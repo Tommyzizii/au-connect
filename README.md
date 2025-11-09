@@ -8,7 +8,7 @@
 
 - Thant Zin Min
 - Min Thant
-- Sithu Naung
+- Si Thu Naung
 
 ---
 
