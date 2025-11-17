@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
   // Save to DB if not exist
   let user = await prisma.user.findUnique({ where: { email: profile.email } });
 
+  // create record if user does not exist
   if (!user) {
     user = await prisma.user.create({
       data: {
@@ -42,8 +43,6 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Create cookie session or JWT etc.
-  // Example simple cookie:
    const baseUrl = req.nextUrl.origin;
    return NextResponse.redirect(baseUrl)
 }
