@@ -3,15 +3,17 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 import prisma from "../lib/prisma";
-import { COOKIE_EXPIRATION_TIME } from "./constants";
 import SessionMethod from "../enums/SessionMethod";
+import { JWT_COOKIE, COOKIE_EXPIRATION_TIME, GOOGLE_ACCESS_TOKEN_URL, GOOGLE_USERINFO_URL, LINKEDIN_ACCESS_TOKEN_URL, LINKEDIN_USERINFO_URL } from "./constants";
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, JWT_SECRET, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, NEXT_PUBLIC_BASE_URL, NODE_ENV } from "./env";
 
 export async function tradSignup(req: NextRequest) {
   // get inputs from request body
   const { email, password } = await req.json();
 
   // validate input
-  if (!email) return new NextResponse("Email is required", { status: 400 });
+  if (!email) 
+    return new NextResponse("Email is required", { status: 400 });
   if (!password)
     return new NextResponse("Password is required", { status: 400 });
 
@@ -56,22 +58,22 @@ export async function googleAuthSignIn(req: NextRequest) {
   if (!code) return NextResponse.json({ error: "No code" }, { status: 400 });
 
   // Exchange code for access token
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+  const tokenRes = await fetch(GOOGLE_ACCESS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
       code,
       grant_type: "authorization_code",
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+      redirect_uri: GOOGLE_REDIRECT_URI,
     }),
   });
 
   const tokenData = await tokenRes.json();
 
   // Fetch user info
-  const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+  const userRes = await fetch(GOOGLE_USERINFO_URL, {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
 
@@ -110,15 +112,15 @@ export async function linkedinAuthSignIn(req: NextRequest) {
   if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
 
   // Exchange code for access token
-  const tokenRes = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
+  const tokenRes = await fetch(LINKEDIN_ACCESS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.LINKEDIN_REDIRECT_URI!,
-      client_id: process.env.LINKEDIN_CLIENT_ID!,
-      client_secret: process.env.LINKEDIN_CLIENT_SECRET!
+      redirect_uri: LINKEDIN_REDIRECT_URI,
+      client_id: LINKEDIN_CLIENT_ID,
+      client_secret: LINKEDIN_CLIENT_SECRET
     })
   });
 
@@ -129,7 +131,7 @@ export async function linkedinAuthSignIn(req: NextRequest) {
     return NextResponse.json({ error: "Token exchange failed" }, { status: 400 });
 
   // fetch user info via OIDC
-  const infoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+  const infoRes = await fetch(LINKEDIN_USERINFO_URL, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
 
@@ -161,7 +163,8 @@ export async function linkedinAuthSignIn(req: NextRequest) {
     { id: user.id, email: user.email },
     SessionMethod.SIGN_IN_LINKEDIN
   );
-  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/?success=true&provider=linkedin`);
+
+  return NextResponse.redirect(NEXT_PUBLIC_BASE_URL + `/?success=true&provider=linkedin`);
 }
 
 export async function tradLogin(req: NextRequest) {
@@ -187,7 +190,7 @@ export async function tradLogin(req: NextRequest) {
 }
 
 export async function logout(req: NextRequest) {
-    req.cookies.delete("auth_token");
+    req.cookies.delete(JWT_COOKIE);
     return getResponse({id: "", email: ""}, SessionMethod.LOGOUT);
 }
 
@@ -206,7 +209,7 @@ export function createUserSession(
   // create JWT token
   const token = jwt.sign(
     { userId: user.id, email: user.email },
-    process.env.JWT_SECRET!,
+    JWT_SECRET,
     { expiresIn: COOKIE_EXPIRATION_TIME }
   );
 
@@ -215,10 +218,10 @@ export function createUserSession(
   // set the JWT in the cookie
   if (response) {
     response.cookies.set({
-      name: "auth_token",
+      name: JWT_COOKIE,
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
   }
