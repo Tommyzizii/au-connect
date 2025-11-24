@@ -1,0 +1,61 @@
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken';
+
+import { JWT_COOKIE, LOGIN_PAGE_PATH } from '@/lib/constants';
+import { JWT_SECRET } from './lib/env';
+
+export function middleware(request: NextRequest) {
+  // Get the JWT token from cookies
+  const token = request.cookies.get(JWT_COOKIE)?.value;
+  
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
+  const isProtectedRoute = !isAuthPage;
+  
+  // verify token if it exists
+  let isValidToken = false;
+  if (token) {
+    try {
+      jwt.verify(token, JWT_SECRET);
+      isValidToken = true;
+    } catch (error) {
+      // token is invalid or expired
+      isValidToken = false;
+      // clear the invalid cookie
+      const response = NextResponse.redirect(new URL(LOGIN_PAGE_PATH, request.url));
+      response.cookies.delete(JWT_COOKIE);
+      return response;
+    }
+  }
+  
+  // if no valid token and trying to access protected routes → redirect to login
+  if (!isValidToken && isProtectedRoute) {
+    const loginUrl = new URL(LOGIN_PAGE_PATH, request.url);
+    // add redirect query param to return user after login
+    loginUrl.searchParams.set('from', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // if has valid token and trying to access auth pages -> redirect to home
+  if (isValidToken && isAuthPage) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+  
+  // all good, continue to the page
+  return NextResponse.next();
+}
+
+// Configure which routes middleware runs on
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - api routes (except if you want to protect them)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, other public files
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg).*)',
+  ],
+};
