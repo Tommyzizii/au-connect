@@ -1,6 +1,12 @@
 import { MapPin, Clock } from "lucide-react"; 
 
-export default function EventCard({ event, isLoading }) {
+type EventType = {
+  title: string;
+  location: string;
+  date: string;
+};
+
+export default function EventCard({ event, isLoading }: { event: EventType; isLoading: boolean }) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
