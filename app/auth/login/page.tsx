@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 import {
   GOOGLE_AUTH_DIRECT_PATH,
@@ -85,112 +86,125 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-screen">
-      {/* Left side - Background image + Welcome text */}
-      <div className="relative w-1/2 hidden md:block">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Left side - Hero section with image */}
+      <div className="relative w-1/2 hidden lg:flex items-end overflow-hidden">
+        {/* Background Image */}
         <Image
           src="/au-bg.png"
           alt="AU background"
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-black/40"></div>
 
-        <div className="absolute bottom-20 left-10 text-white">
-          <h1 className="text-4xl font-semibold">Welcome to</h1>
-          <h1 className="text-5xl font-bold mt-1">AU Connect</h1>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20"></div>
+
+        {/* Text Content at Bottom */}
+        <div className="relative z-10 text-white p-12 pb-16 w-full">
+          <div className="flex items-center gap-2 mb-4">
+            {/* <Sparkles className="w-6 h-6" /> */}
+            <span className="text-sm font-semibold tracking-wider uppercase opacity-90">
+              AU Connect
+            </span>
+          </div>
+
+          <h1 className="text-5xl font-bold mb-4 leading-tight">
+            Welcome Back
+          </h1>
+
+          <p className="text-lg text-gray-200 leading-relaxed mb-6 max-w-md">
+            Connect, collaborate, and grow with your fellow AU students. Your
+            community awaits.
+          </p>
         </div>
       </div>
 
-      {/* Right side - Form card */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-50">
-        <div className="bg-white shadow-xl rounded-2xl p-10 w-[90%] max-w-md">
-          {/* Logo + Title */}
-          <div className="flex flex-col items-center mb-4">
-            <Image
-              src="/au-connect-logo.png"
-              width={60}
-              height={60}
-              alt="Logo"
-            />
-
-            <p className="mt-2 text-xl font-semibold text-center text-gray-900">
-              Connect with fellow AU Students!
-            </p>
+      {/* Right side - Login form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Logo section */}
+          <div className="text-center mb-8">
+            <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-lg overflow-hidden">
+              <Image
+                src="/au-connect-logo.png"
+                alt="AU Connect logo"
+                width={64}
+                height={64}
+                className="object-contain"
+              />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Log In</h2>
+            <p className="text-gray-600">Choose your preferred log-in method</p>
           </div>
 
-          {/* Email */}
-          <div className="mt-6">
-            <label className="block mb-1 text-sm font-semibold text-gray-900">
-              Email
-            </label>
-            <input
-              type="text"
-              className="w-full border rounded-md p-2 focus:ring focus:ring-blue-300 text-gray-600"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+          {/* Error message */}
+          {errorMsg && (
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+              {errorMsg}
+            </div>
+          )}
 
-          {/* Password */}
-          <div className="mt-4">
-            <label className="block mb-1 text-sm font-semibold text-gray-900">
-              Password
-            </label>
-            <input
-              type="password"
-              className="w-full border rounded-md p-2 focus:ring focus:ring-blue-300 text-gray-600"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          {/* Remember me & forgot password */}
-          <div className="flex justify-between items-center mt-3 text-sm">
-            {/* TODO: remember me logic not yet implemented in backend yet :[ */}
-            <label className="flex items-center gap-2 text-gray-500">
-              <input type="checkbox" /> Remember me
-            </label>
-            {/* TODO: needs path name here but has not been implemented yet*/}
-            <Link href="#" className="text-blue-600 hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-
-          {errorMsg && <p className="mt-5 text-red-400">{errorMsg}</p>}
-
-          {/* Sign in button */}
-          <button
-            className="w-full mt-5 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition"
-            onClick={() => handleLogin()}
-          >
-            {loading ? "Sigining in..." : "Sign up"}
-          </button>
-
-          {/* Google login */}
-          <button
-            className="w-full mt-3 bg-black text-white py-2 rounded-md hover:bg-gray-800 flex items-center justify-center gap-2"
-            onClick={() => handleSignin(Provider.GOOGLE)}
-          >
-            <Image src="/google-icon.png" width={20} height={20} alt="Google" />
-            Sign in with Google
-          </button>
-
-          {/* Signup link */}
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Dont have an account?{" "}
-            <Link
-              href={SIGNUP_PAGE_PATH}
-              className="text-blue-600 hover:underline"
+          {/* Social login buttons */}
+          <div className="space-y-3 mb-8">
+            {/* Google */}
+            <button
+              onClick={() => handleSignin(Provider.GOOGLE)}
+              disabled={loading}
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-white border-2 border-gray-200 text-gray-700 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:border-gray-300 hover:bg-gray-50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign up now
-            </Link>
+              <Image src="/google-icon.png" width={20} height={20} alt="Google" />
+              <span>Continue with Google</span>
+              <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+
+            {/* LinkedIn */}
+            <button
+              onClick={() => handleSignin(Provider.LINKEDIN)}
+              disabled={loading}
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-[#0A66C2] text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-[#004182] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Image src="/linkedin-icon.png" width={20} height={20} alt="LinkedIn" />
+              <span>Continue with LinkedIn</span>
+              <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+
+            {/* Microsoft */}
+            <button
+              onClick={() => handleSignin(Provider.MICROSOFT)}
+              disabled={loading}
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-gradient-to-r from-gray-800 to-gray-900 text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:from-gray-900 hover:to-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Image src="/microsoft-icon.png" width={20} height={20} alt="Microsoft" />
+              <span>Continue with Microsoft</span>
+              <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
           </div>
 
-          <p className="text-center text-xs mt-6 text-gray-500">
-            © AU Connect Team 2025
+          {/* Divider */}
+          <div className="relative mb-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-500">
+                New to AU Connect?
+              </span>
+            </div>
+          </div>
+
+          {/* Sign up link */}
+          <Link
+            href={SIGNUP_PAGE_PATH}
+            className="flex items-center justify-center w-full py-3.5 rounded-xl border-2 border-gray-200 text-gray-700 font-medium hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 group"
+          >
+            Create an account
+            <ArrowRight className="inline-block ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          {/* Footer */}
+          <p className="text-center text-xs text-gray-500 mt-8">
+            © 2025 AU Connect Team. All rights reserved.
           </p>
         </div>
       </div>
