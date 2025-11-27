@@ -1,10 +1,8 @@
 "use client";
-import { BookOpen, Image as ImageIcon } from "lucide-react";
-import Image from "next/image";
-import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import Post from "./components/Post";
-import EventCard from "./components/EventCard";
+import LeftProfile from "./components/Feed_LeftProfile";
+import MainFeed from "./components/Feed_MainFeed";
+import RightEvents from "./components/Feed_RightEvents";
 
 const mockUser = {
   name: "Zai Swan",
@@ -26,6 +24,24 @@ const mockPosts = [
   },
   {
     id: 2,
+    author: "Floyd Miles",
+    education: "Class 2015, School of Martin De Tours",
+    avatar: "/au-bg.png",
+    title: "Back To My Graduation Days",
+    timestamp: "2h",
+    image: "/au-bg.png",
+  },
+  {
+    id: 3,
+    author: "Floyd Miles",
+    education: "Class 2015, School of Martin De Tours",
+    avatar: "/au-bg.png",
+    title: "Back To My Graduation Days",
+    timestamp: "2h",
+    image: "/au-bg.png",
+  },
+  {
+    id: 4,
     author: "Floyd Miles",
     education: "Class 2015, School of Nursing Science",
     avatar: "/au-bg.png",
@@ -58,86 +74,14 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="grid grid-cols-12 gap-6">
-        
         {/* LEFT PROFILE */}
-        <div className="col-span-3">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-20">
-            <div className="h-24 bg-gray-200"></div>
-            <div className="p-4 -mt-12">
-              <div className="relative w-20 h-20 mb-3">
-                <Image
-                  src={mockUser.avatar}
-                  alt={mockUser.name}
-                  fill
-                  className="rounded-full border-4 border-white object-cover"
-                />
-              </div>
-              <h2 className="font-bold text-gray-900 text-lg">
-                {mockUser.name}
-              </h2>
-              <p className="text-sm text-gray-600 mb-1">{mockUser.title}</p>
-              <p className="text-xs text-gray-500 mb-1">{mockUser.education}</p>
-              <p className="text-xs text-gray-500">{mockUser.location}</p>
-            </div>
-          </div>
-        </div>
+        <LeftProfile user={mockUser} loading={loading} />
 
         {/* MAIN FEED */}
-        <div className="col-span-6 space-y-4">
-          
-          {/* CREATE POST */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="relative w-10 h-10">
-                <Image
-                  src={mockUser.avatar}
-                  alt={mockUser.name}
-                  fill
-                  className="rounded-full object-cover"
-                />
-              </div>
-              <input
-                type="text"
-                placeholder="What's new Today?"
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none focus:border-red-400"
-              />
-            </div>
-            <div className="flex gap-4 pl-13">
-              <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
-                <ImageIcon className="w-5 h-5" />
-                <span>Media</span>
-              </button>
-              <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
-                <BookOpen className="w-5 h-5" />
-                <span>Write Article</span>
-              </button>
-            </div>
-          </div>
-
-          {/* POSTS */}
-          {loading ? (
-            <>
-              <Post isLoading={true} />
-              <Post isLoading={true} />
-            </>
-          ) : (
-            mockPosts.map((post) => <Post key={post.id} post={post} isLoading={false} />)
-          )}
-        </div>
+        <MainFeed user={mockUser} posts={mockPosts} loading={loading}/>
 
         {/* RIGHT EVENT SIDEBAR */}
-        <div className="col-span-3 space-y-4">
-          {loading ? (
-            <>
-              <EventCard isLoading={true} />
-              <EventCard isLoading={true} />
-            </>
-          ) : (
-            mockEvents.map((event) => (
-              <EventCard key={event.id} event={event} isLoading={false} />
-            ))
-          )}
-        </div>
+        <RightEvents events={mockEvents} loading={loading}/>
       </div>
     </div>
   );

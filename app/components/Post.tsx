@@ -1,14 +1,7 @@
 import { ThumbsUp, MessageCircle, Send } from "lucide-react";
 import Image from "next/image";
 
-type PostType = {
-  avatar: string;
-  author: string;
-  education: string;
-  title?: string;
-  image?: string;
-  timestamp: string;
-};
+import PostType from "@/types/Post";
 
 export default function Post({
   post,
