@@ -272,7 +272,7 @@ function verifyOauthState(url: URL, req: NextRequest) {
 
 export async function logout(req: NextRequest) {
   req.cookies.delete(JWT_COOKIE);
-  return getResponse({ id: "", email: "" }, SessionMethod.LOGOUT);
+  return getResponse(SessionMethod.LOGOUT);
 }
 
 // checks email only
