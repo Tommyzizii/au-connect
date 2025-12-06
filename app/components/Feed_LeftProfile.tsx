@@ -39,15 +39,8 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
         <div className="flex flex-row gap-6 md:gap-0 md:flex-col p-4 md:-mt-12">
           {/* Avatar */}
           <div
-<<<<<<< HEAD
-            onClick={() => router.push(`/profile/${user.slug}`)}
-
-
-            className="relative w-20 h-20 mb-3 cursor-pointer transition-transform duration-200 active:scale-95 hover:scale-105"
-=======
             onClick={() => router.push(PROFILE_PAGE_PATH)}
             className="relative w-20 h-20 mb-3 cursor-pointer transition-transform duration-200 ative:scale-95 hover:scale-105"
->>>>>>> feature/messages
           >
             {user?.profilePic ? (
               <Image

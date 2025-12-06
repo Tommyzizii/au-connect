@@ -78,6 +78,7 @@ export default function Home() {
         const res = await fetch(ME_API_PATH, {
           method: "GET",
           credentials: "include",
+          cache: 'no-store'
         });
 
         if (!res.ok) {
