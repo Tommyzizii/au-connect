@@ -4,7 +4,8 @@ import { parseSlug } from "../utils/parseSlug";
 import { buildSlug } from "../utils/buildSlug";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 import ProfileView from "../components/ProfileView";
-import { safeUserSelect } from "@/lib/safeUserCall"; // ensure correct filename
+import { safeUserSelect } from "@/lib/safeUserCall";
+import type User from "@/types/User";
 
 // Validate Mongo ObjectId
 function isValidObjectId(id: string) {
@@ -17,57 +18,58 @@ function isValidSlugFormat(slug: string) {
 }
 
 export default async function ProfilePage(props: { params: Promise<{ slug: string }> }) {
-  //  Await params safely
   const { slug } = await props.params;
 
-  if (!slug || !isValidSlugFormat(slug)) {
-    return redirect("/404");
-  }
+  if (!slug || !isValidSlugFormat(slug)) redirect("/404");
 
-  //  Extract ObjectId from slug
+  // Parse ID from slug
   const { id } = parseSlug(slug);
+  if (!id || !isValidObjectId(id)) redirect("/404");
 
-  if (!id || !isValidObjectId(id)) {
-    return redirect("/404");
-  }
-
-  //  Secure fetch — ONLY selected fields
+  // Fetch from DB using safe select
   const user = await prisma.user.findUnique({
     where: { id },
     select: safeUserSelect,
   });
 
-  // Avoid user ID enumeration
-  if (!user) {
-    return redirect("/404");
-  }
+  if (!user) redirect("/404");
 
-  //  Validate correct slug (SEO + anti-guessing)
+  // Correct slug enforcement
   const correctSlug = buildSlug(user.username, user.id);
-  if (slug !== correctSlug) {
-    return redirect(`/profile/${correctSlug}`);
-  }
+  if (slug !== correctSlug) redirect(`/profile/${correctSlug}`);
 
-  //  Determine ownership
+  // Get logged-in user
   const session = await getCurrentUser();
   const isOwner = session?.userId === user.id;
 
-  // Render public-safe profile
+  // Build final typed user object
+  const userData: User = {
+    id: user.id,
+    username: user.username,
+    slug: correctSlug,
+
+    title: user.title || "",
+    about: user.about || "",
+    location: user.location || "",
+    coverPhoto: user.coverPhoto || "/default_cover.jpg",
+    profilePic: user.profilePic || "/default_profile.jpg",
+    createdAt: user.createdAt?.toISOString?.() ?? undefined,
+
+    phoneNo: user.phoneNo || "",
+    phonePublic: user.phonePublic ?? false,
+    emailPublic: user.emailPublic ?? true,
+
+    connections: user.connections ?? 0,
+
+    experience: user.experience,
+    education: user.education,
+    posts: user.posts,
+  };
+
   return (
     <ProfileView
-      user={{
-        name: user.username,
-        avatar: user.profilePic || "/default_profile.jpg",
-        coverPhoto: user.coverPhoto || "/default_cover.jpg",
-        title: user.title || "",
-        location: user.location || "",
-        about: user.about || "",
-        connections: user.connections || 0,
-        experience: user.experience,
-        education: user.education,
-        posts: user.posts,
-      }}
-      recommendedPeople={[]} // add later
+      user={userData}
+      recommendedPeople={[]}
       isOwner={isOwner}
     />
   );

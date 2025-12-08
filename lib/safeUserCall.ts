@@ -7,13 +7,18 @@ export const safeUserSelect = {
   location: true,
   about: true,
   connections: true,
+
+  phoneNo: true,
+  phonePublic: true,
+  emailPublic: true,
+  
   experience: {
-    select: { id: true, role: true, company: true, period: true }
+    select: { id: true, role: true, company: true, period: true },
   },
   education: {
-    select: { id: true, school: true, degree: true, period: true }
+    select: { id: true, school: true, degree: true, period: true },
   },
   posts: {
-    select: { id: true, content: true, image: true, createdAt: true }
-  }
+    select: { id: true, content: true, image: true, createdAt: true },
+  },
 };
