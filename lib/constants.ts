@@ -25,7 +25,7 @@ export const MICROSOFT_AUTH_DIRECT_PATH = BASE_API_PATH + '/auth/azure-ad';
 
 // api routes 
 export const LOGOUT_API_PATH = BASE_API_PATH + '/auth/logout';
-export const ME_API_PATH = BASE_API_PATH + '/me';
+export const ME_API_PATH = BASE_API_PATH + '/profile/me';
 
 
 // OAuth URLs

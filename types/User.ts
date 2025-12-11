@@ -1,15 +1,35 @@
+// types/User.ts
+import Experience from "./Experience";
+import Education from "./Education";
+import PostType from "./Post";
+
 type User = {
-  username?: string;
+  id: string;
+
+  // required fields
+  username: string; 
+  slug: string;
+
+  // optional fields
   title?: string;
+  about?: string;
+  location?: string;
+
   phoneNo?: string;
+  phonePublic?: boolean;
+  emailPublic?: boolean;
+
+  coverPhoto?: string;
   profilePic?: string;
   createdAt?: string;
-  education?: string;
-  location?: string;
-  name: string;
-  avatar: string;
-  slug?: string;
-  coverPhoto?: string;
+
+  experience?: Experience[];
+  education?: Education[];
+  posts?: PostType[];
+  connections?: number;
+
+  // name: string;
+  // avatar: string;
   // followers: number
   // following: number
 };

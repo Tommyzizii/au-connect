@@ -3,10 +3,15 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LeftProfilePropTypes } from "@/types/FeedPagePropTypes";
 
+import { buildSlug } from "@/app/profile/utils/buildSlug";
+
+
+
 const DEFAULT_AVATAR = "/default-avatar.png";
 
 export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
   const router = useRouter();
+
 
   // Safely handle navigation
   const handleProfileClick = () => {
@@ -31,10 +36,12 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
     );
   }
 
+  const slug = user?.slug ?? buildSlug(user?.username || "", user?.id || "");
   const name = user?.username || "Unknown User";
   const title = user?.title || "No title provided";
   const education = user?.education || "No education info";
   const location = user?.location || "Unknown location";
+
 
   return (
     <div className="lg:col-span-3 md:col-span-4 flex justify-center md:justify-start">
@@ -42,11 +49,15 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
         <div className="hidden md:block h-24 bg-gray-200"></div>
 
         <div className="flex flex-row gap-6 md:gap-0 md:flex-col p-4 md:-mt-12">
+
           {/* Avatar */}
           <div
+
             onClick={handleProfileClick}
+
             className="relative w-20 h-20 mb-3 cursor-pointer transition-transform duration-200 active:scale-95 hover:scale-105"
           >
+
             {user?.profilePic ? (
               <Image
                 src={user.profilePic}
@@ -66,7 +77,7 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
 
           {/* Info */}
           <div
-            onClick={handleProfileClick}
+            onClick={()=> (handleProfileClick())}
             className="cursor-pointer transition-all duration-200"
           >
             <h2 className="font-bold text-gray-900 text-lg hover:text-red-500 transition-colors">
@@ -74,7 +85,7 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
             </h2>
 
             <p className="text-sm text-gray-600 mb-1">{title}</p>
-            <p className="text-xs text-gray-500 mb-1">{education}</p>
+            {/* <p className="text-xs text-gray-500 mb-1">{education}</p> */}
             <p className="text-xs text-gray-500">{location}</p>
           </div>
         </div>
