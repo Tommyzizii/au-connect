@@ -1,7 +1,17 @@
 export type Experience = {
   id: string;
-  role: string;
+
+  title: string;
+  employmentType: "Full-time" | "Part-time" | "Freelance" | "Internship";
   company: string;
-  period: string;
+
+  startMonth: number;
+  startYear: number;
+
+  endMonth?: number;
+  endYear?: number;
+
+  isCurrent: boolean;
 };
+
 export default Experience;

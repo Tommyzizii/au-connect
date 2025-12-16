@@ -1,3 +1,4 @@
+import { UPDATE_GENERAL_PROFILE_FIELDS_API_PATH } from "@/lib/constants";
 import type User from "@/types/User";
 
 export interface UpdateProfilePayload {
@@ -11,7 +12,7 @@ export interface UpdateProfilePayload {
 }
 
 export async function updateMyProfile(data: UpdateProfilePayload): Promise<User> {
-  const res = await fetch("/api/connect/v1/profile/me/update/generalFields", {
+  const res = await fetch(UPDATE_GENERAL_PROFILE_FIELDS_API_PATH, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

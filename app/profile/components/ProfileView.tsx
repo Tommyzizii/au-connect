@@ -10,9 +10,11 @@ import EducationItem from "./EducationItem";
 import RecommendedList from "./RecommendedList";
 import RecommendedModal from "./RecommendedModal";
 import EditProfileModal from "./EditProfileModal";
+import ExperienceManagerModal from "./ExperienceManagerModal";
 
 import Post from "@/app/components/Post";
 import User from "@/types/User";
+import Experience from "@/types/Experience";
 
 export default function ProfileView({
   user,
@@ -26,7 +28,13 @@ export default function ProfileView({
   const [tab, setTab] = useState("posts");
   const [openModal, setOpenModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
+  const [openExperienceModal, setOpenExperienceModal] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // ✅ FIX: experience must be client state
+  const [experience, setExperience] = useState<Experience[]>(
+    user.experience ?? []
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
@@ -37,11 +45,12 @@ export default function ProfileView({
     <>
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-12 gap-6">
+
           {/* LEFT MAIN CONTENT */}
           <div className="col-span-12 lg:col-span-8 space-y-4">
+
             {/* PROFILE HEADER */}
             <div className="bg-white rounded-lg border overflow-hidden">
-              {/* COVER PHOTO */}
               <div className="relative h-56 w-full bg-gray-200">
                 <Image
                   src={user.coverPhoto || "/default_cover.jpg"}
@@ -49,7 +58,6 @@ export default function ProfileView({
                   fill
                   className="object-cover"
                 />
-
                 {isOwner && (
                   <button className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow">
                     <Camera size={18} className="text-gray-700" />
@@ -57,31 +65,19 @@ export default function ProfileView({
                 )}
               </div>
 
-              {/* MAIN CONTENT */}
               <div className="relative p-4">
-                {/* EDIT BUTTON */}
                 <div className="absolute top-4 right-4 flex items-center gap-3">
-                  {isOwner ? (
+                  {isOwner && (
                     <button
                       onClick={() => setOpenEditModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white"
+                      className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 bg-white"
                     >
                       <Pencil size={16} />
                       Edit Profile
                     </button>
-                  ) : (
-                    <>
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
-                        Connect
-                      </button>
-                      <button className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white">
-                        Message
-                      </button>
-                    </>
                   )}
                 </div>
 
-                {/* AVATAR */}
                 <div className="relative -mt-16 w-32 h-32">
                   <Image
                     src={user.profilePic || "/default_profile.jpg"}
@@ -91,7 +87,6 @@ export default function ProfileView({
                   />
                 </div>
 
-                {/* USER DETAILS */}
                 <h1 className="text-2xl font-bold text-gray-900 mt-2">
                   {user.username}
                 </h1>
@@ -99,10 +94,7 @@ export default function ProfileView({
                 <p className="text-gray-700">{user.title}</p>
 
                 <p className="text-sm text-gray-600 mt-1">
-                  {user.location} ·{" "}
-                  <span className="underline cursor-pointer">
-                    Contact info
-                  </span>
+                  {user.location}
                 </p>
 
                 <p className="text-sm text-gray-600">
@@ -112,10 +104,28 @@ export default function ProfileView({
             </div>
 
             {/* EXPERIENCE */}
-            <SectionCard title="Experience" icon={isOwner && <Pencil size={18} />}>
-              {user.experience?.map((exp: any) => (
-                <ExperienceItem key={exp.id} {...exp} />
-              ))}
+            <SectionCard
+              title="Experience"
+              icon={
+                isOwner && (
+                  <button
+                    onClick={() => setOpenExperienceModal(true)}
+                    className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                )
+              }
+            >
+              {experience.length > 0 ? (
+                experience.map((exp) => (
+                  <ExperienceItem key={exp.id} {...exp} />
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">
+                  No experience added yet.
+                </p>
+              )}
             </SectionCard>
 
             {/* EDUCATION */}
@@ -138,32 +148,22 @@ export default function ProfileView({
                 {user.connections} connections
               </p>
 
-              {/* TABS */}
-              <div className="flex items-center justify-between border-b pb-2">
-                <div className="flex gap-4">
-                  {["posts", "videos", "images", "documents"].map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTab(t)}
-                      className={`pb-2 capitalize ${
-                        tab === t
-                          ? "border-b-2 border-blue-600 text-blue-600"
-                          : "text-gray-600"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-
-                {isOwner && (
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
-                    Create Post
+              <div className="flex gap-4 border-b pb-2">
+                {["posts", "videos", "images", "documents"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`pb-2 capitalize ${
+                      tab === t
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {t}
                   </button>
-                )}
+                ))}
               </div>
 
-              {/* POSTS */}
               <div className="mt-4 space-y-4">
                 {tab === "posts" ? (
                   user.posts?.map((p: any) => (
@@ -209,6 +209,14 @@ export default function ProfileView({
         open={openEditModal}
         onClose={() => setOpenEditModal(false)}
         user={user}
+      />
+
+      {/* ✅ KEY FIX: pass experience state */}
+      <ExperienceManagerModal
+        open={openExperienceModal}
+        onClose={() => setOpenExperienceModal(false)}
+        experiences={experience}
+        setExperiences={setExperience}
       />
     </>
   );

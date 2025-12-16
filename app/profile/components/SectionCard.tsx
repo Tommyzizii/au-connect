@@ -15,14 +15,12 @@ export default function SectionCard({
     <div className="bg-white rounded-lg border p-4">
       {/* Title + optional icon */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {title}
+        </h2>
 
-        {/* icon only if provided */}
-        {icon && (
-          <button className="p-1 hover:bg-gray-100 rounded-full">
-            {icon}
-          </button>
-        )}
+        {/* render icon directly (NO button wrapper) */}
+        {icon}
       </div>
 
       {children}

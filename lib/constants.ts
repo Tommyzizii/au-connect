@@ -25,12 +25,20 @@ export const MICROSOFT_AUTH_DIRECT_PATH = BASE_API_PATH + '/auth/azure-ad';
 
 // api routes 
 export const LOGOUT_API_PATH = BASE_API_PATH + '/auth/logout';
-
 export const ME_API_PATH = BASE_API_PATH + '/profile/me';
-
-//export const ME_API_PATH = BASE_API_PATH + '/me';
 export const POST_API_PATH = BASE_API_PATH + '/posts'
+// GET all my experiences
+export const GET_EXPERIENCE_API_PATH = ME_API_PATH + '/get/experienceFields';
 
+// ADD new experience
+export const ADD_EXPERIENCE_API_PATH = ME_API_PATH + '/add/experienceFields';
+export const UPDATE_GENERAL_PROFILE_FIELDS_API_PATH = ME_API_PATH + '/update/generalFields';
+
+// UPDATE specific experience (/:exp_id)
+export const UPDATE_EXPERIENCE_API_PATH = ME_API_PATH + '/update/experienceFields';
+
+// DELETE specific experience (/:exp_id)
+export const DELETE_EXPERIENCE_API_PATH = ME_API_PATH + '/delete/experienceFields';
 
 
 // OAuth URLs
@@ -40,7 +48,7 @@ export const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 export const GOOGLE_ACCESS_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
 // LinkedIn
-export const LINKEDIN_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization'; 
+export const LINKEDIN_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization';
 export const LINKEDIN_ACCESS_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken';
 export const LINKEDIN_USERINFO_URL = 'https://api.linkedin.com/v2/userinfo'
 // Microsoft/Azure AD

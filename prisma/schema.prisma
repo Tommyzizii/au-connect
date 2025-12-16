@@ -42,13 +42,24 @@ model User {
 }
 
 model Experience {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId
-  role      String
-  company   String
-  period    String
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  id              String   @id @map("_id") @default(auto()) @db.ObjectId
+
+  title           String
+  employmentType  String
+  company         String
+
+  startMonth      Int
+  startYear       Int
+
+  endMonth        Int?
+  endYear         Int?
+
+  isCurrent       Boolean  @default(false)
+
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
 }
+
 
 model Education {
   id        String   @id @map("_id") @default(auto()) @db.ObjectId

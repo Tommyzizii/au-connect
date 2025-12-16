@@ -61,7 +61,7 @@ export default async function ProfilePage(props: { params: Promise<{ slug: strin
         ? user.profilePic
         : "/default_profile.jpg",
 
-    createdAt: user.createdAt?.toISOString?.() ?? undefined,
+   // createdAt: user.createdAt?.toISOString?.() ?? undefined,
 
     phoneNo: user.phoneNo || "",
     phonePublic: user.phonePublic ?? false,
