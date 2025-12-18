@@ -3,8 +3,16 @@ import prisma from "./prisma";
 
 import { getHeaderUserInfo } from "./authFunctions";
 import { CreatePostSchema } from "@/zod/PostSchema";
-import { AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER_NAME } from "./env";
-import { BlobSASPermissions, generateBlobSASQueryParameters, StorageSharedKeyCredential } from "@azure/storage-blob";
+import {
+  AZURE_STORAGE_ACCOUNT_KEY,
+  AZURE_STORAGE_ACCOUNT_NAME,
+  AZURE_STORAGE_CONTAINER_NAME,
+} from "./env";
+import {
+  BlobSASPermissions,
+  generateBlobSASQueryParameters,
+  StorageSharedKeyCredential,
+} from "@azure/storage-blob";
 
 export async function createPost(req: NextRequest) {
   try {

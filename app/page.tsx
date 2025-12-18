@@ -88,7 +88,7 @@ export default function Home() {
   }, [postList])  
 
   useEffect(() => {
-    console.log(cursor);
+    console.log("Cursor" + cursor);
   }, [cursor])  
 
   return (

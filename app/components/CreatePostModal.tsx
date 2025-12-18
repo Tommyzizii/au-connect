@@ -444,7 +444,6 @@ export default function CreatePostModal({
 
             <button
               onClick={() => handleSubmitPost()}
-              // disabled={!postContent.trim() || isSubmitting}
               disabled={isSubmitting}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
                 isSubmitting

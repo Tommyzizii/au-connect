@@ -52,6 +52,12 @@ export default function Header() {
 
   const hidden = [SIGNIN_PAGE_PATH, ONBOARD_PAGE_PATH].includes(pathName);
 
+
+  const handleProfileClick = () => {
+    if (!user?.slug) return; // prevent runtime crash
+    router.push(`/profile/${user.slug}`);
+  };
+
   useEffect(() => {
     if (!hidden) {
       fetchUser(
@@ -128,8 +134,8 @@ export default function Header() {
 
             {/* Profile + Logout */}
             <div className="flex items-center gap-2">
-              <Link
-                href={PROFILE_PAGE_PATH}
+              <button
+                onClick={() => { handleProfileClick() }}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600"
               >
                 <div className="relative w-8 h-8 rounded-full overflow-hidden border border-red-300 flex items-center justify-center bg-gray-100">
@@ -145,7 +151,7 @@ export default function Header() {
                   )}
                 </div>
                 <span className="text-sm">{user?.username}</span>
-              </Link>
+              </button>
 
               <button
                 onClick={() => setShowModal(true)}

@@ -2,12 +2,14 @@ import { ThumbsUp, MessageCircle, Send } from "lucide-react";
 import Image from "next/image";
 
 import PostType from "@/types/Post";
+import PostMediaGrid from "./PostMediaGrid";
+import parseDate from "../profile/utils/parseDate";
 
 export default function Post({
   post,
   isLoading,
 }: {
-  post?: PostType;      // optional for loading state
+  post?: PostType;
   isLoading: boolean;
 }) {
   // Skeleton UI
@@ -31,10 +33,10 @@ export default function Post({
   if (!post) return null;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-start gap-3 mb-4">
+    <div className="bg-white border border-gray-200 rounded-lg">
+      <div className="flex items-start gap-3 my-4 mx-5">
         <Image
-          src={post.profilePic ? post.profilePic : '/default-profile'}
+          src={post.profilePic ? post.profilePic : "/default-profile"}
           width={50}
           height={50}
           alt={post.username ? post.username : "USER"}
@@ -42,36 +44,21 @@ export default function Post({
         />
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900">{post.username}</h3>
-          <p className="text-sm text-gray-500">{post.education}</p>
+          <p className="text-sm text-gray-500">{post.createdAt && parseDate(post.createdAt)}</p>
         </div>
       </div>
 
-      {post.title && (
-        <h4 className="font-medium text-gray-900 mb-3">{post.title}</h4>
+      {post.content && (
+        <h4 className="font-medium text-gray-900 mb-3 mx-5">{post.content}</h4>
       )}
 
-      {post.media && (
-        // <div className="mb-4 bg-gray-100 rounded-lg overflow-hidden">
-        //   <Image
-        //     src={post.image}
-        //     width={100}
-        //     height={100}
-        //     alt={post.title || "Post image"}
-        //     className="w-full h-64 object-cover"
-        //   />
-        // </div>
-          <div className="mb-4 bg-gray-100 rounded-lg overflow-hidden">
-          <img
-            src={post.media[0].url}
-            width={100}
-            height={100}
-            alt={post.title || "Post image"}
-            className="w-full h-64 object-cover"
-          />
+      {post.media && post.media.length > 0 && (
+        <div className="">
+          <PostMediaGrid media={post.media} isLoading={isLoading}/>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+      <div className="flex items-center justify-evenly py-4 border-t border-gray-200">
         <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
           <ThumbsUp className="w-5 h-5" />
           <span>Like</span>
@@ -84,7 +71,6 @@ export default function Post({
           <Send className="w-5 h-5" />
           <span>Send</span>
         </button>
-        <span className="text-sm text-gray-400">Posted {post.createdAt?.toString()}</span>
       </div>
     </div>
   );
