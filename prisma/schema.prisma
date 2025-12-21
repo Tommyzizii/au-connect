@@ -15,95 +15,138 @@ datasource db {
 }
 
 model User {
-  id            String   @id @map("_id") @default(auto()) @db.ObjectId
-  username      String
-  email         String   @unique
-  googleId      String?  @unique
-  linkedinId    String?  @unique
-  microsoftId   String?  @unique
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  username    String
+  email       String  @unique
+  googleId    String? @unique
+  linkedinId  String? @unique
+  microsoftId String? @unique
 
-  profilePic    String?
-  coverPhoto    String?
-  title         String?
-  location      String?
-  about         String?
-  connections   Int       @default(0)
+  profilePic  String?
+  coverPhoto  String?
+  title       String?
+  location    String?
+  about       String?
+  connections Int     @default(0)
 
-  experience    Experience[]
-  education     Education[]
-  posts         Post[]
+  experience Experience[]
+  education  Education[]
+  posts      Post[]
 
-  phoneNo       String?
-  phonePublic   Boolean  @default(false)
-  emailPublic   Boolean  @default(true)
+  // For Connection
+  sentConnectionRequests     ConnectionRequest[] @relation("SentConnectionRequests")
+  receivedConnectionRequests ConnectionRequest[] @relation("ReceivedConnectionRequests")
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  phoneNo     String?
+  phonePublic Boolean @default(false)
+  emailPublic Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Experience {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId
-  role      String
-  company   String
-  period    String
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  role    String
+  company String
+  period  String
+  userId  String @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id])
 }
 
 model Education {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId
-  school    String
-  degree    String
-  period    String
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  school String
+  degree String
+  period String
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Post {
-  id            String     @id @map("_id") @default(auto()) @db.ObjectId
-  user          User @relation(fields: [userId], references: [id])
-  userId        String     @db.ObjectId
-  username      String
-  profilePic    String?
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  user       User    @relation(fields: [userId], references: [id])
+  userId     String  @db.ObjectId
+  username   String
+  profilePic String?
 
-  postType      String
-  visibility    String?
+  postType   String
+  visibility String?
 
-  title         String?
-  content       String
-  media         Json?
+  title   String?
+  content String
+  media   Json?
 
-  likeCount     Int        @default(0)
-  commentCount  Int        @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  comments      Comment[]
+  comments Comment[]
 }
 
 model Comment {
-  id            String     @id @map("_id") @default(auto()) @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
   // user info (denormalized)
-  userId        String     @db.ObjectId
-  username      String
-  profilePic    String
+  userId     String @db.ObjectId
+  username   String
+  profilePic String
 
   // comment fields
-  content       String
-  media         Json?
+  content String
+  media   Json?
 
-  likeCount     Int        @default(0)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // relation to post
-  postId        String     @db.ObjectId
-  post          Post       @relation(fields: [postId], references: [id])
+  postId String @db.ObjectId
+  post   Post   @relation(fields: [postId], references: [id])
 
   // replies (self-relation)
-  parentId      String?    @db.ObjectId
-  parent        Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies       Comment[]  @relation("CommentReplies")
+  parentId String?   @db.ObjectId
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  Comment[] @relation("CommentReplies")
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
+model ConnectionRequest {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId String        @db.ObjectId
+  toUserId   String        @db.ObjectId
+  status     RequestStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relations to your existing User model
+  fromUser User @relation("SentConnectionRequests", fields: [fromUserId], references: [id])
+  toUser   User @relation("ReceivedConnectionRequests", fields: [toUserId], references: [id])
+
+  @@index([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+}
+
+model Connection {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // store the pair in a consistent order so (A,B) == (B,A)
+  userAId String @db.ObjectId
+  userBId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
 }
