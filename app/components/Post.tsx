@@ -1,10 +1,11 @@
 import { ThumbsUp, MessageCircle, Send } from "lucide-react";
-import Image from "next/image";
 
 import PostType from "@/types/Post";
 import PostMediaGrid from "./PostMediaGrid";
 import parseDate from "../profile/utils/parseDate";
 import PostAttachments from "./PostAttachments";
+import PostText from "./PostText";
+import Image from "next/image";
 
 export default function Post({
   post,
@@ -34,38 +35,76 @@ export default function Post({
   if (!post) return null;
 
   const videosAndImages = post.media?.filter(
-    m => m.type === 'image' || m.type === 'video'
+    (m) => m.type === "image" || m.type === "video"
   );
 
-  const attachments = post.media?.filter(m => m.type === 'file');
+  const containsVideosOrImages =
+    videosAndImages?.length && videosAndImages.length > 0;
+
+  const attachments = post.media?.filter((m) => m.type === "file");
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
-      <div className="flex items-start gap-3 my-4 mx-5">
-        <img
-          src={post.profilePic ? post.profilePic : "/default-profile"}
-          width={50}
-          height={50}
-          alt={post.username ? post.username : "USER"}
-          className="w-12 h-12 rounded-full"
-        />
+      <div
+        className="flex items-start gap-3 my-4 mx-5"
+        onClick={() => {
+          window.alert("go to that profile");
+        }}
+      >
+        {post.profilePic ? (
+          <Image
+            src={post.profilePic}
+            width={50}
+            height={50}
+            alt={post.username ? post.username : "USER"}
+            className="w-12 h-12 rounded-full"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/default_cover.jpg";
+            }}
+          />
+        ) : (
+          <Image
+            src={"/default_cover.jpg"}
+            width={50}
+            height={50}
+            alt={post.username ? post.username : "USER"}
+            className="w-12 h-12 rounded-full"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/default_cover.jpg";
+            }}
+          />
+        )}
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900">{post.username}</h3>
-          <p className="text-sm text-gray-500">{post.createdAt && parseDate(post.createdAt)}</p>
+          {/* <h3 className="text-[10px] text-gray-900">{`${100} followers`}</h3> */}
+          <p className="text-sm text-gray-500">
+            {post.createdAt && parseDate(post.createdAt)}
+          </p>
         </div>
       </div>
 
-      {post.content && (
-        <h4 className="font-medium text-gray-900 mb-3 mx-5">{post.content}</h4>
-      )}
+      {post.content && <PostText text={post.content} />}
 
-      {videosAndImages && videosAndImages.length > 0 && (
-          <PostMediaGrid media={videosAndImages} isLoading={isLoading}/>
+      {containsVideosOrImages && (
+        <PostMediaGrid media={videosAndImages} isLoading={isLoading} />
       )}
 
       {attachments && attachments.length > 0 && (
-        <PostAttachments media={attachments}/>
+        <PostAttachments
+          media={attachments}
+          addMargin={containsVideosOrImages ? true : false}
+        />
       )}
+
+      {/* likes and share counts */}
+      <div className="px-4 py-2">
+        <div className="flex flex-row justify-end">
+          <span className="text-gray-500 mr-3">1000 likes</span>
+          <span className="text-gray-500">123 shares</span>
+        </div>
+      </div>
 
       <div className="flex items-center justify-evenly py-4 border-t border-gray-200">
         <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
@@ -78,7 +117,7 @@ export default function Post({
         </button>
         <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
           <Send className="w-5 h-5" />
-          <span>Send</span>
+          <span>Share</span>
         </button>
       </div>
     </div>

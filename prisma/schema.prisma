@@ -27,7 +27,8 @@ model User {
   title         String?
   location      String?
   about         String?
-  connections   Int       @default(0)
+
+  connections     Int       @default(0)
 
   experience    Experience[]
   education     Education[]

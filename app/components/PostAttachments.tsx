@@ -44,7 +44,7 @@ function formatBytes(bytes: number) {
 }
 
 export default function PostAttachments({
-  media,
+  media, addMargin = false
 }: {
   media: {
     blobName: string;
@@ -54,11 +54,12 @@ export default function PostAttachments({
     mimeType?: string | undefined;
     size?: number | undefined;
   }[];
+  addMargin?: boolean;
 }) {
   if (!media || media.length === 0) return null;
 
   return (
-    <div className="px-5 pb-4 space-y-2">
+    <div className={`px-5 pb-4 space-y-2 ${addMargin && "mt-5"}`}>
       <p className="text-sm font-medium text-gray-700">
         📎 Attachments
       </p>

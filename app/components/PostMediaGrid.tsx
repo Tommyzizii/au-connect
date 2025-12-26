@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { useState } from "react";
+import PostDetailsModal from "./PostDetailsModal";
 
 export default function PostMediaGrid({
   media,
@@ -9,6 +11,14 @@ export default function PostMediaGrid({
   maxVisible?: number;
   isLoading: boolean;
 }) {
+  const [postModalOpen, setPostModalOpen] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+
+  const openPost = (index: number) => {
+    setCurrentMediaIndex(index);
+    setPostModalOpen(true);
+  }
+
   if (!media || media.length === 0) return null;
 
   const visibleMedia = media.slice(0, maxVisible);
@@ -33,7 +43,7 @@ export default function PostMediaGrid({
           >
             <div className="w-full h-full bg-gray-200 animate-pulse relative overflow-hidden">
               {/* Shimmer effect */}
-              <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <div className="absolute inset-0 -translate-x-full animate-shimmer bg-linear-to-r from-transparent via-white/20 to-transparent" />
             </div>
           </div>
         ))}
@@ -51,8 +61,9 @@ export default function PostMediaGrid({
             className={
               isSingle
                 ? "w-full overflow-hidden"
-                : "relative w-full aspect-square"
+                : "relative w-full aspect-square cursor-pointer"
             }
+            onClick={() => openPost(index)}
           >
             <Image
               src={item.url}
@@ -83,6 +94,10 @@ export default function PostMediaGrid({
           </div>
         );
       })}
+
+      { postModalOpen && (
+        <PostDetailsModal media={media} clickedIndex={currentMediaIndex} onClose={() => setPostModalOpen(false)} />
+      )}
     </div>
   );
 }

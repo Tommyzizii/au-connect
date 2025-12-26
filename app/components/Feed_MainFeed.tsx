@@ -129,7 +129,7 @@ export default function MainFeed({
 
       {/* Show SuccessModal */}
       <div
-        className={`fixed top-25 right-1/2 left-1/2 z-50 w-67 flex justify-center transition-all duration-300 
+        className={`fixed bottom-10 left-5 z-50 w-67 flex justify-center transition-all duration-300 
       ${
         showSuccessModal
           ? "opacity-100 translate-y-0"
