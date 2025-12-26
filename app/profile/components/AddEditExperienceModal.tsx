@@ -33,7 +33,7 @@ export default function AddEditExperienceModal({
 }) {
   const [form, setForm] = useState({
     title: "",
-    employmentType: "",
+    employmentType: "" as EmploymentType | "",
     company: "",
     isCurrent: false,
     startMonth: "",
@@ -68,8 +68,8 @@ export default function AddEditExperienceModal({
       isCurrent: initial.isCurrent,
       startMonth: String(initial.startMonth),
       startYear: String(initial.startYear),
-      endMonth: initial.endMonth?.toString() || "",
-      endYear: initial.endYear?.toString() || "",
+      endMonth: initial.endMonth?.toString() ?? "",
+      endYear: initial.endYear?.toString() ?? "",
     });
   }, [open, initial]);
 
@@ -102,7 +102,7 @@ export default function AddEditExperienceModal({
 
     await onSave({
       title: form.title.trim(),
-      employmentType: form.employmentType as any,
+      employmentType: form.employmentType,
       company: form.company.trim(),
       isCurrent: form.isCurrent,
       startMonth: Number(form.startMonth),
@@ -149,15 +149,20 @@ export default function AddEditExperienceModal({
         {/* EMPLOYMENT TYPE */}
         <select
           value={form.employmentType}
-          onChange={(e) => setForm({ ...form, employmentType: e.target.value })}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              employmentType: e.target.value as EmploymentType,
+            })
+          }
           className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg
                      text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Employment type</option>
-          <option>Full-time</option>
-          <option>Part-time</option>
-          <option>Freelance</option>
-          <option>Internship</option>
+          <option value="FULL_TIME">Full-time</option>
+          <option value="PART_TIME">Part-time</option>
+          <option value="FREELANCE">Freelance</option>
+          <option value="INTERNSHIP">Internship</option>
         </select>
 
         {/* COMPANY */}
