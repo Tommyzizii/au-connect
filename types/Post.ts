@@ -29,6 +29,7 @@ type PostType = {
     size?: number;
   }[] | null;
 
+  isLiked?: boolean;
   likeCount?: number;
   commentCount?: number;
   numOfComments?: number;

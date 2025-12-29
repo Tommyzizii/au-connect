@@ -33,6 +33,9 @@ export const COMMENT_API_PATH = (postId: string) =>
 export const REPLIES_API_PATH = (postId: string, commentId: string) =>
   BASE_API_PATH + `/posts/${postId}/comments/${commentId}/replies`;
 
+export const LIKE_POST_API_PATH = (postId: string) =>
+  BASE_API_PATH + `/posts/${postId}/like`;
+
 export const POST_API_PATH = BASE_API_PATH + '/posts'
 // GET all my experiences
 export const GET_EXPERIENCE_API_PATH = ME_API_PATH + '/get/experienceFields';

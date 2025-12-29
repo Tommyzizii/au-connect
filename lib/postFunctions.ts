@@ -14,6 +14,7 @@ import {
   AZURE_STORAGE_CONTAINER_NAME,
 } from "./env";
 import { POSTS_PER_FETCH, SAS_TOKEN_EXPIRE_DURATION } from "./constants";
+import { PostMedia, PostMediaWithUrl } from "@/types/PostMedia";
 
 export async function createPost(req: NextRequest) {
   try {
@@ -121,19 +122,6 @@ export async function createPost(req: NextRequest) {
   }
 }
 
-// TODO:move-to-type
-type PostMedia = {
-  blobName: string;
-  type: string;
-  name: string;
-  mimeType: string;
-  size: number;
-};
-
-// TODO:move-to-type
-type PostMediaWithUrl = PostMedia & {
-  url: string;
-};
 
 export async function getPosts(req: NextRequest) {
   try {
@@ -161,6 +149,13 @@ export async function getPosts(req: NextRequest) {
           select: {
             comments: true,
           }
+        },
+        interactions: {
+          where: {
+            userId: userId,
+            type: "LIKE",
+          },
+          select: { id: true }
         }
       }
     });
@@ -168,6 +163,7 @@ export async function getPosts(req: NextRequest) {
     // adding comments count from _count
     const postWithCommentCount = posts.map((post) => ({
       ...post,
+      isLiked: post.interactions.length > 0,
       numOfComments: post._count.comments,
     }));
 

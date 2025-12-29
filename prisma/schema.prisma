@@ -18,9 +18,10 @@ model User {
   id            String   @id @map("_id") @default(auto()) @db.ObjectId
   username      String
   email         String   @unique
-  googleId      String?  @unique
-  linkedinId    String?  @unique
-  microsoftId   String?  @unique
+
+  googleId      String?  
+  linkedinId    String?  
+  microsoftId   String?  
 
   profilePic    String?
   coverPhoto    String?
@@ -28,7 +29,7 @@ model User {
   location      String?
   about         String?
 
-  connections     Int       @default(0)
+  connections   Int       @default(0)
 
   experience    Experience[]
   education     Education[]
@@ -89,7 +90,6 @@ model Education {
 
 model Post {
   id            String     @id @map("_id") @default(auto()) @db.ObjectId
-  @@index([id])
   
   user          User @relation(fields: [userId], references: [id])
   userId        String     @db.ObjectId
@@ -103,12 +103,15 @@ model Post {
   content       String
   media         Json? // [{ url, type, name, mimeType, size }]
 
-  likeCount     Int        @default(0)
   commentCount  Int        @default(0)
+  likeCount     Int        @default(0)
+  shareCount    Int        @default(0)
+  savedCount    Int        @default(0)
 
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
+  interactions   PostInteraction[]
   comments      Comment[]
 }
 
@@ -136,4 +139,24 @@ model Comment {
   parentId      String?    @db.ObjectId
   parent        Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies       Comment[]  @relation("CommentReplies")
+}
+
+model PostInteraction {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId    String   @db.ObjectId
+  postId    String   @db.ObjectId
+
+  type      PostInteractionType
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, type])
+  @@index([postId, type])
+}
+
+enum PostInteractionType {
+  LIKE
+  SHARE
+  SAVED
 }

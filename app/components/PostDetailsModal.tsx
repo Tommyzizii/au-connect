@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import CommentInput from "./CommentInput";
-import CommentItem, { CommentType } from "./CommentItem";
+import CommentItem from "./CommentItem";
+import CommentType from "@/types/CommentType";
 import MediaCarousel from "./MediaCarousel";
 import PostContentSection from "./PostContentSection";
 import {
@@ -9,21 +10,7 @@ import {
   useTopLevelComments,
 } from "../profile/utils/fetchfunctions";
 import parseDate from "../profile/utils/parseDate";
-
-// TODO:move-to-type
-type PostDetailsModalTypes = {
-  postInfo: {
-    id: string;
-    username: string | undefined;
-    profilePic: string | undefined | null;
-    createdAt: string | Date | undefined;
-  };
-  media?: { url: string; type: string }[] | null;
-  title?: string | null;
-  content: string | undefined;
-  clickedIndex: number;
-  onClose: () => void;
-};
+import PostDetailsModalTypes from "@/types/PostDetailsModalTypes";
 
 export default function PostDetailsModal({
   postInfo,
@@ -55,14 +42,12 @@ export default function PostDetailsModal({
     mutationFn: createComment,
 
     onSuccess: (newComment, variables) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { postId, parentId } = variables;
 
-      // Option 1 (simple & safe)
       queryClient.invalidateQueries({
         queryKey: ["comments", postId],
       });
-
-      // Later we can do optimistic updates
     },
   });
 
@@ -118,7 +103,7 @@ export default function PostDetailsModal({
 
             <button
               onClick={onClose}
-              className="ml-auto text-gray-900 hover:text-gray-500"
+              className="ml-auto text-gray-900 hover:text-gray-500 cursor-pointer"
             >
               ✕
             </button>

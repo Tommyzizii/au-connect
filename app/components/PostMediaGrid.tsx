@@ -63,7 +63,7 @@ export default function PostMediaGrid({
   }
 
   return (
-    <div className={`grid ${gridClass} gap-1 overflow-hidden`}>
+    <div className={`grid ${gridClass} gap-1 overflow-hidden cursor-pointer`}>
       {visibleMedia.map((item, index) => {
         const isLastVisible = index === maxVisible - 1 && extraCount > 0;
         return (

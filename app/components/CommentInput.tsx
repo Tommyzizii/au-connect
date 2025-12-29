@@ -1,9 +1,9 @@
 "use client";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export default function CommentInput({
-  isLoading,
+  isLoading = false,
   onSubmit,
   placeholder = "Add a comment...",
 }: {
@@ -14,7 +14,7 @@ export default function CommentInput({
   const [text, setText] = useState("");
 
   const handleSubmit = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || isLoading) return;
     onSubmit(text.trim());
     setText("");
   };
@@ -26,6 +26,8 @@ export default function CommentInput({
     }
   };
 
+  const isDisabled = !text.trim() || isLoading;
+
   return (
     <div className="flex items-end gap-2">
       <textarea
@@ -34,19 +36,24 @@ export default function CommentInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={1}
-        className="flex-1 resize-none text-sm text-gray-900 outline-none bg-transparent"
+        disabled={isLoading}
+        className="flex-1 resize-none text-sm text-gray-900 outline-none bg-transparent disabled:opacity-50"
       />
 
       <button
         onClick={handleSubmit}
-        disabled={!text.trim()}
+        disabled={isDisabled}
         className={`text-sm font-semibold ${
-          text.trim()
-            ? "text-blue-500 hover:text-blue-600 cursor-pointer"
-            : "text-gray-400 hover:text-gray-500 cursor-default"
+          isDisabled
+            ? "text-gray-400 cursor-default"
+            : "text-blue-500 hover:text-blue-600 cursor-pointer"
         }`}
       >
-        <SendHorizontal />
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <SendHorizontal className="h-4 w-4" />
+        )}
       </button>
     </div>
   );

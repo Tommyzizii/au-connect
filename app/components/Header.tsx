@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import {
   CONNECT_PAGE_PATH,
@@ -29,7 +30,10 @@ import {
 } from "@/lib/constants";
 import { fetchUser, handleLogout } from "../profile/utils/fetchfunctions";
 import LogoutModal from "./LogoutModal";
-import { useRouter } from "next/navigation";
+
+const Skeleton = ({ className = "" }) => (
+  <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
+);
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -39,8 +43,8 @@ export default function Header() {
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["user"],
-    queryFn: fetchUser   
-  })
+    queryFn: fetchUser,
+  });
 
   const navBarIndicatedPages = [
     MAIN_PAGE_PATH,
@@ -55,7 +59,6 @@ export default function Header() {
     : "not-valid-path";
 
   const hidden = [SIGNIN_PAGE_PATH, ONBOARD_PAGE_PATH].includes(pathName);
-
 
   const handleProfileClick = () => {
     if (!user?.slug) return; // prevent runtime crash
@@ -130,11 +133,14 @@ export default function Header() {
             {/* Profile + Logout */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => { handleProfileClick() }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600"
+                onClick={handleProfileClick}
+                disabled={userLoading}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-default disabled:hover:bg-transparent"
               >
                 <div className="relative w-8 h-8 rounded-full overflow-hidden border border-red-300 flex items-center justify-center bg-gray-100">
-                  {user?.profilePic ? (
+                  {userLoading ? (
+                    <Skeleton className="w-full h-full rounded-full" />
+                  ) : user?.profilePic ? (
                     <Image
                       src={user.profilePic}
                       alt="Profile Avatar"
@@ -145,12 +151,18 @@ export default function Header() {
                     <UserRound className="w-4 h-4 text-gray-500" />
                   )}
                 </div>
-                <span className="text-sm">{user?.username}</span>
+
+                {userLoading ? (
+                  <Skeleton className="h-3 w-16" />
+                ) : (
+                  <span className="text-sm">{user?.username}</span>
+                )}
               </button>
 
               <button
                 onClick={() => setShowModal(true)}
-                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                disabled={userLoading}
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:hover:bg-transparent"
               >
                 <LogOut className="w-5 h-5" />
               </button>

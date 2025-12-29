@@ -22,8 +22,6 @@ export async function createComments(
 
     // grab postId from params and content from body
     const { postId } = params;
-    //TODO:remove-log
-    console.log(postId);
     const { content, parentId } = await req.json();
 
     if (!content || !content.trim()) {

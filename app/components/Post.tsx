@@ -8,6 +8,7 @@ import parseDate from "../profile/utils/parseDate";
 import PostAttachments from "./PostAttachments";
 import PostText from "./PostText";
 import PostDetailsModal from "./PostDetailsModal";
+import { useToggleLike } from "../profile/utils/fetchfunctions";
 
 export default function Post({
   post,
@@ -17,6 +18,7 @@ export default function Post({
   isLoading: boolean;
 }) {
   const [postModalOpen, setPostModelOpen] = useState(false);
+  const toggleLike = useToggleLike();
 
   // Skeleton UI
   if (isLoading) {
@@ -50,7 +52,7 @@ export default function Post({
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
       <div
-        className="flex items-start gap-3 my-4 mx-5"
+        className="flex items-start gap-3 my-4 mx-5 cursor-pointer"
         onClick={() => {
           window.alert("go to that profile");
         }}
@@ -117,13 +119,15 @@ export default function Post({
       <div className="px-4 py-2">
         <div className="flex flex-row justify-end">
           <span className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2">
-            {1000} likes
+            {post.likeCount} likes
           </span>
           <span
             onClick={() => setPostModelOpen(true)}
             className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2"
           >
-            {post.numOfComments && post.numOfComments > 0 ? `${post.numOfComments} comments` : "0 comments"}
+            {post.numOfComments && post.numOfComments > 0
+              ? `${post.numOfComments} comments`
+              : "0 comments"}
           </span>
           <span className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2">
             {123} shares
@@ -132,9 +136,22 @@ export default function Post({
       </div>
 
       <div className="flex items-center justify-evenly py-4 border-t border-gray-200">
-        <button className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer">
-          <ThumbsUp className="w-5 h-5" />
-          <span>Like</span>
+        <button
+          className={`flex items-center gap-2 cursor-pointer disabled:opacity-50 ${
+            post.isLiked ? "text-red-600" : "text-gray-600 hover:text-red-600"
+          }`}
+          disabled={toggleLike.isPending}
+          onClick={() =>
+            toggleLike.mutate({
+              postId: post.id,
+              isLiked: post.isLiked ?? false,
+            })
+          }
+        >
+          <ThumbsUp
+            className={`w-5 h-5 ${post.isLiked ? "fill-red-600" : ""}`}
+          />
+          <span>{post.isLiked ? "Liked" : "Like"}</span>
         </button>
         <button
           onClick={() => setPostModelOpen(true)}

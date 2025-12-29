@@ -141,6 +141,7 @@ export async function linkedinAuthSignIn(req: NextRequest) {
   });
 
   const userInfo = await infoRes.json();
+  
 
   // check if user exists
   let user = await checkExistUser(userInfo.email);
@@ -152,7 +153,7 @@ export async function linkedinAuthSignIn(req: NextRequest) {
         username: userInfo.name,
         email: userInfo.email,
         linkedinId: userInfo.sub,
-        profilePic: userInfo.picture.original.url,
+        profilePic: userInfo.picture,
       },
     });
   } else {
@@ -162,7 +163,7 @@ export async function linkedinAuthSignIn(req: NextRequest) {
     // if the user had a default picture, update it
     if (isDefaultPicture(user.profilePic)) {
       // but only if the picture from linkedin is not default, use it
-      if (!isDefaultPicture(userInfo.picture.original.url)) {
+      if (!isDefaultPicture(userInfo.picture)) {
         profilePic = userInfo.picture.original.url;
       }
       // else keep existing picture
@@ -238,6 +239,8 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
     }
 
     const userData = await userResponse.json();
+
+  console.log("SERVER SIDE LOG:\nMicrosoft User Info:", userData);
 
     // check if user exists
     let user = await checkExistUser(userData.mail);

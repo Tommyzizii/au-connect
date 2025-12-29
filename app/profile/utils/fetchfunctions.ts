@@ -1,13 +1,19 @@
-import { useState } from "react";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  useMutation,
+  InfiniteData,
+} from "@tanstack/react-query";
 
 import {
   COMMENT_API_PATH,
+  LIKE_POST_API_PATH,
   LOGOUT_API_PATH,
   ME_API_PATH,
   POST_API_PATH,
   REPLIES_API_PATH,
 } from "@/lib/constants";
+import PostType from "@/types/Post";
 
 // calls /me
 export async function fetchUser() {
@@ -139,15 +145,13 @@ export async function createComment({
   return res.json();
 }
 
-
 export function useTopLevelComments(postId: string) {
   return useInfiniteQuery({
     queryKey: ["comments", postId],
     initialPageParam: null,
     queryFn: async ({ pageParam }) => {
       const res = await fetch(
-        COMMENT_API_PATH(postId) +
-          (pageParam ? `?cursor=${pageParam}` : "")
+        COMMENT_API_PATH(postId) + (pageParam ? `?cursor=${pageParam}` : "")
       );
 
       if (!res.ok) throw new Error("Failed to fetch comments");
@@ -167,9 +171,7 @@ export async function fetchReplies({
   cursor?: string | null;
 }) {
   const params = cursor ? `?cursor=${cursor}` : "";
-  const res = await fetch(
-    `${REPLIES_API_PATH(postId, commentId)}${params}`
-  );
+  const res = await fetch(`${REPLIES_API_PATH(postId, commentId)}${params}`);
 
   if (!res.ok) throw new Error("Failed to fetch replies");
   return res.json();
@@ -187,4 +189,81 @@ export function useReplies(postId: string, commentId: string) {
       }),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
   });
+}
+
+type PostsPage = {
+  posts: PostType[];
+  nextCursor: string | null;
+};
+
+type PostsInfiniteData = InfiniteData<PostsPage>;
+
+export function useToggleLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    unknown,
+    Error,
+    { postId: string; isLiked: boolean },
+    { previousPosts?: PostsInfiniteData }
+  >({
+    mutationFn: ({ postId }) => callPostLikeUpdate({ postId }),
+
+    onMutate: async ({ postId, isLiked }) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      const previousPosts =
+        queryClient.getQueryData<PostsInfiniteData>(["posts"]);
+
+      queryClient.setQueryData<PostsInfiniteData>(["posts"], (old) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            posts: page.posts.map((post) =>
+              post.id === postId
+                ? {
+                    ...post,
+                    likeCount: post.likeCount && post.likeCount + (isLiked ? -1 : 1),
+                    isLiked: !isLiked, // 🔥 important
+                  }
+                : post
+            ),
+          })),
+        };
+      });
+
+      return { previousPosts };
+    },
+
+    onError: (_err, _vars, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts"], context.previousPosts);
+      }
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+}
+
+export async function callPostLikeUpdate({
+  postId,
+}: {
+  postId: string;
+}) {
+  const res = await fetch(LIKE_POST_API_PATH(postId), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.error || "Failed to toggle like");
+  }
+
+  return res.json();
 }

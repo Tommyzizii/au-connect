@@ -4,17 +4,7 @@ import { useState } from "react";
 import CommentInput from "./CommentInput";
 import parseDate from "../profile/utils/parseDate";
 import { useReplies } from "../profile/utils/fetchfunctions";
-
-//TODO:moveto-type
-export type CommentType = {
-  id: string;
-  username: string;
-  profilePic: string;
-  content: string;
-  createdAt: string;
-  replyCount?: number;
-  replies?: CommentType[];
-};
+import CommentType from "@/types/CommentType";
 
 
 export default function CommentItem({
@@ -38,14 +28,15 @@ export default function CommentItem({
   depth?: number;
 }) {
   const [isReplying, setIsReplying] = useState(false);
-  const [showReplies, setShowReplies] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const {
     data,
+    isLoading,
+    isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
   } = useReplies(postId, comment.id);
 
   const replies =
@@ -54,13 +45,10 @@ export default function CommentItem({
   return (
     <div style={{ marginLeft: depth * 16 }}>
       <div className="flex gap-3">
-        <img
-          src={comment.profilePic}
-          className="w-8 h-8 rounded-full"
-          alt=""
-        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={comment.profilePic} className="w-8 h-8 rounded-full" alt="" />
 
-        <div className="text-sm text-gray-900 w-full">
+        <div className="text-sm text-gray-900">
           <span className="font-semibold mr-1">{comment.username}</span>
           {comment.content}
 
@@ -69,10 +57,10 @@ export default function CommentItem({
 
             {comment.replyCount && comment.replyCount > 0 && (
               <button
-                onClick={() => setShowReplies((v) => !v)}
+                onClick={() => setIsOpen((v) => !v)}
                 className="hover:text-blue-500"
               >
-                {showReplies
+                {isOpen
                   ? "Hide replies"
                   : `View replies (${comment.replyCount})`}
               </button>
@@ -100,17 +88,22 @@ export default function CommentItem({
                 parentId: comment.id,
               });
               setIsReplying(false);
+              setIsOpen(true); // 🔥 auto-open replies after replying
             }}
           />
         </div>
       )}
 
       {/* Replies */}
-      {showReplies && (
-        <div className="mt-3 space-y-3">
+      {isOpen && (
+        <div className="mt-2 ml-11 space-y-3">
           {isLoading && (
-            <div className="text-xs text-gray-500 ml-11">
-              Loading replies...
+            <div className="text-xs text-gray-500">Loading replies…</div>
+          )}
+
+          {isError && (
+            <div className="text-xs text-red-500">
+              Failed to load replies
             </div>
           )}
 
@@ -128,11 +121,9 @@ export default function CommentItem({
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className="ml-11 text-xs text-blue-500 hover:underline"
+              className="text-xs text-blue-500 hover:underline disabled:opacity-50"
             >
-              {isFetchingNextPage
-                ? "Loading..."
-                : "Show more replies"}
+              {isFetchingNextPage ? "Loading…" : replies.length > 5 && "Load more replies"}
             </button>
           )}
         </div>
