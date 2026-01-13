@@ -96,4 +96,5 @@ export const POST_REFRESH_LIMIT = 10;
 export const POSTS_PER_FETCH = 10;
 export const TOP_LEVEL_COMMENTS_FETCH_LIMIT = 15;
 export const REPLIES_PER_FETCH = 5;
+export const REPLY_CHARACTER_LIMIT = 5000;
 

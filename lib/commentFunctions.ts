@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getHeaderUserInfo } from "@/lib/authFunctions";
 import prisma from "@/lib/prisma";
 import { REPLIES_PER_FETCH, TOP_LEVEL_COMMENTS_FETCH_LIMIT } from "./constants";
+import { CreateCommentSchema } from "@/zod/CommentSchema";
 
 // function to create comments/replies
 export async function createComments(
@@ -22,11 +23,21 @@ export async function createComments(
 
     // grab postId from params and content from body
     const { postId } = params;
-    const { content, parentId } = await req.json();
 
-    if (!content || !content.trim()) {
-      return new Response("Content is required", { status: 400 });
+    const body = await req.json();
+    const parsed = CreateCommentSchema.safeParse(body);
+
+    if (!parsed.success) {
+      console.error("ZOD ERROR:", parsed.error.flatten());
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: parsed.error.issues,
+        },
+        { status: 400 }
+      );
     }
+    const  { content, parentCommentId: parentId } = parsed.data;
 
     // grab user info from db
     const user = await prisma.user.findUnique({

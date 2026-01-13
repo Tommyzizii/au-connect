@@ -1,8 +1,9 @@
-"use client";
+"use client"
 
 import { BookOpen, Image as ImageIcon, MessageSquare } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import { Virtuoso } from 'react-virtuoso';
 
 import Post from "./Post";
 import CreatePostModal from "./CreatePostModal";
@@ -19,27 +20,12 @@ export default function MainFeed({
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState("media");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // the load more content logic
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: "200px" } // prefetch early
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  };
 
   const openModal = (postType: string) => {
     setSelectedPostType(postType);
@@ -51,52 +37,64 @@ export default function MainFeed({
     setTimeout(() => setShowSuccessModal(false), 2000);
   };
 
-  return (
-    <div className="lg:col-span-6 md:col-span-7 space-y-4">
-      {/* CREATE POST */}
-      <div className="bg-white md:rounded-lg border border-gray-200 p-4 pt-7">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="relative w-10 h-10">
-            <Image
-              src={user.profilePic ? user.profilePic : "/default_profile.jpg"}
-              alt={user.username}
-              fill
-              className="rounded-full object-cover"
-            />
-          </div>
-          <button
-            onClick={() => setIsCreatePostModalOpen(true)}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none active:bg-gray-100 hover:bg-gray-200 text-left"
-          >
-            {"Share your ideas"}
-          </button>
-        </div>
+  // Footer component for loading indicator
+  const Footer = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <div className="text-center text-sm text-gray-500 py-4">
+        Loading more posts...
+      </div>
+    );
+  };
 
-        <div className="flex justify-evenly gap-4 pl-13">
-          <button
-            onClick={() => openModal("discussion")}
-            className="flex items-center gap-2 text-gray-600 hover:text-red-600"
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span>Discussion</span>
-          </button>
-          <button
-            onClick={() => openModal("media")}
-            className="flex items-center gap-2 text-gray-600 hover:text-red-600"
-          >
-            <ImageIcon className="w-5 h-5" />
-            <span>Media</span>
-          </button>
-          <button
-            onClick={() => openModal("article")}
-            className="flex items-center gap-2 text-gray-600 hover:text-red-600"
-          >
-            <BookOpen className="w-5 h-5" />
-            <span>Write Article</span>
-          </button>
+  // Create Post Card Component (to be rendered inside Virtuoso)
+  const CreatePostCard = () => (
+    <div className="bg-white md:rounded-lg border border-gray-200 p-4 pt-7 mb-4">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="relative w-10 h-10">
+          <Image
+            src={user.profilePic ? user.profilePic : "/default_profile.jpg"}
+            alt={user.username}
+            fill
+            className="rounded-full object-cover"
+          />
         </div>
+        <button
+          onClick={() => setIsCreatePostModalOpen(true)}
+          className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none active:bg-gray-100 hover:bg-gray-200 text-left"
+        >
+          {"Share your ideas"}
+        </button>
       </div>
 
+      <div className="flex justify-evenly gap-4 pl-13">
+        <button
+          onClick={() => openModal("discussion")}
+          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+        >
+          <MessageSquare className="w-5 h-5" />
+          <span>Discussion</span>
+        </button>
+        <button
+          onClick={() => openModal("media")}
+          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+        >
+          <ImageIcon className="w-5 h-5" />
+          <span>Media</span>
+        </button>
+        <button
+          onClick={() => openModal("article")}
+          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+        >
+          <BookOpen className="w-5 h-5" />
+          <span>Write Article</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="lg:col-span-6 md:col-span-7">
       {isCreatePostModalOpen && (
         <CreatePostModal
           user={user}
@@ -107,23 +105,31 @@ export default function MainFeed({
         />
       )}
 
-      {/* POSTS */}
+      {/* EVERYTHING IN ONE SCROLLABLE LIST */}
       {loading ? (
-        <>
+        <div className="space-y-4">
           <Post isLoading={true} />
           <Post isLoading={true} />
-        </>
+        </div>
       ) : (
-        posts.map(
-          (post) => post && <Post key={post.id} post={post} isLoading={false} />
-        )
-      )}
-
-      <div ref={loadMoreRef} />
-
-      {isFetchingNextPage && (
-        <div className="text-center text-sm text-gray-500 py-4">
-          Loading more posts...
+        <div style={{ height: 'calc(100vh - 97px)' }}>
+          <Virtuoso
+            data={posts}
+            endReached={loadMore}
+            overscan={200}
+            components={{
+              Header: CreatePostCard, 
+              Footer,
+            }}
+            itemContent={(index, post) => {
+              if (!post) return null;
+              return (
+                <div className="mb-4">
+                  <Post key={post.id} post={post} isLoading={false} />
+                </div>
+              );
+            }}
+          />
         </div>
       )}
 

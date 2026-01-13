@@ -120,6 +120,7 @@ export default function Header() {
             ].map((item, i) => (
               <Link
                 key={i}
+                title={item.label}
                 href={item.href}
                 className={`flex flex-col items-center gap-1 ${
                   currentPage === item.href ? "text-red-500" : "text-gray-600"
@@ -135,9 +136,11 @@ export default function Header() {
               <button
                 onClick={handleProfileClick}
                 disabled={userLoading}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-default disabled:hover:bg-transparent"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-default disabled:hover:bg-transparent cursor-pointer"
               >
-                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-red-300 flex items-center justify-center bg-gray-100">
+                <div 
+                title="Profile"
+                className="relative w-8 h-8 rounded-full overflow-hidden border border-red-300 flex items-center justify-center bg-gray-100">
                   {userLoading ? (
                     <Skeleton className="w-full h-full rounded-full" />
                   ) : user?.profilePic ? (
@@ -161,8 +164,9 @@ export default function Header() {
 
               <button
                 onClick={() => setShowModal(true)}
+                title="Logout from this account"
                 disabled={userLoading}
-                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:hover:bg-transparent"
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:hover:bg-transparent cursor-pointer"
               >
                 <LogOut className="w-5 h-5" />
               </button>
@@ -240,7 +244,7 @@ export default function Header() {
               ))}
               <button
                 onClick={() => setShowModal(true)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:text-red-600`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:text-red-600 curor-pointer`}
               >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Logout</span>

@@ -44,7 +44,7 @@ function NotificationsPage() {
   const [numOfNotifications, setNumOfNotifications] = useState(3);
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-6 px-4 sm:pt-8 md:pt-10">
+    <div className="h-full overflow-y-auto flex flex-col items-center pt-6 px-4 sm:pt-8 md:pt-10">
       <div className="flex flex-row justify-start items-center rounded-lg p-4 sm:p-5 md:p-6 w-full sm:w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 gap-2 sm:gap-3 bg-white border-2 border-gray-200">
         <h1 className="text-gray-600 text-2xl sm:text-3xl md:text-4xl font-bold">Inbox</h1>
         {numOfNotifications != 0 && (

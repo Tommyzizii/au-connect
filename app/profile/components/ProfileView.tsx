@@ -17,6 +17,7 @@ import Post from "@/app/components/Post";
 import User from "@/types/User";
 import Experience from "@/types/Experience";
 import Education from "@/types/Education"; 
+import PostType from "@/types/Post";
 
 export default function ProfileView({
   user,
@@ -24,7 +25,8 @@ export default function ProfileView({
   isOwner,
 }: {
   user: User;
-  recommendedPeople: any[];
+  // TODO: type needs to be fixed
+  recommendedPeople: Array<number>;
   isOwner: boolean;
 }) {
   const [tab, setTab] = useState("posts");
@@ -51,7 +53,7 @@ export default function ProfileView({
 
   return (
     <>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 overflow-y-auto">
         <div className="grid grid-cols-12 gap-6">
 
           {/* LEFT MAIN CONTENT */}
@@ -198,7 +200,7 @@ export default function ProfileView({
 
               <div className="mt-4 space-y-4">
                 {tab === "posts" ? (
-                  user.posts?.map((p: any) => (
+                  user.posts?.map((p: PostType) => (
                     <Post key={p.id} post={p} isLoading={loading} />
                   ))
                 ) : (

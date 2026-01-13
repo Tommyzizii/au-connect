@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // like or unlike a post
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ postId: string; commentId: string }> }
+  context: { params: Promise<{ postId: string }> }
 ) {
   try {
     const [userEmail, userId] = getHeaderUserInfo(req);

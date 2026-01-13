@@ -53,11 +53,11 @@ export default function Home() {
   const posts: PostType[] = data?.pages.flatMap((page) => page.posts) ?? [];
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="md:grid md:grid-cols-12 md:gap-6">
           <LeftProfile user={user} loading={userLoading} />
-
+ 
           {user && (
             <MainFeed
               user={user}

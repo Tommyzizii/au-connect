@@ -62,7 +62,7 @@ const connectRequests = [
 
 export default function ConnectPage() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="h-full overflow-y-auto bg-white">
       {/* Content area */}
       <div className="w-full px-10 py-10">
         

@@ -3,7 +3,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LeftProfilePropTypes } from "@/types/FeedPagePropTypes";
 
-
 const DEFAULT_AVATAR = "/default-avatar.png";
 
 export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
@@ -39,7 +38,14 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
   return (
     <div className="lg:col-span-3 md:col-span-4 flex justify-center md:justify-start">
       <div className="bg-white md:rounded-lg border border-gray-200 overflow-hidden flex-1 sticky top-20 w-full md:w-auto md:max-w-xs self-start">
-        <div className="hidden md:block h-24 bg-gray-200"></div>
+        <div className="hidden md:block h-24 bg-gray-200 relative">
+          <Image
+            src={user?.coverPhoto || "/default_cover.jpg"}
+            alt="cover photo"
+            fill
+            className="object-cover"
+          />
+        </div>
 
         <div className="flex flex-row gap-6 md:gap-0 md:flex-col p-4 md:-mt-12">
           {/* Avatar */}
