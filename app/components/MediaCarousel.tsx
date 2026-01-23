@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import VideoPlayer from "./VideoPlayer";
 
 export default function MediaCarousel({
   clickedIndex,
@@ -88,14 +89,27 @@ export default function MediaCarousel({
           direction === "right" ? "animate-slide-left" : "animate-slide-right"
         }`}
       >
+        {mediaList[currentIndex]?.type === "video" && (
+          <VideoPlayer
+            src={mediaList[currentIndex]?.url}
+            showControls
+            autoPlay
+            muted
+            loop
+            className="w-full h-full"
+          />
+        )}
+
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={mediaList[currentIndex]?.url}
-          alt=""
-          loading="eager"
-          decoding="async"
-          className="max-h-full max-w-full object-contain"
-        />
+        {mediaList[currentIndex]?.type === "image" && (
+          <img
+            src={mediaList[currentIndex]?.url}
+            alt=""
+            loading="eager"
+            decoding="async"
+            className="max-h-full max-w-full object-contain"
+          />
+        )}
       </div>
 
       {/* Left arrow */}

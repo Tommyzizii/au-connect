@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
 import { BookOpen, Image as ImageIcon, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso } from "react-virtuoso";
 
 import Post from "./Post";
 import CreatePostModal from "./CreatePostModal";
@@ -101,7 +101,6 @@ export default function MainFeed({
           isOpen={isCreatePostModalOpen}
           setIsOpen={setIsCreatePostModalOpen}
           initialType={selectedPostType}
-          enableSuccessModal={enableSuccessModal}
         />
       )}
 
@@ -112,13 +111,13 @@ export default function MainFeed({
           <Post isLoading={true} />
         </div>
       ) : (
-        <div style={{ height: 'calc(100vh - 97px)' }}>
+        <div style={{ height: "calc(100vh - 97px)" }}>
           <Virtuoso
             data={posts}
             endReached={loadMore}
             overscan={200}
             components={{
-              Header: CreatePostCard, 
+              Header: CreatePostCard,
               Footer,
             }}
             itemContent={(index, post) => {

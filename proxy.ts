@@ -160,6 +160,8 @@ function verifySession(
 //   ],
 // };
 
+// IMPORTANT: Middleware must always run on /api routes
+// Security depends on injected auth headers
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)",

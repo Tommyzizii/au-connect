@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Header from "./components/Header";
 import "./globals.css";
 import Provider from "./components/provider";
+
+import { UploadToast } from "./components/UploadToast";
+import Header from "./components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +35,7 @@ export default function RootLayout({
           <div className="flex flex-col h-screen">
             <Header />
             <main className="flex-1 min-h-0">{children}</main>
+            <UploadToast />
           </div>
         </Provider>
       </body>

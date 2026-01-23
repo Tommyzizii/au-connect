@@ -11,7 +11,7 @@ export async function createComments(
   params: { postId: string }
 ) {
   try {
-    // valideate user info from headers
+    // validate user info from headers
     const [userEmail, userId] = getHeaderUserInfo(req);
 
     if (!userEmail || !userId) {
