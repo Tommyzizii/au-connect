@@ -34,16 +34,20 @@ model User {
 
   connections   Int       @default(0)
 
-  experience    Experience[]
-  education     Education[]
-  posts         Post[]
+  experience Experience[]
+  education  Education[]
+  posts      Post[]
 
-  phoneNo       String?
-  phonePublic   Boolean  @default(false)
-  emailPublic   Boolean  @default(true)
+  // For Connection
+  sentConnectionRequests     ConnectionRequest[] @relation("SentConnectionRequests")
+  receivedConnectionRequests ConnectionRequest[] @relation("ReceivedConnectionRequests")
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  phoneNo     String?
+  phonePublic Boolean @default(false)
+  emailPublic Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum EmploymentType {
@@ -99,8 +103,8 @@ model Post {
   username      String
   profilePic    String?
 
-  postType      String
-  visibility    String?
+  postType   String
+  visibility String?
 
   title         String?
   content       String
@@ -111,37 +115,76 @@ model Post {
   shareCount    Int        @default(0)
   savedCount    Int        @default(0)
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   interactions   PostInteraction[]
   comments      Comment[]
 }
 
 model Comment {
-  id            String     @id @map("_id") @default(auto()) @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
   // user info (denormalized)
-  userId        String     @db.ObjectId
-  username      String
-  profilePic    String
+  userId     String @db.ObjectId
+  username   String
+  profilePic String
 
   // comment fields
-  content       String
-  media         Json?
+  content String
+  media   Json?
 
-  likeCount     Int        @default(0)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // relation to post
-  postId        String     @db.ObjectId
-  post          Post       @relation(fields: [postId], references: [id])
+  postId String @db.ObjectId
+  post   Post   @relation(fields: [postId], references: [id])
 
   // replies (self-relation)
-  parentId      String?    @db.ObjectId
-  parent        Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies       Comment[]  @relation("CommentReplies")
+  parentId String?   @db.ObjectId
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  Comment[] @relation("CommentReplies")
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
+model ConnectionRequest {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId String        @db.ObjectId
+  toUserId   String        @db.ObjectId
+  status     RequestStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relations to your existing User model
+  fromUser User @relation("SentConnectionRequests", fields: [fromUserId], references: [id])
+  toUser   User @relation("ReceivedConnectionRequests", fields: [toUserId], references: [id])
+
+  @@index([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+}
+
+model Connection {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // store the pair in a consistent order so (A,B) == (B,A)
+  userAId String @db.ObjectId
+  userBId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
 }
 
 model PostInteraction {
