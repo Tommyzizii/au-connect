@@ -11,6 +11,8 @@ import {
 } from "../profile/utils/fetchfunctions";
 import parseDate from "../profile/utils/parseDate";
 import PostDetailsModalTypes from "@/types/PostDetailsModalTypes";
+import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+
 
 export default function PostDetailsModal({
   postInfo,
@@ -22,6 +24,7 @@ export default function PostDetailsModal({
 }: PostDetailsModalTypes) {
   const mediaList = media ?? [];
   const hasMedia = mediaList.length > 0;
+  const avatarUrl = useResolvedMediaUrl(postInfo.profilePic, "/default_profile.jpg");
 
   const queryClient = useQueryClient();
 
@@ -57,9 +60,8 @@ export default function PostDetailsModal({
       onClick={onClose}
     >
       <div
-        className={`bg-white w-full ${
-          hasMedia ? "max-w-6xl md:flex-row" : "max-w-xl"
-        } h-[90vh] rounded-lg overflow-hidden flex`}
+        className={`bg-white w-full ${hasMedia ? "max-w-6xl md:flex-row" : "max-w-xl"
+          } h-[90vh] rounded-lg overflow-hidden flex`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* LEFT: Media carousel */}
@@ -75,23 +77,19 @@ export default function PostDetailsModal({
 
         {/* RIGHT: Post details + comments */}
         <div
-          className={`flex flex-col ${
-            hasMedia ? "w-full md:w-[420px] border-l" : "w-full"
-          }`}
+          className={`flex flex-col ${hasMedia ? "w-full md:w-[420px] border-l" : "w-full"
+            }`}
         >
           {/* Header */}
           <div className="flex items-center gap-3 p-4">
             {/* the user of the post */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={
-                postInfo.profilePic
-                  ? postInfo.profilePic
-                  : "/default_profile.jpg"
-              }
-              className="w-10 h-10 rounded-full"
+              src={avatarUrl}
+              className="w-10 h-10 rounded-full object-cover"
               alt=""
             />
+
             <div>
               <div className="font-semibold text-sm text-gray-900">
                 {postInfo.username}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 
 type IncomingRequest = {
   id: string;
@@ -15,6 +16,25 @@ type IncomingRequest = {
     location?: string;
   };
 };
+
+function RequestAvatar({
+  profilePic,
+  username,
+}: {
+  profilePic?: string;
+  username?: string;
+}) {
+  const avatarUrl = useResolvedMediaUrl(profilePic, "/default_profile.jpg");
+
+  return (
+    <Image
+      src={avatarUrl}
+      alt={username || "User"}
+      fill
+      className="object-cover"
+    />
+  );
+}
 
 export default function ConnectPage() {
   const [requests, setRequests] = useState<IncomingRequest[]>([]);
@@ -126,11 +146,9 @@ export default function ConnectPage() {
                     <div className="flex items-start md:items-center gap-4">
                       <div className="relative">
                         <div className="relative h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-neutral-200 group-hover:ring-blue-400 transition-all duration-300">
-                          <Image
-                            src={u?.profilePic || "/default_profile.jpg"}
-                            alt={u?.username || "User"}
-                            fill
-                            className="object-cover"
+                          <RequestAvatar
+                            profilePic={u?.profilePic}
+                            username={u?.username}
                           />
                         </div>
                         <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full border-4 border-white" />
