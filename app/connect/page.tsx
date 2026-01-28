@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import { useRouter } from "next/navigation";
+import { buildSlug } from "@/app/profile/utils/buildSlug";
 
 type IncomingRequest = {
   id: string;
@@ -147,7 +148,8 @@ export default function ConnectPage() {
                 No connection requests
               </h3>
               <p className="text-sm text-neutral-500 mt-2">
-                When someone sends you a connection request, it will appear here.
+                When someone sends you a connection request, it will appear
+                here.
               </p>
             </div>
           )}
@@ -162,12 +164,13 @@ export default function ConnectPage() {
                   className="group relative overflow-hidden rounded-2xl bg-linear-to-br from-neutral-50 to-neutral-100/50 p-6 border border-neutral-200/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    
                     {/* LEFT — clickable profile */}
                     <div
                       className="flex items-start md:items-center gap-4 cursor-pointer hover:opacity-90"
                       onClick={() => {
-                        if (u?.id) router.push(`/profile/${u.id}`);
+                        if (!u?.id) return;
+                        const slug = buildSlug(u.username || "", u.id);
+                        router.push(`/profile/${slug}`);
                       }}
                     >
                       <div className="relative">
@@ -219,7 +222,6 @@ export default function ConnectPage() {
                         {actingId === req.id ? "Declining..." : "Decline"}
                       </button>
                     </div>
-
                   </div>
                 </div>
               );
@@ -230,3 +232,4 @@ export default function ConnectPage() {
     </main>
   );
 }
+
