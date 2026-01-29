@@ -19,19 +19,21 @@ import { useUploadStore } from "@/lib/stores/uploadStore";
 import { processUpload } from "@/lib/services/uploadService";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import { useDraftStore } from "@/lib/stores/draftStore";
+import { useEditPost } from "@/app/profile/utils/fetchfunctions";
+import { PostMediaWithUrl } from "@/types/PostMedia";
+import { processEdit } from "@/lib/services/uploadService";
+import VideoPlayer from "./VideoPlayer";
 
 const getMediaType = (file: File): MediaType => {
   if (file.type.startsWith("image/")) return "image";
   if (file.type.startsWith("video/")) return "video";
-  return "file"; // pdf, docx, zip, etc
+  return "file";
 };
 
 const getDraftFileString = (fList: string[]) => {
   if (!fList.length) return "";
-
   const filesPart = fList.join(", ");
   const suffix = fList.length > 1 ? "files were" : "file was";
-
   return `${filesPart} ${suffix} uploaded before`;
 };
 
@@ -48,54 +50,78 @@ export default function CreatePostModal({
   isOpen,
   setIsOpen,
   initialType = "media",
+  editMode = false,
+  exisistingPost,
 }: CreatePostModalPropTypes) {
   const [selectedVisibility, setSelectedVisibility] = useState("everyone");
   const [showDropdown, setShowDropdown] = useState(false);
   const [postContent, setPostContent] = useState("");
-
   const [postType, setPostType] = useState(initialType);
   const [title, setTitle] = useState("");
   const [disableComments, setDisableComments] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [currentImage, setCurrentImage] = useState(0);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
-  const [media, setMedia] = useState<MediaItem[]>([]);
+  // Separate state for new uploads vs existing media
+  const [newMedia, setNewMedia] = useState<MediaItem[]>([]);
+  const [existingMedia, setExistingMedia] = useState<PostMediaWithUrl[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ resolved avatar url (blobName -> signed url) via cached hook
+  const editPostMutation = useEditPost();
+
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     user?.profilePic,
     DEFAULT_PROFILE_PIC,
   );
 
   const { draft, saveDraft, clearDraft, hasDraft } = useDraftStore();
-  const hasDraftFiles = draft.mediaFileNames.length > 0 && media.length === 0;
+  const hasDraftFiles =
+    draft.mediaFileNames.length > 0 && newMedia.length === 0;
 
   const hasTextContent = postContent.trim().length > 0;
   const hasTitle =
     (postType === "discussion" || postType === "article") &&
     title.trim().length > 0;
-
-  const hasMedia = media.length > 0;
-
+  const hasMedia = newMedia.length > 0 || existingMedia.length > 0;
   const canPost = hasTextContent || hasTitle || hasMedia;
 
+  // Total media count for carousel
+  const totalMedia = [...existingMedia, ...newMedia];
+
+  // Load initial post data when in edit mode
   useEffect(() => {
-    if (hasDraft()) {
+    if (editMode && exisistingPost && isOpen) {
+      setPostType(exisistingPost.postType || "media");
+      setTitle(exisistingPost.title || "");
+      setPostContent(exisistingPost.content || "");
+      setSelectedVisibility(exisistingPost.visibility || "everyone");
+
+      // Just store existing media as-is
+      if (exisistingPost.media && exisistingPost.media.length > 0) {
+        // TODO: fix-ts-error
+        setExistingMedia(exisistingPost.media);
+      }
+    }
+  }, [editMode, exisistingPost, isOpen]);
+
+  // Load draft (only if NOT in edit mode)
+  useEffect(() => {
+    if (!editMode && hasDraft() && isOpen) {
       setPostType(draft.postType);
       setTitle(draft.title);
       setPostContent(draft.content);
       setSelectedVisibility(draft.visibility);
       setDisableComments(draft.disableComments);
-      // Note: Can't restore media files, user needs to re-select
     }
-  }, [isOpen]); // Load when modal opens
+  }, [isOpen, editMode, hasDraft, draft]);
 
-  // Auto-save draft as user types
+  // Auto-save draft (only if NOT in edit mode)
   useEffect(() => {
+    if (editMode) return;
+
     const timer = setTimeout(() => {
-      if (postContent || title || media.length > 0) {
+      if (postContent || title || newMedia.length > 0) {
         saveDraft({
           postType,
           title,
@@ -103,27 +129,35 @@ export default function CreatePostModal({
           visibility: selectedVisibility,
           disableComments,
           mediaFileNames:
-            media.length > 0
-              ? media.map((m) => m.file.name)
+            newMedia.length > 0
+              ? newMedia.map((m) => m.file?.name || "").filter(Boolean)
               : draft.mediaFileNames,
         });
       }
-    }, 1000); // Save 1 second after user stops typing
+    }, 1000);
 
     return () => clearTimeout(timer);
-  }, [postContent, title, media, selectedVisibility, disableComments]);
+  }, [
+    postContent,
+    title,
+    newMedia,
+    selectedVisibility,
+    disableComments,
+    editMode,
+  ]);
 
-  /** Update modal type whenever parent changes it */
   useEffect(() => {
-    setPostType(initialType);
-  }, [initialType]);
+    if (!editMode) {
+      setPostType(initialType);
+    }
+  }, [initialType, editMode]);
 
   const handleClearDraft = () => {
     setSelectedVisibility("everyone");
     clearDraft();
     setTitle("");
     setPostContent("");
-    setMedia([]);
+    setNewMedia([]);
     setDisableComments(false);
   };
 
@@ -132,27 +166,88 @@ export default function CreatePostModal({
     setIsSubmitting(true);
 
     try {
-      // Add job to queue
-      const jobId = useUploadStore.getState().addJob({
-        postType,
-        title,
-        content: postContent,
-        visibility: selectedVisibility,
-        disableComments,
-        media,
-      });
+      if (editMode && exisistingPost) {
+        const hasNewMedia = newMedia.length > 0;
 
-      // Close the modal immediately
-      setIsOpen(false);
+        if (hasNewMedia) {
+          // EDIT VIA BACKGROUND JOB
+          const jobId = useUploadStore.getState().addJob({
+            isEdit: true,
+            postId: exisistingPost.id,
+            postType,
+            title,
+            content: postContent,
+            visibility: selectedVisibility,
+            disableComments,
+            media: newMedia, // ONLY new files
+            existingMedia: existingMedia, // already uploaded
+          });
 
-      // String upload in background
-      processUpload(jobId);
+          setIsOpen(false);
+          processEdit(jobId);
+        } else {
+          // 🔥 EDIT WITHOUT UPLOAD
+          await editPostMutation.mutateAsync({
+            postId: exisistingPost.id,
+            data: {
+              postType,
+              title,
+              content: postContent,
+              visibility: selectedVisibility,
+              media: existingMedia.map((m) => ({
+                blobName: m.blobName,
+                thumbnailBlobName: m.thumbnailBlobName,
+                type: m.type,
+                name: m.name,
+                mimetype: m.mimetype,
+                size: m.size,
+              })),
+            },
+          });
 
-      // clear draft after posting
-      clearDraft();
+          setIsOpen(false);
+        }
+      } else {
+        // 🔥 CREATE POST (ALWAYS JOB)
+        const jobId = useUploadStore.getState().addJob({
+          postType,
+          title,
+          content: postContent,
+          visibility: selectedVisibility,
+          disableComments,
+          media: newMedia,
+        });
+
+        setIsOpen(false);
+        processUpload(jobId);
+        clearDraft();
+      }
+    } catch (err) {
+      console.error("❌ Submit failed:", err);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleRemoveMedia = () => {
+    const isExisting = currentMediaIndex < existingMedia.length;
+
+    if (isExisting) {
+      // Remove from existing media
+      setExistingMedia((prev) =>
+        prev.filter((_, i) => i !== currentMediaIndex),
+      );
+    } else {
+      // Remove from new media
+      const newMediaIndex = currentMediaIndex - existingMedia.length;
+      const mediaItem = newMedia[newMediaIndex];
+      if (mediaItem.previewUrl) {
+        URL.revokeObjectURL(mediaItem.previewUrl);
+      }
+      setNewMedia((prev) => prev.filter((_, i) => i !== newMediaIndex));
+    }
+
+    setCurrentMediaIndex((i) => Math.max(0, i - 1));
   };
 
   const visibilityOptions = [
@@ -207,12 +302,15 @@ export default function CreatePostModal({
     (opt) => opt.id === selectedVisibility,
   );
 
+  // Get current media item (existing or new)
+  const currentMedia = totalMedia[currentMediaIndex];
+  const isCurrentExisting = currentMediaIndex < existingMedia.length;
+
   return (
     <main className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform animate-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="flex items-start gap-4 px-6 pt-6 pb-4 border-b border-neutral-100">
-          {/* Avatar */}
           <div className="relative">
             <div className="h-14 w-14 rounded-2xl overflow-hidden p-0.5">
               <div className="h-full w-full rounded-2xl overflow-hidden bg-white relative">
@@ -229,10 +327,9 @@ export default function CreatePostModal({
 
           <div className="flex-1">
             <div className="text-base font-bold text-neutral-900">
-              {user.username}
+              {editMode ? "Edit Post" : user.username}
             </div>
 
-            {/* Visibility dropdown */}
             <div className="relative mt-2">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
@@ -255,7 +352,6 @@ export default function CreatePostModal({
                 </svg>
               </button>
 
-              {/* Dropdown menu */}
               {showDropdown && (
                 <div className="absolute top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200 z-10">
                   {visibilityOptions.map((option) => (
@@ -286,28 +382,26 @@ export default function CreatePostModal({
           </div>
 
           <div className="flex justify-center">
-            {/* clear draft button */}
-            <button
-              title="clear draft"
-              onClick={handleClearDraft}
-              className="ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
-            >
-              <Eraser className="text-gray-400" />
-            </button>
+            {!editMode && (
+              <button
+                title="clear draft"
+                onClick={handleClearDraft}
+                className="ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
+              >
+                <Eraser className="text-gray-400" />
+              </button>
+            )}
 
-            {/* Close button */}
             <button
               title="close"
               onClick={handleClose}
               className="ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
             >
-              {/* Close button X icon svg */}
               <X className="text-gray-400" />
             </button>
           </div>
         </div>
 
-        {/* Title only for discussion & article */}
         {(postType === "discussion" || postType === "article") && (
           <div className="px-6 pt-4">
             <input
@@ -319,103 +413,135 @@ export default function CreatePostModal({
           </div>
         )}
 
-        {/* Text area */}
         <div className="px-6 pt-2 pb-2">
           <textarea
             value={postContent}
             onChange={(e) => setPostContent(e.target.value)}
             className={`w-full ${
-              media.length === 0 ? "h-44" : "h-25"
+              totalMedia.length === 0 ? "h-44" : "h-25"
             } text-gray-600 resize-none border-none outline-none text-base`}
             placeholder="What's on your mind?"
           />
         </div>
 
-        {hasDraftFiles && (
+        {hasDraftFiles && !editMode && (
           <p className="text-gray-400 mb-5 px-5">
             {getDraftFileString(draft.mediaFileNames)}
           </p>
         )}
 
-        {/* Media Preview */}
-        {media.length > 0 && (
+        {/* Media Preview - Render based on existing vs new */}
+        {totalMedia.length > 0 && currentMedia && (
           <div className="mb-10 px-5 relative w-full">
-            {media[currentImage].type === "image" && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={media[currentImage].previewUrl}
-                alt="preview"
-                className="h-full w-auto min-w-full object-cover mx-auto"
-              />
-            )}
-
-            {media[currentImage].type === "video" && (
-              <div className="w-full">
-                <div className="flex flex-col items-center justify-center bg-neutral-900 rounded-t-xl py-12">
-                  <Video className="h-16 w-16 text-white mb-3" />
-                  <p className="text-white text-lg font-semibold">
-                    ✅ Video Ready to Upload
-                  </p>
-                </div>
-                <div className="bg-neutral-100 rounded-b-xl p-4">
-                  <p className="text-sm font-semibold text-neutral-900 mb-2">
-                    {media[currentImage].file.name}
-                  </p>
-                  <div className="flex flex-wrap gap-4 text-xs text-neutral-500">
-                    <span>
-                      Size: {formatFileSize(media[currentImage].file.size)}
-                    </span>
-                    <span>
-                      Type: {media[currentImage].file.type || "video"}
-                    </span>
+            {isCurrentExisting ? (
+              // Render existing media
+              <>
+                {currentMedia.type === "image" && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentMedia.url}
+                    alt="preview"
+                    className="h-full w-auto min-w-full object-cover mx-auto rounded-lg"
+                  />
+                )}
+                {currentMedia.type === "video" && (
+                  <div className="w-full">
+                    <VideoPlayer
+                      src={currentMedia.url ? currentMedia.url : ""}
+                      controls
+                      className="w-full rounded-t-xl"
+                    />
+                    <div className="bg-neutral-100 rounded-b-xl p-4">
+                      <p className="text-sm font-semibold text-neutral-900">
+                        {currentMedia.name || "Video file"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+                {currentMedia.type === "file" && (
+                  <div className="flex items-center justify-center bg-neutral-100 rounded-xl p-8">
+                    <div className="text-center">
+                      <Paperclip className="mx-auto h-8 w-8 mb-2" />
+                      <p className="text-sm font-semibold">
+                        {currentMedia.name || "File"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              // Render new media
+              <>
+                {currentMedia.type === "image" && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentMedia.previewUrl}
+                    alt="preview"
+                    className="h-full w-auto min-w-full object-cover mx-auto rounded-lg"
+                  />
+                )}
+                {currentMedia.type === "video" && (
+                  <div className="w-full">
+                    <div className="flex flex-col items-center justify-center bg-neutral-900 rounded-t-xl py-12">
+                      <Video className="h-16 w-16 text-white mb-3" />
+                      <p className="text-white text-lg font-semibold">
+                        ✅ Video Ready to Upload
+                      </p>
+                    </div>
+                    <div className="bg-neutral-100 rounded-b-xl p-4">
+                      <p className="text-sm font-semibold text-neutral-900 mb-2">
+                        {currentMedia.file?.name || "Video file"}
+                      </p>
+                      {currentMedia.file && (
+                        <div className="flex flex-wrap gap-4 text-xs text-neutral-500">
+                          <span>
+                            Size: {formatFileSize(currentMedia.file.size)}
+                          </span>
+                          <span>Type: {currentMedia.file.type || "video"}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {currentMedia.type === "file" && (
+                  <div className="flex items-center justify-center bg-neutral-100 rounded-xl p-8">
+                    <div className="text-center">
+                      <Paperclip className="mx-auto h-8 w-8 mb-2" />
+                      <p className="text-sm font-semibold">
+                        {currentMedia.file?.name || "File"}
+                      </p>
+                      {currentMedia.file && (
+                        <p className="text-xs text-neutral-500">
+                          {(currentMedia.file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
-            {media[currentImage].type === "file" && (
-              <div className="flex items-center justify-center h-full bg-neutral-100 rounded-xl">
-                <div className="text-center">
-                  <Paperclip className="mx-auto h-8 w-8 mb-2" />
-                  <p className="text-sm font-semibold">
-                    {media[currentImage].file.name}
-                  </p>
-                  <p className="text-xs text-neutral-500">
-                    {(media[currentImage].file.size / 1024 / 1024).toFixed(2)}{" "}
-                    MB
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Prev */}
-            {currentImage > 0 && (
+            {/* Navigation buttons */}
+            {currentMediaIndex > 0 && (
               <button
-                onClick={() => setCurrentImage((i) => i - 1)}
+                onClick={() => setCurrentMediaIndex((i) => i - 1)}
                 className="absolute left-8 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
               >
                 <ArrowBigLeft />
               </button>
             )}
 
-            {/* Next */}
-            {currentImage < media.length - 1 && (
+            {currentMediaIndex < totalMedia.length - 1 && (
               <button
-                onClick={() => setCurrentImage((i) => i + 1)}
+                onClick={() => setCurrentMediaIndex((i) => i + 1)}
                 className="absolute right-8 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
               >
                 <ArrowBigRight />
               </button>
             )}
 
-            {/* Remove */}
             <button
-              onClick={() => {
-                const previewUrl = media[currentImage].previewUrl;
-                URL.revokeObjectURL(previewUrl ? previewUrl : "");
-                setMedia((prev) => prev.filter((_, i) => i !== currentImage));
-                setCurrentImage((i) => Math.max(0, i - 1));
-              }}
+              onClick={handleRemoveMedia}
               className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1 rounded-lg text-sm hover:bg-black/80 transition"
             >
               Remove
@@ -423,9 +549,7 @@ export default function CreatePostModal({
           </div>
         )}
 
-        {/* Attachment row */}
         <div className="px-6 pb-4">
-          {/* hidden input element */}
           <input
             ref={fileInputRef}
             type="file"
@@ -453,7 +577,7 @@ export default function CreatePostModal({
                 }),
               );
 
-              setMedia((prev) => [...prev, ...newItems]);
+              setNewMedia((prev) => [...prev, ...newItems]);
               e.target.value = "";
             }}
           />
@@ -486,7 +610,7 @@ export default function CreatePostModal({
 
             <button
               onClick={() => {
-                window.alert("Feature not yet implemented yet");
+                window.alert("Feature not yet implemented");
               }}
               className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
             >
@@ -495,7 +619,6 @@ export default function CreatePostModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t bg-neutral-50">
           <div className="flex items-center gap-3">
             <input
@@ -521,10 +644,16 @@ export default function CreatePostModal({
               className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
                 !canPost || isSubmitting
                   ? "bg-neutral-300 cursor-not-allowed"
-                  : "bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl"
+                  : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl"
               }`}
             >
-              {isSubmitting ? "Posting..." : "Post"}
+              {isSubmitting
+                ? editMode
+                  ? "Updating..."
+                  : "Posting..."
+                : editMode
+                  ? "Update"
+                  : "Post"}
             </button>
           </div>
         </div>

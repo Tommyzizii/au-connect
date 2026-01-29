@@ -108,7 +108,7 @@ model Post {
 
   title         String?
   content       String
-  media         Json? // [{ url, type, name, mimeType, size }]
+  media         Json? // [{ url, type, name, mimetype, size }]
 
   commentCount  Int        @default(0)
   likeCount     Int        @default(0)

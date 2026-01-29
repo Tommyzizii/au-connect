@@ -1,12 +1,10 @@
 import { z } from "zod";
 
-const MediaSchema = z.object({
+export const MediaSchema = z.object({
   blobName: z.string(),
-  thumbnailBlobName: z.string().optional(),
+  thumbnailBlobName: z.string().nullable().optional(),
   type: z.enum(["image", "video", "file"]),
   name: z.string(),
-  mimetype: z.string().optional(),
-  size: z.number().optional(),
+  mimetype: z.string(),
+  size: z.number(),
 });
-
-export default MediaSchema;

@@ -15,7 +15,7 @@ const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
 interface PostProfileProps {
   post: PostType;
   currentUserId?: string; // Pass the current logged-in user's ID
-  onEdit?: (post: PostType) => void;
+  onEdit?: () => void;
   onDelete?: (postId: string) => void;
 }
 
@@ -63,7 +63,7 @@ export default function PostProfile({
 
   const handleEdit = () => {
     setPostMenuDropDownOpen(false);
-    onEdit?.(post);
+    onEdit?.();
   };
 
   const handleDelete = () => {

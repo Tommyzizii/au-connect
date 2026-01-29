@@ -8,7 +8,7 @@ import {
 } from "@azure/storage-blob";
 
 import { getHeaderUserInfo } from "./authFunctions";
-import { CreatePostSchema } from "@/zod/PostSchema";
+import { CreatePostSchema, EditPostSchema } from "@/zod/PostSchema";
 import {
   AZURE_STORAGE_ACCOUNT_KEY,
   AZURE_STORAGE_ACCOUNT_NAME,
@@ -243,8 +243,10 @@ export async function editPost(req: NextRequest) {
       );
     }
 
+    const postId = req.nextUrl.searchParams.get("postId");
     const body = await req.json();
-    const { postId, ...postData } = body;
+
+    console.log("EDIT POST BODY:", JSON.stringify(body, null, 2));
 
     if (!postId) {
       return NextResponse.json(
@@ -254,7 +256,7 @@ export async function editPost(req: NextRequest) {
     }
 
     // parsing body with zod
-    const parsed = CreatePostSchema.safeParse(postData);
+    const parsed = EditPostSchema.safeParse(body);
 
     if (!parsed.success) {
       console.error("ZOD ERROR:", parsed.error.flatten());
@@ -343,6 +345,10 @@ export async function editPost(req: NextRequest) {
       }
     }
 
+    if (data.media) {
+      assertCompleteMedia(data.media);
+    }
+
     // Update the post
     const updatedPost = await prisma.post.update({
       where: { id: postId },
@@ -413,6 +419,20 @@ export async function editPost(req: NextRequest) {
       { error: "Internal server error" },
       { status: 500 },
     );
+  }
+}
+
+function assertCompleteMedia(media: any[]) {
+  for (const m of media) {
+    if (
+      !m.blobName ||
+      !m.type ||
+      !m.name ||
+      !m.mimetype ||
+      typeof m.size !== "number"
+    ) {
+      throw new Error(`Invalid media object: ${JSON.stringify(m)}`);
+    }
   }
 }
 

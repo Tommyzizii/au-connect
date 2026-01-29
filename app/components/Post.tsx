@@ -2,25 +2,34 @@ import { ThumbsUp, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 
 import PostType from "@/types/Post";
+import User from "@/types/User";
 import PostMediaGrid from "./PostMediaGrid";
 import PostProfile from "./PostProfile";
 import PostAttachments from "./PostAttachments";
 import PostText from "./PostText";
 import PostDetailsModal from "./PostDetailsModal";
-import { useToggleLike, useDeletePost } from "../profile/utils/fetchfunctions";
+import {
+  useToggleLike,
+  useDeletePost,
+  useEditPost,
+} from "../profile/utils/fetchfunctions";
+import CreatePostModal from "./CreatePostModal";
 
 export default function Post({
+  user,
   post,
   isLoading,
-  currentUserId,
 }: {
+  user?: User;
   post?: PostType;
   isLoading: boolean;
-  currentUserId?: string;
 }) {
   const [postModalOpen, setPostModelOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
+  const editPostMutation = useEditPost();
 
   // Skeleton UI
   if (isLoading) {
@@ -53,9 +62,12 @@ export default function Post({
     <div className="bg-white border border-gray-200 rounded-lg">
       <PostProfile
         post={post}
-        currentUserId={currentUserId}
+        currentUserId={user?.id}
         onDelete={(postId: string) => {
           deletePost.mutate(postId);
+        }}
+        onEdit={() => {
+          setEditModalOpen(true);
         }}
       />
 
@@ -147,6 +159,16 @@ export default function Post({
           content={post.content}
           clickedIndex={0}
           onClose={() => setPostModelOpen(false)}
+        />
+      )}
+
+      {editModalOpen && (
+        <CreatePostModal
+          user={user || { id: "", username: "unknown", slug: "slug" }}
+          isOpen={editModalOpen}
+          setIsOpen={setEditModalOpen}
+          editMode={true}
+          exisistingPost={post}
         />
       )}
     </div>

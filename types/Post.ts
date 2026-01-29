@@ -1,6 +1,6 @@
 type PostType = {
   // ---------- core ----------
-  id: string; 
+  id: string;
 
   // ---------- mock fields ----------
   author?: string;
@@ -20,15 +20,17 @@ type PostType = {
   title?: string | null;
   content?: string;
 
-  media?: {
-    blobName: string;
-    thumbnailBlobName?: string;
-    url: string;
-    type: string;
-    name?: string;
-    mimeType?: string;
-    size?: number;
-  }[] | null;
+  media?:
+    | {
+        blobName: string;
+        thumbnailBlobName?: string;
+        url: string;
+        type: string;
+        name?: string;
+        mimetype?: string;
+        size?: number;
+      }[]
+    | null;
 
   isLiked?: boolean;
   likeCount?: number;
@@ -37,7 +39,6 @@ type PostType = {
 
   createdAt?: string | Date;
   updatedAt?: string | Date;
-
 };
 
 export default PostType;

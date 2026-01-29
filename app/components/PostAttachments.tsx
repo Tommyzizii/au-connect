@@ -44,14 +44,15 @@ function formatBytes(bytes: number) {
 }
 
 export default function PostAttachments({
-  media, addMargin = false
+  media,
+  addMargin = false,
 }: {
   media: {
     blobName: string;
     url: string;
     type: string;
     name?: string | undefined;
-    mimeType?: string | undefined;
+    mimetype?: string | undefined;
     size?: number | undefined;
   }[];
   addMargin?: boolean;
@@ -60,17 +61,14 @@ export default function PostAttachments({
 
   return (
     <div className={`px-5 pb-4 space-y-2 ${addMargin && "mt-5"}`}>
-      <p className="text-sm font-medium text-gray-700">
-        📎 Attachments
-      </p>
+      <p className="text-sm font-medium text-gray-700">📎 Attachments</p>
 
       {media.map((file, index) => {
-        const mimeType = file.mimeType ?? "";
-        const style =
-          FILE_STYLES[mimeType] ?? {
-            label: "FILE",
-            className: "bg-gray-100 text-gray-700",
-          };
+        const mimeType = file.mimetype ?? "";
+        const style = FILE_STYLES[mimeType] ?? {
+          label: "FILE",
+          className: "bg-gray-100 text-gray-700",
+        };
 
         return (
           <div
@@ -92,9 +90,7 @@ export default function PostAttachments({
                   {file.name ?? "Untitled file"}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {file.size
-                    ? formatBytes(file.size)
-                    : "Unknown size"}
+                  {file.size ? formatBytes(file.size) : "Unknown size"}
                 </p>
               </div>
             </div>
@@ -115,3 +111,4 @@ export default function PostAttachments({
     </div>
   );
 }
+

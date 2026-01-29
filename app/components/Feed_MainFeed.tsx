@@ -138,9 +138,9 @@ export default function MainFeed({
                 <div className="mb-4">
                   <Post
                     key={post.id}
+                    user={user}
                     post={post}
                     isLoading={false}
-                    currentUserId={user.id}
                   />
                 </div>
               );

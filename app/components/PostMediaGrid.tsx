@@ -24,7 +24,7 @@ export default function PostMediaGrid({
         thumbnailBlobName?: string | undefined;
         url: string;
         type: string | undefined;
-        mimeType?: string | undefined;
+        mimetype?: string | undefined;
         size?: number | undefined;
       }[]
     | undefined;

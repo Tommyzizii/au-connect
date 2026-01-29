@@ -296,3 +296,49 @@ export function useDeletePost() {
     },
   });
 }
+
+// post edit function
+export async function editPost({
+  postId,
+  data,
+}: {
+  postId: string;
+  data: any; // or use your CreatePostSchema type
+}) {
+  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data), // Include the updated post data
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.error || "Failed to edit post");
+  }
+
+  return res.json();
+}
+
+export function useEditPost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: editPost,
+    onSuccess: (updatedPost) => {
+      // ✅ Update the post in the infinite query cache
+      queryClient.setQueryData(["posts"], (oldData: any) => {
+        if (!oldData?.pages) return oldData;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((post: any) =>
+              post.id === updatedPost.id ? updatedPost : post,
+            ),
+          })),
+        };
+      });
+    },
+  });
+}

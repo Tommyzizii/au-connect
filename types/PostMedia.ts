@@ -1,10 +1,9 @@
-
 export type PostMedia = {
   blobName: string;
   thumbnailBlobName?: string;
   type: string;
   name: string;
-  mimeType: string;
+  mimetype: string;
   size: number;
 };
 
