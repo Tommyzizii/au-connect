@@ -14,7 +14,8 @@ import ExperienceManagerModal from "./ExperienceManagerModal";
 import EducationManagerModal from "./EducationManagerModal";
 import EditAboutModal from "./EditAboutModal";
 import ProfilePhotoModal from "./ProfilePhotoModal";
-
+import CoverPhotoModal from "./CoverPhotoModal";
+import ContactInfoModal from "./ContactInfoModal";
 import Post from "@/app/components/Post";
 import User from "@/types/User";
 import Experience from "@/types/Experience";
@@ -22,7 +23,6 @@ import Education from "@/types/Education";
 import PostType from "@/types/Post";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 
-//  ADD: react-query + profile posts fetcher
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 
@@ -32,10 +32,11 @@ export default function ProfileView({
   isOwner,
 }: {
   user: User;
-  // TODO: type needs to be fixed
   recommendedPeople: Array<number>;
   isOwner: boolean;
 }) {
+  const [userState, setUserState] = useState<User>(user);
+  const [openContactInfo, setOpenContactInfo] = useState(false);
   const [tab, setTab] = useState("posts");
   const [openModal, setOpenModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -45,6 +46,7 @@ export default function ProfileView({
   const [loading, setLoading] = useState(true);
 
   const [openProfilePhotoModal, setOpenProfilePhotoModal] = useState(false);
+  const [openCoverPhotoModal, setOpenCoverPhotoModal] = useState(false);
 
   const [experience, setExperience] = useState<Experience[]>(
     user.experience ?? []
@@ -57,22 +59,32 @@ export default function ProfileView({
     user.profilePic || "/default_profile.jpg"
   );
 
-  //  resolve using hook (cached)
+  //  local cover value so UI updates after upload/delete without refresh
+  const [coverPhotoValue, setCoverPhotoValue] = useState<string>(
+    user.coverPhoto || "/default_cover.jpg"
+  );
+
+  //  resolve URLs using hook (cached)
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     profilePicValue,
     "/default_profile.jpg"
   );
+
+  const resolvedCoverPhotoUrl = useResolvedMediaUrl(
+    coverPhotoValue,
+    "/default_cover.jpg"
+  );
+
   // Connect button states
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
-  const [connectSuccess, setConnectSuccess] = useState(false); // "Requested"
+  const [connectSuccess, setConnectSuccess] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
 
-  //  ADD: fetch this profile user's posts (infinite, like home feed)
   const {
     data: postData,
     isLoading: profilePostLoading,
@@ -88,13 +100,11 @@ export default function ProfileView({
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  //  ADD: flatten posts
   const posts: PostType[] =
     postData?.pages.flatMap((page: { posts: PostType[] }) => page.posts) ?? [];
 
-  //  ADD: use this for Post skeletons inside profile
   const isPostsLoading = loading || profilePostLoading;
-  //  On profile load: check if I already sent a pending request to this user
+
   useEffect(() => {
     if (isOwner) return;
 
@@ -104,21 +114,16 @@ export default function ProfileView({
       try {
         const res = await fetch("/api/connect/v1/connect/requests?type=outgoing");
         const json = await res.json();
-
         if (!res.ok) return;
 
         const outgoing = (json.data || []) as any[];
-
-        // Support both shapes:
-        // - direct ids: r.toUserId
-        // - included user: r.toUser?.id
         const alreadyRequested = outgoing.some(
           (r) => r.toUserId === user.id || r.toUser?.id === user.id
         );
 
         if (!ignore) setConnectSuccess(alreadyRequested);
       } catch {
-        // ignore silently (don't block UI)
+        // ignore silently
       }
     }
 
@@ -144,16 +149,10 @@ export default function ProfileView({
 
       if (!res.ok) {
         const msg = json?.error || "Failed to send connection request";
-
-        //  If backend says "already sent", update UI to Requested
-        if (msg.toLowerCase().includes("already")) {
-          setConnectSuccess(true);
-        }
-
+        if (msg.toLowerCase().includes("already")) setConnectSuccess(true);
         throw new Error(msg);
       }
 
-      //  success => Requested
       setConnectSuccess(true);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
@@ -169,15 +168,20 @@ export default function ProfileView({
           <div className="col-span-12 lg:col-span-8 space-y-4">
             {/* PROFILE HEADER */}
             <div className="bg-white rounded-lg border overflow-hidden">
-              <div className="relative h-56 w-full aspect-[3/1] bg-gray-200">
+              <div className="relative w-full aspect-[3/1] bg-gray-200">
                 <Image
-                  src={user.coverPhoto || "/default_cover.jpg"}
+                  src={resolvedCoverPhotoUrl}
                   alt="cover photo"
                   fill
                   className="object-cover"
                 />
                 {isOwner && (
-                  <button className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow">
+                  <button
+                    onClick={() => setOpenCoverPhotoModal(true)}
+                    className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow"
+                    type="button"
+                    aria-label="Edit cover photo"
+                  >
                     <Camera size={18} className="text-gray-700" />
                   </button>
                 )}
@@ -200,17 +204,16 @@ export default function ProfileView({
                         <button
                           onClick={handleConnect}
                           disabled={connectLoading || connectSuccess}
-                          className={`px-4 py-2 rounded-lg shadow text-white ${
-                            connectSuccess
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-blue-600 hover:bg-blue-700"
-                          }`}
+                          className={`px-4 py-2 rounded-lg shadow text-white ${connectSuccess
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"
+                            }`}
                         >
                           {connectLoading
                             ? "Sending..."
                             : connectSuccess
-                            ? "Requested"
-                            : "Connect"}
+                              ? "Requested"
+                              : "Connect"}
                         </button>
 
                         <button className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white">
@@ -220,7 +223,6 @@ export default function ProfileView({
                     )}
                   </div>
 
-                  {/* Error message */}
                   {connectError && (
                     <p className="text-sm text-red-600">{connectError}</p>
                   )}
@@ -249,13 +251,20 @@ export default function ProfileView({
                 </div>
 
                 <h1 className="text-2xl font-bold text-gray-900 mt-2">
-                  {user.username}
+                  {userState.username}
                 </h1>
-                <p className="text-gray-700">{user.title}</p>
+                <p className="text-gray-700">{userState.title}</p>
 
                 <p className="text-sm text-gray-600 mt-1">
-                  {user.location} ·{" "}
-                  <span className="underline cursor-pointer">Contact info</span>
+                  {userState.location} ·{" "}
+                  <button
+                    type="button"
+                    onClick={() => setOpenContactInfo(true)}
+                    className="underline cursor-pointer"
+                  >
+                    Contact info
+                  </button>
+
                 </p>
 
                 <p className="text-sm text-gray-600">
@@ -336,11 +345,10 @@ export default function ProfileView({
                   <button
                     key={t}
                     onClick={() => setTab(t)}
-                    className={`pb-2 capitalize ${
-                      tab === t
-                        ? "border-b-2 border-blue-600 text-blue-600"
-                        : "text-gray-600"
-                    }`}
+                    className={`pb-2 capitalize ${tab === t
+                      ? "border-b-2 border-blue-600 text-blue-600"
+                      : "text-gray-600"
+                      }`}
                   >
                     {t}
                   </button>
@@ -416,8 +424,10 @@ export default function ProfileView({
       <EditProfileModal
         open={openEditModal}
         onClose={() => setOpenEditModal(false)}
-        user={user}
+        user={userState}
+        onUserUpdated={(u) => setUserState((prev) => ({ ...prev, ...u }))}
       />
+
 
       <ExperienceManagerModal
         open={openExperienceModal}
@@ -432,6 +442,14 @@ export default function ProfileView({
         education={education}
         setEducation={setEducation}
       />
+
+      <ContactInfoModal
+        open={openContactInfo}
+        onClose={() => setOpenContactInfo(false)}
+        user={userState}
+        isOwner={isOwner}
+      />
+
 
       <EditAboutModal
         open={openAboutModal}
@@ -449,6 +467,16 @@ export default function ProfileView({
         onProfilePicChanged={(newProfilePicValue: string) =>
           setProfilePicValue(newProfilePicValue)
         }
+      />
+
+      {/* COVER PHOTO MODAL */}
+      <CoverPhotoModal
+        open={openCoverPhotoModal}
+        onClose={() => setOpenCoverPhotoModal(false)}
+        isOwner={isOwner}
+        user={user}
+        resolvedCoverPhotoUrl={resolvedCoverPhotoUrl}
+        onCoverPhotoChanged={(newCover: string) => setCoverPhotoValue(newCover)}
       />
     </>
   );

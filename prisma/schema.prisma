@@ -28,6 +28,9 @@ model User {
   profilePicCrop      Json?
 
   coverPhoto    String?
+  coverPhotoOriginal String?
+  coverPhotoCrop Json?
+
   title         String?
   location      String?
   about         String?

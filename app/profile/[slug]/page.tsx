@@ -43,6 +43,8 @@ export default async function ProfilePage(props: {
   // Get logged-in user
   const session = await getCurrentUser();
   const isOwner = session?.userId === user.id;
+  const canSeePhone = isOwner || user.phonePublic === true;
+  const canSeeEmail = isOwner || user.emailPublic === true;
 
   // Build final typed user object
   const userData: User = {
@@ -63,9 +65,9 @@ export default async function ProfilePage(props: {
         ? user.profilePic
         : "/default_profile.jpg",
 
-    // createdAt: user.createdAt?.toISOString?.() ?? undefined,
+    email: canSeeEmail ? (user.email ?? "") : "",
+    phoneNo: canSeePhone ? (user.phoneNo ?? "") : "",
 
-    phoneNo: user.phoneNo || "",
     phonePublic: user.phonePublic ?? false,
     emailPublic: user.emailPublic ?? true,
 

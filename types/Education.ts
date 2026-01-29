@@ -1,4 +1,3 @@
-// /types/Education.ts
 export type Education = {
   id: string;
 

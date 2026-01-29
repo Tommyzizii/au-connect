@@ -1,4 +1,3 @@
-
 export type PostMedia = {
   blobName: string;
   thumbnailBlobName?: string;

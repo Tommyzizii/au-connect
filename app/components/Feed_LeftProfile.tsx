@@ -14,6 +14,12 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
     DEFAULT_AVATAR
   );
 
+  const resolvedCoverPhotoUrl = useResolvedMediaUrl(
+    user?.coverPhoto,
+    "/default_cover.jpg"
+  );
+
+
   // Safely handle navigation
   const handleProfileClick = () => {
     if (!user?.slug) return; // prevent runtime crash
@@ -46,7 +52,7 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
       <div className="bg-white md:rounded-lg border border-gray-200 overflow-hidden flex-1 sticky top-20 w-full md:w-auto md:max-w-xs self-start">
         <div className="hidden md:block h-24 bg-gray-200 relative">
           <Image
-            src={user?.coverPhoto || "/default_cover.jpg"}
+            src={resolvedCoverPhotoUrl}
             alt="cover photo"
             fill
             className="object-cover"

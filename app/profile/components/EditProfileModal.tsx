@@ -1,221 +1,221 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { updateMyProfile } from "../[slug]/hook/updateMyProfile";
 import type User from "@/types/User";
 
 interface EditProfileModalProps {
-    open: boolean;
-    onClose: () => void;
-    user: User;
+  open: boolean;
+  onClose: () => void;
+  user: User;
+
+  // ProfileView updates without refresh
+  onUserUpdated?: (u: User) => void;
 }
 
-export default function EditProfileModal({ open, onClose, user }: EditProfileModalProps) {
-    // Form State
-    const [form, setForm] = useState({
+export default function EditProfileModal({
+  open,
+  onClose,
+  user,
+  onUserUpdated,
+}: EditProfileModalProps) {
+  const queryClient = useQueryClient();
+
+  const [form, setForm] = useState({
+    originalUsername: user.username || "",
+    newUsername: user.username || "",
+    title: user.title || "",
+    location: user.location || "",
+    phoneNo: user.phoneNo || "",
+    phonePublic: user.phonePublic ?? false,
+    emailPublic: user.emailPublic ?? true,
+  });
+
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setForm({
         originalUsername: user.username || "",
         newUsername: user.username || "",
         title: user.title || "",
-        //about: user.about || "",
         location: user.location || "",
         phoneNo: user.phoneNo || "",
         phonePublic: user.phonePublic ?? false,
         emailPublic: user.emailPublic ?? true,
-    });
+      });
+      setError("");
+    }
+  }, [open, user]);
 
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
+  if (!open) return null;
 
-    // Reset form with fresh user data when modal opens
-    useEffect(() => {
-        if (open) {
-            setForm({
-                originalUsername: user.username || "",
-                newUsername: user.username || "",
-                title: user.title || "",
-                //about: user.about || "",
-                location: user.location || "",
-                phoneNo: user.phoneNo || "",
-                phonePublic: user.phonePublic ?? false,
-                emailPublic: user.emailPublic ?? true,
-            });
-        }
-    }, [open, user]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
 
-    if (!open) return null;
+    if (name === "newUsername") {
+      if (value.startsWith(" ")) return;
+      setForm((prev) => ({ ...prev, newUsername: value }));
+      return;
+    }
 
-    const handleChange = (e: any) => {
-        const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-        if (name === "newUsername") {
-            // Prevent leading space only
-            if (value.startsWith(" ")) return;
+  const handleSave = async () => {
+    setSaving(true);
+    setError("");
 
-            // Allow empty typing — do NOT auto-restore
-            setForm((prev) => ({ ...prev, newUsername: value }));
-            return;
-        }
+    const finalUsername = form.newUsername.trim();
+    if (!finalUsername) {
+      setError("Username cannot be empty.");
+      setSaving(false);
+      return;
+    }
 
-        setForm((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
-    };
+    try {
+      const updatedUser = await updateMyProfile({
+        username: finalUsername,
+        title: form.title,
+        location: form.location,
+        phoneNo: form.phoneNo,
+        phonePublic: form.phonePublic,
+        emailPublic: form.emailPublic,
+      });
 
+      // update react-query cache
+      queryClient.setQueryData(["user"], (old: any) =>
+        old ? { ...old, ...updatedUser } : updatedUser
+      );
 
-    const handleSave = async () => {
-        setSaving(true);
-        setError("");
+      // update ProfileView local state (no refresh)
+      onUserUpdated?.(updatedUser);
 
-        const finalUsername = form.newUsername.trim();
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-        // Block empty username
-        if (!finalUsername) {
-            setError("Username cannot be empty.");
-            setSaving(false);
-            return;
-        }
+  const readOnlyEmail = (user.email ?? "").trim();
 
-        try {
-            await updateMyProfile({
-                username: finalUsername,
-                title: form.title,
-                //about: form.about,
-                location: form.location,
-                phoneNo: form.phoneNo,
-                phonePublic: form.phonePublic,
-                emailPublic: form.emailPublic,
-            });
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 font-inter">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6 border border-gray-200">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-900">Edit Profile</h2>
 
-            onClose();
-            window.location.reload();
-        } catch (err: any) {
-            setError(err.message || "Failed to update profile");
-        }
+        {error && <p className="text-red-600 text-sm mb-2 font-medium">{error}</p>}
 
-        setSaving(false);
-    };
+        {/* USERNAME */}
+        <label className="block mb-3">
+          <span className="text-gray-900 text-sm font-medium">Username</span>
+          <input
+            name="newUsername"
+            value={form.newUsername}
+            onChange={handleChange}
+            placeholder="Enter username"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg 
+              text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+          />
+        </label>
 
+        {/* TITLE */}
+        <label className="block mb-3">
+          <span className="text-gray-900 text-sm font-medium">Title</span>
+          <input
+            name="title"
+            value={form.title}
+            onChange={handleChange}
+            placeholder="Your role / job title"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
+              text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+          />
+        </label>
 
-    return (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 font-inter">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6 border border-gray-200">
+        {/* LOCATION */}
+        <label className="block mb-3">
+          <span className="text-gray-900 text-sm font-medium">Location</span>
+          <input
+            name="location"
+            value={form.location}
+            onChange={handleChange}
+            placeholder="Bangkok, Thailand"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
+              text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+          />
+        </label>
 
-                <h2 className="text-2xl font-semibold mb-4 text-gray-900">Edit Profile</h2>
-                {error && <p className="text-red-600 text-sm mb-2 font-medium">{error}</p>}
-
-                {/* USERNAME */}
-                <label className="block mb-3">
-                    <span className="text-gray-900 text-sm font-medium">Username</span>
-                    <input
-                        name="newUsername"
-                        value={form.newUsername}
-                        onChange={handleChange}
-                        placeholder="Enter username"
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg 
-                       text-gray-900 placeholder-gray-500
-                       focus:ring-2 focus:ring-blue-500"
-                    />
-                </label>
-
-                {/* TITLE */}
-                <label className="block mb-3">
-                    <span className="text-gray-900 text-sm font-medium">Title</span>
-                    <input
-                        name="title"
-                        value={form.title}
-                        onChange={handleChange}
-                        placeholder="Your role / job title"
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
-                       text-gray-900 placeholder-gray-500
-                       focus:ring-2 focus:ring-blue-500"
-                    />
-                </label>
-
-                {/* ABOUT */}
-                {/* <label className="block mb-3">
-                    <span className="text-gray-900 text-sm font-medium">About</span>
-                    <textarea
-                        name="about"
-                        value={form.about}
-                        onChange={handleChange}
-                        placeholder="Tell people about yourself"
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg 
-                       text-gray-900 placeholder-gray-500
-                       h-24 resize-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </label> */}
-
-                {/* LOCATION */}
-                <label className="block mb-3">
-                    <span className="text-gray-900 text-sm font-medium">Location</span>
-                    <input
-                        name="location"
-                        value={form.location}
-                        onChange={handleChange}
-                        placeholder="Bangkok, Thailand"
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
-                       text-gray-900 placeholder-gray-500
-                       focus:ring-2 focus:ring-blue-500"
-                    />
-                </label>
-
-                {/* PHONE NUMBER */}
-                <label className="block mb-3">
-                    <span className="text-gray-900 text-sm font-medium">Phone Number</span>
-                    <input
-                        name="phoneNo"
-                        value={form.phoneNo}
-                        onChange={handleChange}
-                        placeholder="Your phone number"
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
-                       text-gray-900 placeholder-gray-500
-                       focus:ring-2 focus:ring-blue-500"
-                    />
-                </label>
-
-                {/* CHECKBOXES */}
-                <label className="flex items-center gap-2 mb-3">
-                    <input
-                        type="checkbox"
-                        name="phonePublic"
-                        checked={form.phonePublic}
-                        onChange={handleChange}
-                    />
-                    <span className="text-sm text-gray-800">Make phone visible to others</span>
-                </label>
-
-                <label className="flex items-center gap-2 mb-4">
-                    <input
-                        type="checkbox"
-                        name="emailPublic"
-                        checked={form.emailPublic}
-                        onChange={handleChange}
-                    />
-                    <span className="text-sm text-gray-800">Show email on profile</span>
-                </label>
-
-                {/* BUTTONS */}
-                <div className="flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 
-                       hover:bg-gray-100 font-medium"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium 
-                       hover:bg-blue-700 disabled:bg-blue-300"
-                    >
-                        {saving ? "Saving..." : "Save Changes"}
-                    </button>
-                </div>
-
-            </div>
+        {/* EMAIL (READ ONLY) */}
+        <div className="block mb-3">
+          <span className="text-gray-900 text-sm font-medium">Email</span>
+          <div className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+            {readOnlyEmail || "—"}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Email is read-only (from your sign-in).
+          </p>
         </div>
-    );
+
+        {/* PHONE NUMBER */}
+        <label className="block mb-3">
+          <span className="text-gray-900 text-sm font-medium">Phone Number</span>
+          <input
+            name="phoneNo"
+            value={form.phoneNo}
+            onChange={handleChange}
+            placeholder="Your phone number"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
+              text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+          />
+        </label>
+
+        {/* CHECKBOXES */}
+        <label className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            name="phonePublic"
+            checked={form.phonePublic}
+            onChange={handleChange}
+          />
+          <span className="text-sm text-gray-800">Make phone visible to others</span>
+        </label>
+
+        <label className="flex items-center gap-2 mb-4">
+          <input
+            type="checkbox"
+            name="emailPublic"
+            checked={form.emailPublic}
+            onChange={handleChange}
+          />
+          <span className="text-sm text-gray-800">Show email on profile</span>
+        </label>
+
+        {/* BUTTONS */}
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300"
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
