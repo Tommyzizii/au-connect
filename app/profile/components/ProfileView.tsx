@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Pencil, Camera } from "lucide-react";
+import { Pencil, Camera, X } from "lucide-react";
 
 import SectionCard from "./SectionCard";
 import ExperienceItem from "./ExperienceItem";
@@ -70,6 +70,8 @@ export default function ProfileView({
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connectSuccess, setConnectSuccess] = useState(false); // "Requested"
+  const [requestId, setRequestId] = useState<string | null>(null); // Store request ID for canceling
+  const [isConnected, setIsConnected] = useState(false); // Track if already connected
 
   const router = useRouter();
 
@@ -104,37 +106,51 @@ export default function ProfileView({
 
   // ✅ ADD: use this for Post skeletons inside profile
   const isPostsLoading = loading || profilePostLoading;
-  // ✅ On profile load: check if I already sent a pending request to this user
+  // ✅ On profile load: check connection status (connected or pending request)
   useEffect(() => {
     if (isOwner) return;
 
     let ignore = false;
 
-    async function loadOutgoingStatus() {
+    async function loadConnectionStatus() {
       try {
-        const res = await fetch(
+        // Check if already connected
+        const connectionsRes = await fetch(
+          "/api/connect/v1/connect/status?otherUserId=" + user.id,
+          { credentials: "include" }
+        );
+        
+        if (connectionsRes.ok) {
+          const connectionsJson = await connectionsRes.json();
+          if (!ignore && connectionsJson.isConnected) {
+            setIsConnected(true);
+            return; // If connected, don't check for pending requests
+          }
+        }
+
+        // If not connected, check for pending outgoing request
+        const requestsRes = await fetch(
           "/api/connect/v1/connect/requests?type=outgoing",
         );
-        const json = await res.json();
+        const requestsJson = await requestsRes.json();
 
-        if (!res.ok) return;
+        if (!requestsRes.ok) return;
 
-        const outgoing = (json.data || []) as any[];
-
-        // Support both shapes:
-        // - direct ids: r.toUserId
-        // - included user: r.toUser?.id
-        const alreadyRequested = outgoing.some(
+        const outgoing = (requestsJson.data || []) as any[];
+        const existingRequest = outgoing.find(
           (r) => r.toUserId === user.id || r.toUser?.id === user.id,
         );
 
-        if (!ignore) setConnectSuccess(alreadyRequested);
+        if (!ignore && existingRequest) {
+          setConnectSuccess(true);
+          setRequestId(existingRequest.id);
+        }
       } catch {
         // ignore silently (don't block UI)
       }
     }
 
-    loadOutgoingStatus();
+    loadConnectionStatus();
 
     return () => {
       ignore = true;
@@ -198,8 +214,77 @@ export default function ProfileView({
         throw new Error(msg);
       }
 
-      // ✅ success => Requested
+      // ✅ success => Requested & store the request ID
       setConnectSuccess(true);
+      if (json.request?.id) {
+        setRequestId(json.request.id);
+      }
+    } catch (e: unknown) {
+      setConnectError(e instanceof Error ? e.message : "Server error");
+    } finally {
+      setConnectLoading(false);
+    }
+  }
+
+  async function handleCancelRequest() {
+    if (!requestId) {
+      setConnectError("No request to cancel");
+      return;
+    }
+
+    try {
+      setConnectError(null);
+      setConnectLoading(true);
+
+      const res = await fetch(
+        `/api/connect/v1/connect/request/${requestId}/cancel`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json?.error || "Failed to cancel request");
+      }
+
+      // ✅ success => reset to initial state
+      setConnectSuccess(false);
+      setRequestId(null);
+    } catch (e: unknown) {
+      setConnectError(e instanceof Error ? e.message : "Server error");
+    } finally {
+      setConnectLoading(false);
+    }
+  }
+
+  async function handleRemoveConnection() {
+    if (!confirm("Are you sure you want to remove this connection?")) {
+      return;
+    }
+
+    try {
+      setConnectError(null);
+      setConnectLoading(true);
+
+      const res = await fetch(
+        `/api/connect/v1/connect/${user.id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json?.error || "Failed to remove connection");
+      }
+
+      // ✅ success => reset to not connected state
+      setIsConnected(false);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
     } finally {
@@ -242,21 +327,49 @@ export default function ProfileView({
                       </button>
                     ) : (
                       <>
-                        <button
-                          onClick={handleConnect}
-                          disabled={connectLoading || connectSuccess}
-                          className={`px-4 py-2 rounded-lg shadow text-white ${
-                            connectSuccess
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-blue-600 hover:bg-blue-700"
-                          }`}
-                        >
-                          {connectLoading
-                            ? "Sending..."
-                            : connectSuccess
-                              ? "Requested"
-                              : "Connect"}
-                        </button>
+                        {/* IMPROVED: Show different UI based on connection state */}
+                        {isConnected ? (
+                          // Connected state - Show Remove button
+                          <button
+                            onClick={handleRemoveConnection}
+                            disabled={connectLoading}
+                            className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${
+                              connectLoading ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
+                          >
+                            {connectLoading ? "Removing..." : "Remove"}
+                          </button>
+                        ) : connectSuccess ? (
+                          // Requested state - Show "Requested" with Cancel button
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 border border-gray-300">
+                              <span className="text-sm font-medium text-gray-700">
+                                Requested
+                              </span>
+                            </div>
+                            <button
+                              onClick={handleCancelRequest}
+                              disabled={connectLoading}
+                              className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${
+                                connectLoading ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                              title="Cancel request"
+                            >
+                              {connectLoading ? "Canceling..." : "Cancel"}
+                            </button>
+                          </div>
+                        ) : (
+                          // Not connected - Show Connect button
+                          <button
+                            onClick={handleConnect}
+                            disabled={connectLoading}
+                            className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${
+                              connectLoading ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
+                          >
+                            {connectLoading ? "Sending..." : "Connect"}
+                          </button>
+                        )}
 
                         <button className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white">
                           Message
