@@ -23,7 +23,7 @@ function isSafeInternalBlobName(blobName: string) {
   if (lower.startsWith("http://") || lower.startsWith("https://")) return false;
   if (blobName.includes("..")) return false;
 
-  // limit to our known folders (your upload-media uses images/videos/files)
+  // limit folders
   return (
     blobName.startsWith("images/") ||
     blobName.startsWith("videos/") ||
@@ -260,7 +260,7 @@ export async function saveMyProfilePic(req: NextRequest) {
         x !== croppedBlobName
     );
 
-    // 1) Update DB first (Option B)
+    // 1) Update DB first 
     await prisma.user.update({
       where: { id: userId },
       data: {

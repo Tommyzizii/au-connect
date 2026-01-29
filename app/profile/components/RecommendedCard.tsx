@@ -23,7 +23,7 @@ export default function RecommendedCard({ user }: any) {
       </div>
 
       <button className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg">
-        Follow
+        Connect
       </button>
     </div>
   );

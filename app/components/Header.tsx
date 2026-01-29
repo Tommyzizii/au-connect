@@ -48,7 +48,7 @@ export default function Header() {
     queryFn: fetchUser,
   });
 
-  // ✅ resolved avatar (cached)
+  //  resolved avatar (cached)
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     user?.profilePic,
     "/default_profile.jpg"

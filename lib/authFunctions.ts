@@ -166,7 +166,7 @@ export async function linkedinAuthSignIn(req: NextRequest) {
 
   // if user does not exist create new user record
   if (!user) {
-    // ✅ Pattern A: import provider avatar into Azure (new users only)
+    //  Pattern A: import provider avatar into Azure (new users only)
     const providerAvatarUrl = getLinkedInAvatarUrl(userInfo);
 
     const importedBlobName =
@@ -417,7 +417,7 @@ export function getHeaderUserInfo(req: NextRequest) {
 }
 
 /**
- * ✅ Provider avatar → Azure import (new users only)
+ *  Provider avatar → Azure import (new users only)
  * - downloads provider image
  * - validates type & size
  * - uploads to Azure as blob

@@ -30,10 +30,10 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
       );
     }
 
-     // ✅ ADD: normalize again (double-safe)
+     //  ADD: normalize again (double-safe)
     const normalizedProfileUserId = decodeURIComponent(profileUserId).trim();
 
-    // ✅ ADD: temporary debug (remove later)
+    //  ADD: temporary debug (remove later)
     console.log("PROFILE POSTS userId param:", {
       raw: profileUserId,
       normalized: normalizedProfileUserId,

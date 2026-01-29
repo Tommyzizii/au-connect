@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { updateAbout } from "../[slug]/hook/updateAbout"; // ✅ USE NEW API
+import { updateAbout } from "../[slug]/hook/updateAbout"; //  USE NEW API
 
 export default function EditAboutModal({
   open,
@@ -34,7 +34,7 @@ export default function EditAboutModal({
     setError("");
 
     try {
-      await updateAbout(about); // ✅ ONLY UPDATE ABOUT
+      await updateAbout(about); //  ONLY UPDATE ABOUT
       onSaved(about);           // update UI immediately
       onClose();
     } catch (err: any) {

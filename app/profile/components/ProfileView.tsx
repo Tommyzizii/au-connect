@@ -1,4 +1,3 @@
-// ProfileView.tsx
 "use client";
 
 import Image from "next/image";
@@ -23,7 +22,7 @@ import Education from "@/types/Education";
 import PostType from "@/types/Post";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 
-// ✅ ADD: react-query + profile posts fetcher
+//  ADD: react-query + profile posts fetcher
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 
@@ -53,12 +52,12 @@ export default function ProfileView({
   const [education, setEducation] = useState<Education[]>(user.education ?? []);
   const [about, setAbout] = useState(user.about ?? "");
 
-  // ✅ local profile pic value so UI updates after upload/delete without refresh
+  //  local profile pic value so UI updates after upload/delete without refresh
   const [profilePicValue, setProfilePicValue] = useState<string>(
     user.profilePic || "/default_profile.jpg"
   );
 
-  // ✅ resolve using hook (cached)
+  //  resolve using hook (cached)
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     profilePicValue,
     "/default_profile.jpg"
@@ -73,7 +72,7 @@ export default function ProfileView({
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ ADD: fetch this profile user's posts (infinite, like home feed)
+  //  ADD: fetch this profile user's posts (infinite, like home feed)
   const {
     data: postData,
     isLoading: profilePostLoading,
@@ -89,13 +88,13 @@ export default function ProfileView({
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  // ✅ ADD: flatten posts
+  //  ADD: flatten posts
   const posts: PostType[] =
     postData?.pages.flatMap((page: { posts: PostType[] }) => page.posts) ?? [];
 
-  // ✅ ADD: use this for Post skeletons inside profile
+  //  ADD: use this for Post skeletons inside profile
   const isPostsLoading = loading || profilePostLoading;
-  // ✅ On profile load: check if I already sent a pending request to this user
+  //  On profile load: check if I already sent a pending request to this user
   useEffect(() => {
     if (isOwner) return;
 
@@ -146,7 +145,7 @@ export default function ProfileView({
       if (!res.ok) {
         const msg = json?.error || "Failed to send connection request";
 
-        // ✅ If backend says "already sent", update UI to Requested
+        //  If backend says "already sent", update UI to Requested
         if (msg.toLowerCase().includes("already")) {
           setConnectSuccess(true);
         }
@@ -154,7 +153,7 @@ export default function ProfileView({
         throw new Error(msg);
       }
 
-      // ✅ success => Requested
+      //  success => Requested
       setConnectSuccess(true);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
@@ -170,7 +169,7 @@ export default function ProfileView({
           <div className="col-span-12 lg:col-span-8 space-y-4">
             {/* PROFILE HEADER */}
             <div className="bg-white rounded-lg border overflow-hidden">
-              <div className="relative h-56 w-full bg-gray-200">
+              <div className="relative h-56 w-full aspect-[3/1] bg-gray-200">
                 <Image
                   src={user.coverPhoto || "/default_cover.jpg"}
                   alt="cover photo"

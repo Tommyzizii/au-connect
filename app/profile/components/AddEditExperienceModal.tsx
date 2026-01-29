@@ -95,7 +95,7 @@ export default function AddEditExperienceModal({
     if (!form.startMonth || !form.startYear)
       return setError("Start date is required");
 
-    // ✅ start date cannot be in the future
+    //  start date cannot be in the future
     if (startValue > currentValue)
       return setError("Start date cannot be in the future");
 
@@ -103,11 +103,11 @@ export default function AddEditExperienceModal({
       if (!form.endMonth || !form.endYear)
         return setError("End date is required");
 
-      // ✅ end must be after start
+      //  end must be after start
       if (endValue <= startValue)
         return setError("End date must be later than start date");
 
-      // ✅ end date cannot be in the future
+      //  end date cannot be in the future
       if (endValue > currentValue)
         return setError("End date cannot be in the future");
     }

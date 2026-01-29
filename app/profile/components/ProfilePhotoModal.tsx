@@ -1,25 +1,94 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
-import { X, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { X, Trash2, Pencil } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import User from "@/types/User";
 import ProfilePhotoCropModal from "@/app/profile/components/ProfilePhotoCropModal";
 import { uploadFile } from "@/app/profile/utils/uploadMedia";
+import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 
 type ProfilePhotoModalProps = {
   open: boolean;
   onClose: () => void;
   isOwner: boolean;
   user: User;
+
+  // current cropped avatar URL (already resolved in parent)
   resolvedProfilePicUrl: string;
+
   onProfilePicChanged: (newProfilePicValue: string) => void;
 };
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function isInternalProfileImageBlobName(blobName?: string) {
+  return !!blobName && blobName.startsWith("images/");
+}
+
+/**
+ * Convert a URL to a local File + blob URL so cropping via canvas is always safe.
+ * (Avoids CORS-tainted canvas issues.)
+ */
+async function urlToLocalFile(url: string) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load image");
+
+  const blob = await res.blob();
+  const ext =
+    blob.type === "image/png"
+      ? "png"
+      : blob.type === "image/webp"
+      ? "webp"
+      : "jpg";
+
+  const file = new File([blob], `edit-${crypto.randomUUID()}.${ext}`, {
+    type: blob.type || "image/jpeg",
+  });
+
+  const previewUrl = URL.createObjectURL(file);
+  return { file, previewUrl };
+}
+
+/**
+ * Patch infinite-query post pages so avatar changes immediately without waiting for refetch.
+ * Works for profile posts query shape: { pages: [{ posts: [...] , nextCursor: ...}, ...] }
+ */
+function patchInfinitePostsAvatar(
+  queryClient: ReturnType<typeof useQueryClient>,
+  queryKey: any[],
+  userId: string,
+  newProfilePic: string
+) {
+  queryClient.setQueryData(queryKey, (old: any) => {
+    if (!old?.pages || !Array.isArray(old.pages)) return old;
+
+    return {
+      ...old,
+      pages: old.pages.map((page: any) => {
+        if (!page?.posts || !Array.isArray(page.posts)) return page;
+
+        return {
+          ...page,
+          posts: page.posts.map((p: any) => {
+            const isOwner = p?.userId === userId || p?.user?.id === userId;
+            if (!isOwner) return p;
+
+            return {
+              ...p,
+              profilePic: newProfilePic,
+              user: p.user ? { ...p.user, profilePic: newProfilePic } : p.user,
+            };
+          }),
+        };
+      }),
+    };
+  });
+}
 
 export default function ProfilePhotoModal({
   open,
@@ -29,6 +98,7 @@ export default function ProfilePhotoModal({
   resolvedProfilePicUrl,
   onProfilePicChanged,
 }: ProfilePhotoModalProps) {
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [error, setError] = useState("");
@@ -40,23 +110,62 @@ export default function ProfilePhotoModal({
   );
   const [openCrop, setOpenCrop] = useState(false);
 
+  // "upload" = upload new photo, "edit" = re-crop original photo
+  const [mode, setMode] = useState<"upload" | "edit">("upload");
+
+  // Use React Query cache as latest truth (SSR `user` can be stale)
+  const cachedUser = queryClient.getQueryData(["user"]) as User | undefined;
+
+  const effectiveUser: User = useMemo(() => {
+    if (cachedUser && cachedUser.id === user.id) return { ...user, ...cachedUser };
+    return user;
+  }, [cachedUser, user]);
+
+  // Resolve original blobName -> URL (fallback to current avatar URL)
+  const resolvedProfilePicOriginalUrl = useResolvedMediaUrl(
+    effectiveUser.profilePicOriginal || null,
+    resolvedProfilePicUrl
+  );
+
+  // Disable edit for OAuth/external originals (not images/...)
+  const canEditOriginal = isInternalProfileImageBlobName(
+    effectiveUser.profilePicOriginal
+  );
+
+  // cleanup when modal closes/unmounts
+  useEffect(() => {
+    if (!open) {
+      if (selectedPreviewUrl) URL.revokeObjectURL(selectedPreviewUrl);
+      setSelectedPreviewUrl(null);
+      setSelectedFile(null);
+      setOpenCrop(false);
+      setMode("upload");
+      setError("");
+      setBusy(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   if (!open) return null;
 
-  const showDelete =
-    isOwner &&
-    user.profilePic &&
-    user.profilePic.trim() !== "" &&
-    user.profilePic !== DEFAULT_PROFILE_PIC;
+  const hasPhoto =
+    !!effectiveUser.profilePic &&
+    effectiveUser.profilePic.trim() !== "" &&
+    effectiveUser.profilePic !== DEFAULT_PROFILE_PIC;
+
+  const showDelete = isOwner && hasPhoto;
 
   function resetSelection() {
     setSelectedFile(null);
     if (selectedPreviewUrl) URL.revokeObjectURL(selectedPreviewUrl);
     setSelectedPreviewUrl(null);
     setOpenCrop(false);
+    setMode("upload");
   }
 
   function pickFile() {
     setError("");
+    setMode("upload");
     fileInputRef.current?.click();
   }
 
@@ -64,7 +173,7 @@ export default function ProfilePhotoModal({
     setError("");
 
     const file = e.target.files?.[0];
-    e.target.value = ""; // allow reselect same file
+    e.target.value = "";
 
     if (!file) return;
 
@@ -81,7 +190,30 @@ export default function ProfilePhotoModal({
     const url = URL.createObjectURL(file);
     setSelectedFile(file);
     setSelectedPreviewUrl(url);
+    setMode("upload");
     setOpenCrop(true);
+  }
+
+  async function handleEditCurrent() {
+    if (!canEditOriginal) return;
+
+    try {
+      setBusy(true);
+      setError("");
+
+      const { file, previewUrl } = await urlToLocalFile(
+        resolvedProfilePicOriginalUrl
+      );
+
+      setSelectedFile(file);
+      setSelectedPreviewUrl(previewUrl);
+      setMode("edit");
+      setOpenCrop(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to edit photo");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleDelete() {
@@ -96,7 +228,33 @@ export default function ProfilePhotoModal({
 
       if (!res.ok) throw new Error(data?.error || "Delete failed");
 
+      //Update local avatar on profile page
       onProfilePicChanged(DEFAULT_PROFILE_PIC);
+
+      //Update header cache immediately
+      queryClient.setQueryData(["user"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          profilePic: DEFAULT_PROFILE_PIC,
+          profilePicCrop: null,
+          profilePicOriginal: null,
+        };
+      });
+
+      // Update cached profile posts instantly + refetch in background
+      patchInfinitePostsAvatar(
+        queryClient,
+        ["profilePosts", effectiveUser.id],
+        effectiveUser.id,
+        DEFAULT_PROFILE_PIC
+      );
+      queryClient.invalidateQueries({ queryKey: ["profilePosts", effectiveUser.id] });
+
+      // queryClient.invalidateQueries({ queryKey: ["feed"] });
+      // queryClient.invalidateQueries({ queryKey: ["posts"] });
+
+      resetSelection();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -109,24 +267,33 @@ export default function ProfilePhotoModal({
     croppedFile: File;
     profilePicCrop: any;
   }) {
-    if (!selectedFile) return;
-
     try {
       setBusy(true);
       setError("");
 
-      // 1) upload original to azure
-      const originalUpload = await uploadFile(selectedFile);
-
-      // 2) upload cropped 512x512 to azure
+      // Always upload new cropped
       const croppedUpload = await uploadFile(result.croppedFile);
 
-      // 3) save in DB + delete old best-effort
+      // Decide originalBlobName
+      let originalBlobName: string | undefined = effectiveUser.profilePicOriginal;
+
+      if (mode === "upload") {
+        if (!selectedFile) throw new Error("No file selected");
+        const originalUpload = await uploadFile(selectedFile);
+        originalBlobName = originalUpload.blobName;
+      } else {
+        if (!originalBlobName || originalBlobName.trim() === "") {
+          if (!selectedFile) throw new Error("Original image missing");
+          const originalUpload = await uploadFile(selectedFile);
+          originalBlobName = originalUpload.blobName;
+        }
+      }
+
       const res = await fetch("/api/connect/v1/profile/me/upload/profilePic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          originalBlobName: originalUpload.blobName,
+          originalBlobName,
           croppedBlobName: croppedUpload.blobName,
           profilePicCrop: result.profilePicCrop,
         }),
@@ -135,8 +302,31 @@ export default function ProfilePhotoModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Save profile photo failed");
 
-      // Update ProfileView’s local state (blobName or default path)
+      //Update local avatar on profile page
       onProfilePicChanged(croppedUpload.blobName);
+
+      //Update header cache immediately
+      queryClient.setQueryData(["user"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          profilePic: croppedUpload.blobName,
+          profilePicCrop: result.profilePicCrop,
+          profilePicOriginal: originalBlobName,
+        };
+      });
+
+      //Fix issue: update cached profile posts instantly + refetch in background
+      patchInfinitePostsAvatar(
+        queryClient,
+        ["profilePosts", effectiveUser.id],
+        effectiveUser.id,
+        croppedUpload.blobName
+      );
+      queryClient.invalidateQueries({ queryKey: ["profilePosts", effectiveUser.id] });
+
+      // queryClient.invalidateQueries({ queryKey: ["feed"] });
+      // queryClient.invalidateQueries({ queryKey: ["posts"] });
 
       resetSelection();
       onClose();
@@ -186,7 +376,7 @@ export default function ProfilePhotoModal({
           <div className="relative w-48 h-48">
             <Image
               src={resolvedProfilePicUrl}
-              alt={`${user.username}'s profile photo`}
+              alt={`${effectiveUser.username}'s profile photo`}
               fill
               className="rounded-full object-cover border"
             />
@@ -202,6 +392,22 @@ export default function ProfilePhotoModal({
         {/* ACTIONS */}
         {isOwner && (
           <div className="space-y-3">
+            {hasPhoto && (
+              <button
+                type="button"
+                onClick={canEditOriginal ? handleEditCurrent : undefined}
+                disabled={busy || !canEditOriginal}
+                className={`w-full px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${
+                  canEditOriginal
+                    ? "text-gray-900 hover:bg-gray-50"
+                    : "text-gray-400 cursor-not-allowed bg-gray-50"
+                }`}
+              >
+                <Pencil size={16} />
+                {busy ? "Please wait..." : "Edit current photo"}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={pickFile}
@@ -237,7 +443,7 @@ export default function ProfilePhotoModal({
         <ProfilePhotoCropModal
           open={openCrop}
           imageUrl={selectedPreviewUrl}
-          initialCrop={user.profilePicCrop ?? null}
+          initialCrop={effectiveUser.profilePicCrop ?? null}
           onCancel={() => {
             if (!busy) resetSelection();
           }}

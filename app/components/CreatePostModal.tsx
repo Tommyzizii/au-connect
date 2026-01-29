@@ -54,7 +54,7 @@ export default function CreatePostModal({
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ resolved avatar url (blobName -> signed url) via cached hook
+  // resolved avatar url (blobName -> signed url) via cached hook
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     user?.profilePic,
     DEFAULT_PROFILE_PIC
@@ -329,7 +329,7 @@ export default function CreatePostModal({
                 <div className="flex flex-col items-center justify-center bg-neutral-900 rounded-t-xl py-12">
                   <Video className="h-16 w-16 text-white mb-3" />
                   <p className="text-white text-lg font-semibold">
-                    ✅ Video Ready to Upload
+                     Video Ready to Upload
                   </p>
                 </div>
                 <div className="bg-neutral-100 rounded-b-xl p-4">

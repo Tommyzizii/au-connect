@@ -90,7 +90,7 @@ export default function ConnectPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed to decline request");
 
-      // ✅ pop out from connects page
+      //  pop out from connects page
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Server error");

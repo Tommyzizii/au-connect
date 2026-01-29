@@ -1,4 +1,3 @@
-// lib/getCurrentUser.ts
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { JWT_COOKIE } from "./constants";
@@ -11,7 +10,6 @@ export type AuthPayload = {
 
 export async function getCurrentUser(): Promise<AuthPayload | null> {
   try {
-    // cookies() is async inside server utilities
     const cookieStore = await cookies();
     const token = cookieStore.get(JWT_COOKIE)?.value;
 

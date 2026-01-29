@@ -88,7 +88,7 @@ export default function AddEditEducationModal({
     if (!form.endMonth || !form.endYear)
       return setError("End date is required");
 
-    // ✅ Security/validation: start date cannot be in the future
+    //  Security/validation: start date cannot be in the future
     if (startValue > currentValue)
       return setError("Start date cannot be in the future");
 
