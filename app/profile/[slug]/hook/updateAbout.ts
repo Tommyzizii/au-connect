@@ -1,6 +1,7 @@
+import {UPDATE_PROFILE_ABOUT_API_PATH } from "@/lib/constants";
 export async function updateAbout(about: string) {
   const res = await fetch(
-    "/api/connect/v1/profile/me/update/about",
+    UPDATE_PROFILE_ABOUT_API_PATH,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

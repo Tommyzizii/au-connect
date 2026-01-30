@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import AddEditEducationModal from "./AddEditEducationModal";
 import type Education from "@/types/Education";
-import { ADD_EDUCATION_API_PATH } from "@/lib/constants";
+import { ADD_EDUCATION_API_PATH , DELETE_EDUCATION_API_PATH } from "@/lib/constants";
 
 const MONTHS = [
   "Jan","Feb","Mar","Apr","May","Jun",
@@ -92,8 +92,7 @@ export default function EducationManagerModal({
                   <button
                     onClick={async () => {
                       await fetch(
-                        //TODO:put in constant
-                        `/api/connect/v1/profile/me/delete/educationFields/${edu.id}`,
+                        DELETE_EDUCATION_API_PATH + `/${edu.id}`,
                         {
                           method: "DELETE",
                           credentials: "include",

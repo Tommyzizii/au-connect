@@ -9,6 +9,7 @@ import User from "@/types/User";
 import ProfilePhotoCropModal from "@/app/profile/components/ProfilePhotoCropModal";
 import { uploadFile } from "@/app/profile/utils/uploadMedia";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { DELETE_PROFILE_PIC_API_PATH,UPLOAD_PROFILE_PIC_API_PATH } from "@/lib/constants";
 
 type ProfilePhotoModalProps = {
   open: boolean;
@@ -221,7 +222,7 @@ export default function ProfilePhotoModal({
       setBusy(true);
       setError("");
 
-      const res = await fetch("/api/connect/v1/profile/me/delete/profilePic", {
+      const res = await fetch(DELETE_PROFILE_PIC_API_PATH, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -289,7 +290,7 @@ export default function ProfilePhotoModal({
         }
       }
 
-      const res = await fetch("/api/connect/v1/profile/me/upload/profilePic", {
+      const res = await fetch(UPLOAD_PROFILE_PIC_API_PATH, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

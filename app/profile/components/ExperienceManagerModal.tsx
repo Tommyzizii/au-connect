@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import AddEditExperienceModal from "./AddEditExperienceModal";
 import type Experience from "@/types/Experience";
-import { ADD_EXPERIENCE_API_PATH } from "@/lib/constants";
+import { ADD_EXPERIENCE_API_PATH, UPDATE_EXPERIENCE_API_PATH,DELETE_EXPERIENCE_API_PATH } from "@/lib/constants";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -97,7 +97,7 @@ export default function ExperienceManagerModal({
                   <button
                     onClick={async () => {
                       await fetch(
-                        `/api/connect/v1/profile/me/delete/experienceFields/${exp.id}`,
+                        DELETE_EXPERIENCE_API_PATH + `/${exp.id}`,
                         {
                           method: "DELETE",
                           credentials: "include",
@@ -128,7 +128,7 @@ export default function ExperienceManagerModal({
         onSave={async (data) => {
           if (editing) {
             const res = await fetch(
-              `/api/connect/v1/profile/me/update/experienceFields/${editing.id}`,
+              UPDATE_EXPERIENCE_API_PATH+`/${editing.id}`,
               {
                 method: "PUT",
                 credentials: "include",

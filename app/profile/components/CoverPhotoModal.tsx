@@ -9,6 +9,7 @@ import User from "@/types/User";
 import CoverPhotoCropModal from "./CoverPhotoCropModal";
 import { uploadFile } from "@/app/profile/utils/uploadMedia";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { DELETE_PROFILE_COVER_API_PATH ,UPLOAD_PROFILE_COVER_API_PATH} from "@/lib/constants";
 
 const DEFAULT_COVER = "/default_cover.jpg";
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -149,7 +150,7 @@ export default function CoverPhotoModal({
       setError("");
 
       const res = await fetch(
-        "/api/connect/v1/profile/me/delete/coverPic",
+        DELETE_PROFILE_COVER_API_PATH,
         { method: "DELETE" }
       );
       const json = await res.json();
@@ -194,7 +195,7 @@ export default function CoverPhotoModal({
       }
 
       const res = await fetch(
-        "/api/connect/v1/profile/me/upload/coverPic",
+        UPLOAD_PROFILE_COVER_API_PATH,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
