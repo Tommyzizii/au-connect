@@ -27,7 +27,7 @@ export default function CoverPhotoCropModal({
   onSave,
 }: Props) {
   const [crop, setCrop] = useState<{ x: number; y: number }>(
-    initialCrop?.crop ?? { x: 0, y: 0 }
+    initialCrop?.crop ?? { x: 0, y: 0 },
   );
   const [zoom, setZoom] = useState<number>(initialCrop?.zoom ?? 1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
@@ -60,17 +60,17 @@ export default function CoverPhotoCropModal({
     };
 
     const croppedFile = await getCroppedCoverFile(
-      imageUrl,
+      imageUrl ?? "",
       croppedAreaPixels,
       1500,
-      500
+      500,
     );
 
     onSave({ croppedFile, coverPhotoCrop });
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-60 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
 
       <div className="relative z-10 w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
@@ -93,12 +93,12 @@ export default function CoverPhotoCropModal({
             <div className="relative h-[360px]">
               <Cropper
                 image={imageUrl}
-                crop={crop}                 
+                crop={crop}
                 zoom={zoom}
                 aspect={3 / 1}
                 cropShape="rect"
                 showGrid={false}
-                onCropChange={setCrop}      
+                onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
               />
