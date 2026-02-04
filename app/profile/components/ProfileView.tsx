@@ -316,7 +316,7 @@ export default function ProfileView({
         throw new Error(json?.error || "Failed to remove connection");
       }
 
-      // ✅ success => reset to not connected state
+      // success => reset to not connected state
       setIsConnected(false);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");

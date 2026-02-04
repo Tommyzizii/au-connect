@@ -28,7 +28,7 @@ const mockEvents = [
 ];
 
 export default function Home() {
-  // ✅ Get query client and pass to upload service
+  // Get query client and pass to upload service
   const queryClient = useQueryClient();
 
   useEffect(() => {

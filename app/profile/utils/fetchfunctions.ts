@@ -281,7 +281,7 @@ export function useDeletePost() {
   return useMutation({
     mutationFn: deletePost,
     onSuccess: (_, postId) => {
-      // ✅ Update the infinite query structure
+      // Update the infinite query structure
       queryClient.setQueryData(["posts"], (oldData: any) => {
         if (!oldData?.pages) return oldData;
 

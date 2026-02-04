@@ -209,3 +209,46 @@ enum PostInteractionType {
   SHARE
   SAVED
 }
+
+model Conversation {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // sorted order: userAId < userBId
+  userAId String @db.ObjectId
+  userBId String @db.ObjectId
+
+  lastMessageAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userALastReadAt DateTime?
+  userBLastReadAt DateTime?
+
+  messages Message[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+  @@index([lastMessageAt])
+  @@index([userAId, lastMessageAt])
+  @@index([userBId, lastMessageAt])
+}
+
+model Message {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  conversationId String       @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  senderId   String @db.ObjectId
+  receiverId String @db.ObjectId
+
+  text  String?
+  media Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([receiverId, createdAt])
+}
