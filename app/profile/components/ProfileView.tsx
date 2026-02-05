@@ -405,8 +405,10 @@ export default function ProfileView({
                             {connectLoading ? "Sending..." : "Connect"}
                           </button>
                         )}
-
-                        <button className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white">
+                        <button
+                          onClick={() => router.push(`/messages?userId=${user.id}`)}
+                          className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white"
+                        >
                           Message
                         </button>
                       </>

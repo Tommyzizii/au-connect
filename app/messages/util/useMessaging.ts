@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { InboxRow } from "@/types/InboxRow";
 import type { ChatMessage } from "@/types/ChatMessage";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const LS_LAST_CONV = "auconnect:lastConversationId";
 const LS_LAST_USER = "auconnect:lastUserId";
+const PAGE_SIZE = 50;
 
 function dedupeById(list: ChatMessage[]) {
   const seen = new Set<string>();
@@ -23,7 +25,16 @@ function mergeAppend(prev: ChatMessage[], incoming: ChatMessage[]) {
   return dedupeById([...prev, ...incoming]);
 }
 
+function mergePrepend(prev: ChatMessage[], incoming: ChatMessage[]) {
+  if (!incoming.length) return prev;
+  return dedupeById([...incoming, ...prev]);
+}
+
 export function useMessaging() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const targetUserId = searchParams?.get("userId") ?? null;
+
   const [inbox, setInbox] = useState<InboxRow[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -31,6 +42,10 @@ export function useMessaging() {
   const [messagesByConv, setMessagesByConv] = useState<Record<string, ChatMessage[]>>({});
   const [messageInput, setMessageInput] = useState("");
   const [showChatMobile, setShowChatMobile] = useState(false);
+
+  // reverse scroll state (per conversation)
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreOlderByConv, setHasMoreOlderByConv] = useState<Record<string, boolean>>({});
 
   // Teams behavior: only follow output if user is at bottom (ChatPane updates this ref)
   const isAtBottomRef = useRef(true);
@@ -68,6 +83,11 @@ export function useMessaging() {
     return messagesByConv[selectedConversationId] ?? [];
   }, [messagesByConv, selectedConversationId]);
 
+  const hasMoreOlder = useMemo(() => {
+    if (!selectedConversationId) return false;
+    return hasMoreOlderByConv[selectedConversationId] ?? true; // default true until proven false
+  }, [hasMoreOlderByConv, selectedConversationId]);
+
   // ---------- read helpers ----------
   const markReadLocal = (conversationId: string) => {
     setInbox((prev) =>
@@ -75,14 +95,13 @@ export function useMessaging() {
     );
   };
 
-  // throttle so it never spams /read
   const lastReadPostAtRef = useRef<Record<string, number>>({});
   const markReadServerSafe = async (conversationId: string) => {
     if (!conversationId) return;
 
     const now = Date.now();
     const last = lastReadPostAtRef.current[conversationId] ?? 0;
-    if (now - last < 3000) return; // max 1 POST / 3s per conversation
+    if (now - last < 3000) return;
 
     lastReadPostAtRef.current[conversationId] = now;
 
@@ -106,7 +125,6 @@ export function useMessaging() {
     const rows: InboxRow[] = json?.data || [];
     setInbox(rows);
 
-    // keep current selection if exists, else last saved, else first row
     setSelectedUserId((prev) => {
       if (prev && rows.some((r) => r.user.id === prev)) return prev;
 
@@ -131,8 +149,8 @@ export function useMessaging() {
       method: "POST",
       credentials: "include",
     });
-    const json = await res.json().catch(() => ({}));
     if (!res.ok) return null;
+    const json = await res.json().catch(() => ({}));
     return (json?.data?.conversationId as string) || null;
   };
 
@@ -143,6 +161,9 @@ export function useMessaging() {
 
     const incoming: ChatMessage[] = json?.data || [];
     setMessagesByConv((prev) => ({ ...prev, [conversationId]: dedupeById(incoming) }));
+
+    // if server returned < PAGE_SIZE, likely no older history
+    setHasMoreOlderByConv((prev) => ({ ...prev, [conversationId]: incoming.length === PAGE_SIZE }));
   };
 
   const fetchMessagesAppendSince = async (conversationId: string, cursorISO?: string) => {
@@ -161,6 +182,53 @@ export function useMessaging() {
 
     return incoming;
   };
+
+  const fetchMessagesOlderBefore = async (conversationId: string, beforeISO: string) => {
+    const res = await fetch(
+      `/api/connect/v1/messages/${conversationId}?before=${encodeURIComponent(beforeISO)}`,
+      { credentials: "include" }
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return [];
+
+    const incoming: ChatMessage[] = json?.data || [];
+    return incoming;
+  };
+
+  // ✅ reverse infinite scroll action
+  const loadOlder = useCallback(async () => {
+    const convId = selectedConvRef.current;
+    if (!convId) return;
+
+    const canLoad = (hasMoreOlderByConv[convId] ?? true);
+    if (!canLoad) return;
+    if (loadingOlder) return;
+
+    const current = messagesByConvRef.current[convId] ?? [];
+    const oldest = current[0];
+    if (!oldest?.createdAt) return;
+
+    setLoadingOlder(true);
+    try {
+      const older = await fetchMessagesOlderBefore(convId, oldest.createdAt);
+      if (!older.length) {
+        setHasMoreOlderByConv((prev) => ({ ...prev, [convId]: false }));
+        return;
+      }
+
+      setMessagesByConv((prev) => {
+        const cur = prev[convId] ?? [];
+        return { ...prev, [convId]: mergePrepend(cur, older) };
+      });
+
+      // if got < PAGE_SIZE, likely no more older
+      if (older.length < PAGE_SIZE) {
+        setHasMoreOlderByConv((prev) => ({ ...prev, [convId]: false }));
+      }
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [hasMoreOlderByConv, loadingOlder]);
 
   // ---------- initial load + poll inbox ----------
   useEffect(() => {
@@ -185,6 +253,38 @@ export function useMessaging() {
     };
   }, []);
 
+  // ---------- deep link ?userId= ----------
+  const didHandleDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!targetUserId) return;
+    if (didHandleDeepLinkRef.current) return;
+    if (inbox.length === 0) return;
+
+    didHandleDeepLinkRef.current = true;
+
+    (async () => {
+      const existing = inboxRef.current.find((r) => r.user.id === targetUserId);
+      if (existing) {
+        await openChatWith(existing);
+        router.replace("/messages");
+        return;
+      }
+
+      const conversationId = await ensureConversation(targetUserId);
+      if (!conversationId) {
+        router.replace("/messages");
+        return;
+      }
+
+      setSelectedUserId(targetUserId);
+      setSelectedConversationId(conversationId);
+      setShowChatMobile(true);
+
+      router.replace("/messages");
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetUserId, inbox.length]);
+
   // when selection changes: persist, fetch messages ONCE, mark read ONLY if unread
   useEffect(() => {
     if (!selectedConversationId || !selectedUserId) return;
@@ -194,7 +294,6 @@ export function useMessaging() {
 
     fetchMessagesReplace(selectedConversationId);
 
-    // mark read ONLY if it has unread
     if (shouldMarkRead(selectedConversationId)) {
       markReadLocal(selectedConversationId);
       markReadServerSafe(selectedConversationId);
@@ -202,7 +301,7 @@ export function useMessaging() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversationId, selectedUserId]);
 
-  // poll active conversation (append only) WITHOUT spamming /read
+  // poll active conversation (append only)
   useEffect(() => {
     if (!selectedConversationId) return;
 
@@ -222,7 +321,6 @@ export function useMessaging() {
       const newMsgs = await fetchMessagesAppendSince(convId, cursor);
       if (!newMsgs.length) return;
 
-      // mark read ONLY if new incoming arrived
       const hasIncoming = newMsgs.some((m) => m.senderId === otherUserId);
       if (hasIncoming) {
         markReadLocal(convId);
@@ -247,13 +345,11 @@ export function useMessaging() {
       conversationId = await ensureConversation(row.user.id);
       if (!conversationId) return;
 
-      // update inbox row with newly created conversationId
       setInbox((prev) => prev.map((x) => (x.user.id === row.user.id ? { ...x, conversationId } : x)));
     }
 
     setSelectedConversationId(conversationId);
 
-    // mark read only if unread
     if ((row.unreadCount ?? 0) > 0) {
       markReadLocal(conversationId);
       markReadServerSafe(conversationId);
@@ -268,7 +364,6 @@ export function useMessaging() {
 
     setMessageInput("");
 
-    // optimistic message (use a special id + "__me__" marker)
     const optimisticId = `optimistic-${Date.now()}`;
     const optimistic: ChatMessage = {
       id: optimisticId,
@@ -300,7 +395,6 @@ export function useMessaging() {
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      // rollback optimistic
       setMessagesByConv((prev) => {
         const current = prev[selectedConversationId] ?? [];
         return { ...prev, [selectedConversationId]: current.filter((m) => m.id !== optimisticId) };
@@ -338,5 +432,10 @@ export function useMessaging() {
     isAtBottomRef,
     openChatWith,
     sendMessage,
+
+    //  for reverse scroll
+    loadOlder,
+    hasMoreOlder,
+    loadingOlder,
   };
 }

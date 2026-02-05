@@ -17,6 +17,9 @@ export default function MessagePages() {
     isAtBottomRef,
     openChatWith,
     sendMessage,
+    loadOlder,
+    hasMoreOlder,
+    loadingOlder,
   } = useMessaging();
 
   const selectedRow = inbox.find((x) => x.user.id === selectedUserId) ?? null;
@@ -43,6 +46,9 @@ export default function MessagePages() {
           setMessageInput={setMessageInput}
           onSend={sendMessage}
           isAtBottomRef={isAtBottomRef}
+          onLoadOlder={loadOlder}
+          hasMoreOlder={hasMoreOlder}
+          loadingOlder={loadingOlder}
         />
       </div>
     </div>

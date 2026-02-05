@@ -217,7 +217,10 @@ export async function markConversationRead(req: NextRequest, conversationId: str
 
 /* =========================
    GET MESSAGES
-   GET /api/connect/v1/messages/:conversationId?cursor=ISO_DATE
+   GET /api/connect/v1/messages/:conversationId
+     - no params       => latest 50 (ASC)
+     - ?cursor=ISO     => newer than cursor (ASC)  [append]
+     - ?before=ISO     => older than before (ASC)  [prepend]
 ========================= */
 export async function getMessages(req: NextRequest, conversationId: string) {
   try {
@@ -234,16 +237,70 @@ export async function getMessages(req: NextRequest, conversationId: string) {
       return jsonError("Unauthorized", 403);
     }
 
-    const cursor = req.nextUrl.searchParams.get("cursor");
-    const cursorDate = cursor ? new Date(cursor) : null;
+    const cursorStr = req.nextUrl.searchParams.get("cursor"); // fetch newer than this
+    const beforeStr = req.nextUrl.searchParams.get("before"); // fetch older than this
 
-    const messages = await prisma.message.findMany({
-      where: {
-        conversationId,
-        ...(cursorDate ? { createdAt: { gt: cursorDate } } : {}),
-      },
-      orderBy: { createdAt: "asc" },
-      take: 50,
+    // Don’t allow both at once (ambiguous)
+    if (cursorStr && beforeStr) {
+      return jsonError("Use only one of 'cursor' or 'before'", 400);
+    }
+
+    const cursorDate = cursorStr ? new Date(cursorStr) : null;
+    const beforeDate = beforeStr ? new Date(beforeStr) : null;
+
+    if (cursorDate && isNaN(cursorDate.getTime())) {
+      return jsonError("Invalid cursor date", 400);
+    }
+    if (beforeDate && isNaN(beforeDate.getTime())) {
+      return jsonError("Invalid before date", 400);
+    }
+
+    const PAGE_SIZE = 50;
+
+    // CASE A) append newer (polling)
+    if (cursorDate) {
+      const messages = await prisma.message.findMany({
+        where: { conversationId, createdAt: { gt: cursorDate } },
+        orderBy: { createdAt: "asc" },
+        take: PAGE_SIZE,
+        select: {
+          id: true,
+          senderId: true,
+          receiverId: true,
+          text: true,
+          createdAt: true,
+        },
+      });
+
+      return NextResponse.json({ data: messages });
+    }
+
+    // CASE B) load older (reverse infinite scroll)
+    // We query DESC to get the closest older chunk efficiently, then reverse to ASC for UI.
+    if (beforeDate) {
+      const olderDesc = await prisma.message.findMany({
+        where: { conversationId, createdAt: { lt: beforeDate } },
+        orderBy: { createdAt: "desc" },
+        take: PAGE_SIZE,
+        select: {
+          id: true,
+          senderId: true,
+          receiverId: true,
+          text: true,
+          createdAt: true,
+        },
+      });
+
+      const messages = olderDesc.reverse(); // back to ASC
+      return NextResponse.json({ data: messages });
+    }
+
+    // CASE C) initial load => latest 50 (ASC)
+    // Query DESC (latest) then reverse to ASC for UI.
+    const latestDesc = await prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE,
       select: {
         id: true,
         senderId: true,
@@ -253,12 +310,14 @@ export async function getMessages(req: NextRequest, conversationId: string) {
       },
     });
 
+    const messages = latestDesc.reverse(); // ASC for rendering
     return NextResponse.json({ data: messages });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Server error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
 
 /* =========================
    SEND MESSAGE
