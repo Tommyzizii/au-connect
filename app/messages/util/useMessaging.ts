@@ -9,6 +9,11 @@ const LS_LAST_CONV = "auconnect:lastConversationId";
 const LS_LAST_USER = "auconnect:lastUserId";
 const PAGE_SIZE = 50;
 
+/** localStorage pending key per conversation */
+function pendingKey(convId: string) {
+  return `auconnect:pending:${convId}`;
+}
+
 function dedupeById(list: ChatMessage[]) {
   const seen = new Set<string>();
   const out: ChatMessage[] = [];
@@ -30,6 +35,47 @@ function mergePrepend(prev: ChatMessage[], incoming: ChatMessage[]) {
   return dedupeById([...incoming, ...prev]);
 }
 
+function safeReadPending(convId: string): ChatMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(pendingKey(convId));
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+
+    return arr
+      .filter(Boolean)
+      .map((m: ChatMessage) => ({ ...m, status: "failed" as const }))
+      .filter((m: ChatMessage) => typeof m.id === "string" && typeof m.createdAt === "string");
+  } catch {
+    return [];
+  }
+}
+
+function safeWritePending(convId: string, list: ChatMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(pendingKey(convId), JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+}
+
+function safeUpsertPending(convId: string, msg: ChatMessage) {
+  const current = safeReadPending(convId);
+  const next = dedupeById([
+    ...current.filter((x) => x.id !== msg.id),
+    { ...msg, status: "failed" as const },
+  ]);
+  safeWritePending(convId, next);
+}
+
+function safeRemovePending(convId: string, id: string) {
+  const current = safeReadPending(convId);
+  const next = current.filter((x) => x.id !== id);
+  safeWritePending(convId, next);
+}
+
 export function useMessaging() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,7 +93,6 @@ export function useMessaging() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreOlderByConv, setHasMoreOlderByConv] = useState<Record<string, boolean>>({});
 
-  // Teams behavior: only follow output if user is at bottom (ChatPane updates this ref)
   const isAtBottomRef = useRef(true);
 
   // ---- refs to avoid stale values inside intervals ----
@@ -85,7 +130,7 @@ export function useMessaging() {
 
   const hasMoreOlder = useMemo(() => {
     if (!selectedConversationId) return false;
-    return hasMoreOlderByConv[selectedConversationId] ?? true; // default true until proven false
+    return hasMoreOlderByConv[selectedConversationId] ?? true;
   }, [hasMoreOlderByConv, selectedConversationId]);
 
   // ---------- read helpers ----------
@@ -101,7 +146,7 @@ export function useMessaging() {
 
     const now = Date.now();
     const last = lastReadPostAtRef.current[conversationId] ?? 0;
-    if (now - last < 3000) return;
+    if (now - last < 3000) return; // ✅ throttle
 
     lastReadPostAtRef.current[conversationId] = now;
 
@@ -154,16 +199,33 @@ export function useMessaging() {
     return (json?.data?.conversationId as string) || null;
   };
 
+  /** Merge server messages + locally failed pending messages */
+  const setConversationMessagesWithPending = (conversationId: string, serverMsgs: ChatMessage[]) => {
+    const pending = safeReadPending(conversationId); // always "failed"
+    const merged = dedupeById([...serverMsgs, ...pending]).sort((a, b) => {
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      return ta - tb; // ASC for UI
+    });
+    setMessagesByConv((prev) => ({ ...prev, [conversationId]: merged }));
+  };
+
   const fetchMessagesReplace = async (conversationId: string) => {
     const res = await fetch(`/api/connect/v1/messages/${conversationId}`, { credentials: "include" });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return;
 
-    const incoming: ChatMessage[] = json?.data || [];
-    setMessagesByConv((prev) => ({ ...prev, [conversationId]: dedupeById(incoming) }));
+    const incoming: ChatMessage[] = (json?.data || []).map((m: ChatMessage) => ({
+      ...m,
+      status: "sent",
+    }));
 
-    // if server returned < PAGE_SIZE, likely no older history
-    setHasMoreOlderByConv((prev) => ({ ...prev, [conversationId]: incoming.length === PAGE_SIZE }));
+    setConversationMessagesWithPending(conversationId, dedupeById(incoming));
+
+    setHasMoreOlderByConv((prev) => ({
+      ...prev,
+      [conversationId]: incoming.length === PAGE_SIZE,
+    }));
   };
 
   const fetchMessagesAppendSince = async (conversationId: string, cursorISO?: string) => {
@@ -172,7 +234,10 @@ export function useMessaging() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return [];
 
-    const incoming: ChatMessage[] = json?.data || [];
+    const incoming: ChatMessage[] = (json?.data || []).map((m: ChatMessage) => ({
+      ...m,
+      status: "sent",
+    }));
     if (!incoming.length) return [];
 
     setMessagesByConv((prev) => {
@@ -191,7 +256,10 @@ export function useMessaging() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return [];
 
-    const incoming: ChatMessage[] = json?.data || [];
+    const incoming: ChatMessage[] = (json?.data || []).map((m: ChatMessage) => ({
+      ...m,
+      status: "sent",
+    }));
     return incoming;
   };
 
@@ -200,7 +268,7 @@ export function useMessaging() {
     const convId = selectedConvRef.current;
     if (!convId) return;
 
-    const canLoad = (hasMoreOlderByConv[convId] ?? true);
+    const canLoad = hasMoreOlderByConv[convId] ?? true;
     if (!canLoad) return;
     if (loadingOlder) return;
 
@@ -221,7 +289,6 @@ export function useMessaging() {
         return { ...prev, [convId]: mergePrepend(cur, older) };
       });
 
-      // if got < PAGE_SIZE, likely no more older
       if (older.length < PAGE_SIZE) {
         setHasMoreOlderByConv((prev) => ({ ...prev, [convId]: false }));
       }
@@ -315,8 +382,13 @@ export function useMessaging() {
       if (!convId || !otherUserId) return;
 
       const current = messagesByConvRef.current[convId] ?? [];
-      const last = current[current.length - 1];
-      const cursor = last?.createdAt;
+
+      // ✅ IMPORTANT FIX:
+      // cursor must be last SENT message, not a failed optimistic one
+      const lastSent = [...current]
+        .reverse()
+        .find((m) => m.status === "sent" && typeof m.createdAt === "string");
+      const cursor = lastSent?.createdAt;
 
       const newMsgs = await fetchMessagesAppendSince(convId, cursor);
       if (!newMsgs.length) return;
@@ -345,7 +417,9 @@ export function useMessaging() {
       conversationId = await ensureConversation(row.user.id);
       if (!conversationId) return;
 
-      setInbox((prev) => prev.map((x) => (x.user.id === row.user.id ? { ...x, conversationId } : x)));
+      setInbox((prev) =>
+        prev.map((x) => (x.user.id === row.user.id ? { ...x, conversationId } : x))
+      );
     }
 
     setSelectedConversationId(conversationId);
@@ -354,6 +428,16 @@ export function useMessaging() {
       markReadLocal(conversationId);
       markReadServerSafe(conversationId);
     }
+  };
+
+  const markMessageStatus = (convId: string, id: string, status: ChatMessage["status"]) => {
+    setMessagesByConv((prev) => {
+      const cur = prev[convId] ?? [];
+      return {
+        ...prev,
+        [convId]: cur.map((m) => (m.id === id ? { ...m, status } : m)),
+      };
+    });
   };
 
   const sendMessage = async () => {
@@ -371,6 +455,7 @@ export function useMessaging() {
       receiverId: selectedUserId,
       text,
       createdAt: new Date().toISOString(),
+      status: "sending",
     };
 
     setMessagesByConv((prev) => {
@@ -386,30 +471,48 @@ export function useMessaging() {
       )
     );
 
+    // OFFLINE => mark failed + persist
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      markMessageStatus(selectedConversationId, optimisticId, "failed");
+      safeUpsertPending(selectedConversationId, { ...optimistic, status: "failed" });
+      return;
+    }
+
     const res = await fetch(`/api/connect/v1/messages/${selectedConversationId}`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
-    });
+    }).catch(() => null);
 
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessagesByConv((prev) => {
-        const current = prev[selectedConversationId] ?? [];
-        return { ...prev, [selectedConversationId]: current.filter((m) => m.id !== optimisticId) };
-      });
+    if (!res) {
+      markMessageStatus(selectedConversationId, optimisticId, "failed");
+      safeUpsertPending(selectedConversationId, { ...optimistic, status: "failed" });
       return;
     }
 
-    const sent: ChatMessage | undefined = json?.data;
-    if (!sent) return;
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      markMessageStatus(selectedConversationId, optimisticId, "failed");
+      safeUpsertPending(selectedConversationId, { ...optimistic, status: "failed" });
+      return;
+    }
+
+    const sent: ChatMessage | undefined = json?.data ? { ...json.data, status: "sent" } : undefined;
+
+    if (!sent) {
+      markMessageStatus(selectedConversationId, optimisticId, "failed");
+      safeUpsertPending(selectedConversationId, { ...optimistic, status: "failed" });
+      return;
+    }
 
     setMessagesByConv((prev) => {
       const current = prev[selectedConversationId] ?? [];
       const withoutOptimistic = current.filter((m) => m.id !== optimisticId);
       return { ...prev, [selectedConversationId]: mergeAppend(withoutOptimistic, [sent]) };
     });
+
+    safeRemovePending(selectedConversationId, optimisticId);
 
     setInbox((prev) =>
       prev.map((x) =>
@@ -419,6 +522,100 @@ export function useMessaging() {
       )
     );
   };
+
+  /** Manual retry (Option A) */
+  const retryMessage = useCallback(async (messageId: string) => {
+    const convId = selectedConvRef.current;
+    if (!convId) return;
+
+    const current = messagesByConvRef.current[convId] ?? [];
+    const target = current.find((m) => m.id === messageId);
+    if (!target || !target.text) return;
+
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      markMessageStatus(convId, messageId, "failed");
+      safeUpsertPending(convId, { ...target, status: "failed" });
+      return;
+    }
+
+    markMessageStatus(convId, messageId, "sending");
+
+    const res = await fetch(`/api/connect/v1/messages/${convId}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: target.text }),
+    }).catch(() => null);
+
+    if (!res) {
+      markMessageStatus(convId, messageId, "failed");
+      safeUpsertPending(convId, { ...target, status: "failed" });
+      return;
+    }
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      markMessageStatus(convId, messageId, "failed");
+      safeUpsertPending(convId, { ...target, status: "failed" });
+      return;
+    }
+
+    const sent: ChatMessage | undefined = json?.data ? { ...json.data, status: "sent" } : undefined;
+
+    if (!sent) {
+      markMessageStatus(convId, messageId, "failed");
+      safeUpsertPending(convId, { ...target, status: "failed" });
+      return;
+    }
+
+    setMessagesByConv((prev) => {
+      const cur = prev[convId] ?? [];
+      const withoutLocal = cur.filter((m) => m.id !== messageId);
+      return { ...prev, [convId]: mergeAppend(withoutLocal, [sent]) };
+    });
+
+    safeRemovePending(convId, messageId);
+  }, []);
+
+  /** Local delete (only for unsent/failed local messages) */
+  const deleteLocalMessage = useCallback((messageId: string) => {
+    const convId = selectedConvRef.current;
+    if (!convId) return;
+
+    setMessagesByConv((prev) => {
+      const cur = prev[convId] ?? [];
+      return { ...prev, [convId]: cur.filter((m) => m.id !== messageId) };
+    });
+
+    safeRemovePending(convId, messageId);
+  }, []);
+
+  /** ✅ For inbox preview override */
+  const getRowPreview = useCallback(
+    (row: InboxRow) => {
+      const convId = row.conversationId;
+      if (!convId) return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+
+      const msgs = messagesByConvRef.current[convId] ?? [];
+      if (!msgs.length) return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+
+      const last = msgs[msgs.length - 1];
+      if (!last) return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+
+      const isMine = last.senderId === "__me__" || last.senderId !== row.user.id;
+
+      // only show special preview for my local unsent
+      if (isMine && last.status === "failed") {
+        return { text: `(Failed) You: ${last.text ?? ""}`, time: last.createdAt ?? null, isFailed: true };
+      }
+      if (isMine && last.status === "sending") {
+        return { text: `(Sending…) You: ${last.text ?? ""}`, time: last.createdAt ?? null, isFailed: false };
+      }
+
+      return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+    },
+    []
+  );
 
   return {
     inbox,
@@ -433,9 +630,14 @@ export function useMessaging() {
     openChatWith,
     sendMessage,
 
-    //  for reverse scroll
     loadOlder,
     hasMoreOlder,
     loadingOlder,
+
+    retryMessage,
+    deleteLocalMessage,
+
+    // ✅ inbox preview helper
+    getRowPreview,
   };
 }

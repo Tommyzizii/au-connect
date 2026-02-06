@@ -9,11 +9,15 @@ export default function ConversationsPane({
   selectedUserId,
   showChatMobile,
   onOpen,
+  getRowPreview,
 }: {
   inbox: InboxRow[];
   selectedUserId: string | null;
   showChatMobile: boolean;
   onOpen: (row: InboxRow) => void;
+
+  // ✅ allow client-side override (failed/sending)
+  getRowPreview: (row: InboxRow) => { text: string | null; time: string | null; isFailed: boolean };
 }) {
   return (
     <div
@@ -44,14 +48,21 @@ export default function ConversationsPane({
         {inbox.length === 0 ? (
           <div className="p-4 text-sm text-gray-500">No conversations.</div>
         ) : (
-          inbox.map((row) => (
-            <InboxRowItem
-              key={row.conversationId ?? `user-${row.user.id}`}
-              row={row}
-              isSelected={row.user.id === selectedUserId}
-              onOpen={() => onOpen(row)}
-            />
-          ))
+          inbox.map((row) => {
+            const preview = getRowPreview(row);
+
+            return (
+              <InboxRowItem
+                key={row.conversationId ?? `user-${row.user.id}`}
+                row={row}
+                isSelected={row.user.id === selectedUserId}
+                onOpen={() => onOpen(row)}
+                previewText={preview.text}
+                previewTime={preview.time}
+                previewFailed={preview.isFailed}
+              />
+            );
+          })
         )}
       </div>
     </div>

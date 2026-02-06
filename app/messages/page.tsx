@@ -20,6 +20,9 @@ export default function MessagePages() {
     loadOlder,
     hasMoreOlder,
     loadingOlder,
+    retryMessage,
+    deleteLocalMessage,
+    getRowPreview,
   } = useMessaging();
 
   const selectedRow = inbox.find((x) => x.user.id === selectedUserId) ?? null;
@@ -32,6 +35,7 @@ export default function MessagePages() {
           selectedUserId={selectedUserId}
           showChatMobile={showChatMobile}
           onOpen={openChatWith}
+          getRowPreview={getRowPreview}
         />
 
         <ChatPane
@@ -49,6 +53,8 @@ export default function MessagePages() {
           onLoadOlder={loadOlder}
           hasMoreOlder={hasMoreOlder}
           loadingOlder={loadingOlder}
+          onRetryMessage={retryMessage}
+          onDeleteLocalMessage={deleteLocalMessage}
         />
       </div>
     </div>

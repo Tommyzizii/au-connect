@@ -3,6 +3,8 @@ export type ChatMessage = {
   senderId: string;
   receiverId: string;
   text: string | null;
-  createdAt: string; // ISO string from API
+  createdAt: string;
+  status?: "sending" | "sent" | "failed";
 };
+
 export default ChatMessage;
