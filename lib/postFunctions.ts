@@ -43,7 +43,8 @@ export async function createPost(req: NextRequest) {
       );
     }
 
-    const { pollDuration, ...data } = parsed.data;
+    // separating certain data
+    const { pollDuration, job, ...data } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: {
@@ -74,17 +75,59 @@ export async function createPost(req: NextRequest) {
       }
     }
 
-    const post = await prisma.post.create({
-      data: {
-        userId,
-        username: user.username,
-        profilePic:
-          user.profilePic && user.profilePic.trim() !== ""
-            ? user.profilePic
-            : "/default_profile.jpg",
-        ...pollData,
-        ...data, // title, content, media, visibility and stuff
-      },
+    const post = await prisma.$transaction(async (tx) => {
+      // 🔹 Build Post payload safely
+      const basePost = await tx.post.create({
+        data: {
+          userId,
+          username: user.username,
+          profilePic:
+            user.profilePic && user.profilePic.trim() !== ""
+              ? user.profilePic
+              : "/default_profile.jpg",
+
+          postType: data.postType,
+          visibility: data.visibility,
+          title: data.title,
+          content: data.content,
+          commentsDisabled: data.commentsDisabled,
+
+          media: data.media ?? [],
+          links: data.links ?? [],
+
+          // Poll handling
+          pollOptions: data.postType === "poll" ? (data.pollOptions ?? []) : [],
+          pollVotes: data.postType === "poll" ? {} : undefined,
+          pollEndsAt:
+            data.postType === "poll" && pollDuration
+              ? new Date(Date.now() + pollDuration * 24 * 60 * 60 * 1000)
+              : undefined,
+        },
+      });
+
+      // 🔹 If job post → create JobPost record
+      if (data.postType === "job_post" && job) {
+        await tx.jobPost.create({
+          data: {
+            postId: basePost.id,
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            location: job.location,
+            locationType: job.locationType,
+            employmentType: job.employmentType,
+            salaryMin: job.salaryMin,
+            salaryMax: job.salaryMax,
+            salaryCurrency: job.salaryCurrency,
+            deadline: job.deadline ? new Date(job.deadline) : undefined,
+            jobDetails: job.jobDetails,
+            jobRequirements: job.jobRequirements,
+            applyUrl: job.applyUrl,
+            allowExternalApply: job.allowExternalApply,
+          },
+        });
+      }
+
+      return basePost;
     });
 
     if (Array.isArray(post.media)) {
@@ -172,18 +215,39 @@ export async function getPosts(req: NextRequest) {
         cursor: { id: cursor },
       }),
       orderBy: { createdAt: "desc" },
+      // get comment count
       include: {
         _count: {
           select: {
             comments: true,
           },
         },
+        // get likes and shares
         interactions: {
           where: {
             userId: userId,
             type: "LIKE",
           },
           select: { id: true },
+        },
+
+        // get job post related info
+        jobPost: {
+          select: {
+            jobTitle: true,
+            companyName: true,
+            location: true,
+            locationType: true,
+            employmentType: true,
+            salaryMin: true,
+            salaryMax: true,
+            salaryCurrency: true,
+            deadline: true,
+            jobDetails: true,
+            jobRequirements: true,
+            applyUrl: true,
+            allowExternalApply: true,
+          },
         },
       },
     });
@@ -284,7 +348,7 @@ export async function editPost(req: NextRequest) {
       );
     }
 
-    const { pollDuration, ...data } = parsed.data;
+    const { pollDuration, job, ...data } = parsed.data;
 
     // Check if post exists and belongs to user
     const existingPost = await prisma.post.findUnique({
@@ -383,17 +447,71 @@ export async function editPost(req: NextRequest) {
     }
 
     // Update the post
-    const updatedPost = await prisma.post.update({
-      where: { id: postId },
-      data: {
-        ...data,
-        // Calculate pollEndsAt if pollDuration is provided
-        ...(pollDuration && {
-          pollEndsAt: new Date(Date.now() + pollDuration * 86400000),
-        }),
-        updatedAt: new Date(),
-      },
+
+    const updatedPost = await prisma.$transaction(async (tx) => {
+      await tx.post.update({
+        where: { id: postId },
+        data: {
+          ...data,
+          ...(pollDuration && {
+            pollEndsAt: new Date(Date.now() + pollDuration * 86400000),
+          }),
+          updatedAt: new Date(),
+        },
+      });
+
+      if (data.postType === "job_post" && job) {
+        await tx.jobPost.upsert({
+          where: { postId },
+          update: {
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            location: job.location,
+            locationType: job.locationType,
+            employmentType: job.employmentType,
+            salaryMin: job.salaryMin,
+            salaryMax: job.salaryMax,
+            salaryCurrency: job.salaryCurrency,
+            deadline: job.deadline ? new Date(job.deadline) : null,
+            jobDetails: job.jobDetails,
+            jobRequirements: job.jobRequirements,
+            applyUrl: job.applyUrl,
+            allowExternalApply: job.allowExternalApply,
+          },
+          create: {
+            postId,
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            location: job.location,
+            locationType: job.locationType,
+            employmentType: job.employmentType,
+            salaryMin: job.salaryMin,
+            salaryMax: job.salaryMax,
+            salaryCurrency: job.salaryCurrency,
+            deadline: job.deadline ? new Date(job.deadline) : null,
+            jobDetails: job.jobDetails,
+            jobRequirements: job.jobRequirements,
+            applyUrl: job.applyUrl,
+            allowExternalApply: job.allowExternalApply,
+          },
+        });
+      }
+
+      // 🔥 FETCH AGAIN AFTER UPSERT
+      return tx.post.findUnique({
+        where: { id: postId },
+        include: {
+          jobPost: true,
+        },
+      });
     });
+
+    if (!updatedPost) {
+      return NextResponse.json(
+        { error: "Internal server error; fetching posts" },
+        { status: 500 },
+      );
+    }
 
     // Generate SAS tokens for media if present
     if (Array.isArray(updatedPost.media)) {

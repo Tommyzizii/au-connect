@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { MediaItem } from "@/types/Media";
 import { PostMediaWithUrl } from "@/types/PostMedia";
 import LinkEmbed from "@/types/LinkEmbeds";
+import JobDraft from "@/types/JobDraft";
 
 export interface UploadJob {
   // core
@@ -21,6 +22,9 @@ export interface UploadJob {
   // poll
   pollOptions?: string[];
   pollDuration?: number;
+
+  // job
+  job?: JobDraft;
 
   // edit-only
   isEdit?: boolean;
