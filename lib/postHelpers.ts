@@ -11,6 +11,7 @@ import {
   AZURE_STORAGE_CONTAINER_NAME,
 } from "./env";
 import { SAS_TOKEN_EXPIRE_DURATION } from "./constants";
+import JobPostDetailView from "@/app/components/JobPostDetailView";
 
 export async function getPostWithMedia(postId: string) {
   const post = await prisma.post.findUnique({
@@ -18,6 +19,7 @@ export async function getPostWithMedia(postId: string) {
     include: {
       user: true,
       interactions: true,
+      jobPost: true,
     },
   });
 
@@ -55,5 +57,6 @@ export async function getPostWithMedia(postId: string) {
     media: mediaWithUrls,
     username: post.user.username,
     profilePic: post.user.profilePic,
+    jobPost: post.jobPost,
   };
 }

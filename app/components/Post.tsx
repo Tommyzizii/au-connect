@@ -1,4 +1,3 @@
-import { ThumbsUp, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +13,8 @@ import ShareModal from "../profile/components/ShareModal";
 import { POST_DETAIL_PAGE_PATH } from "@/lib/constants";
 import PostPoll from "./PostPoll";
 import LinkEmbedPreview from "./Linkembedpreview";
+import { JobPostCard } from "./JobPostCard";
+import PostInteractionSection from "./PostInteractionSection";
 
 export default function Post({
   user,
@@ -35,6 +36,8 @@ export default function Post({
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [postMenuDropDownOpen, setPostMenuDropDownOpen] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
 
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
@@ -77,127 +80,163 @@ export default function Post({
     return "0 comments";
   };
 
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg">
-      <PostProfile
-        post={post}
-        currentUserId={user?.id}
-        onDelete={(postId: string) => {
-          deletePost.mutate(postId);
-        }}
-        onEdit={() => {
-          setEditModalOpen(true);
-        }}
-      />
-
-      {post.title && (
-        <div className="px-5 mt-2 mb-3">
-          <h2 className="text-xl font-semibold text-gray-900">{post.title}</h2>
+  let content = {};
+  if (post.postType === "job_post" && post.jobPost) {
+    content = (
+      <>
+        <div className="bg-white border border-gray-200 rounded-lg">
+          <JobPostCard
+            post={post}
+            job={post.jobPost}
+            isOwner={post.userId === user?.id}
+            hasApplied={false}
+            isSaved={false}
+            postMenuDropDownOpen={postMenuDropDownOpen}
+            setPostMenuDropDownOpen={(state: boolean) =>
+              setPostMenuDropDownOpen(state)
+            }
+            popupOpen={popupOpen}
+            setPopupOpen={(state: boolean) => setPopupOpen(state)}
+            onTitleClick={() => openPostModal(post.id, 0)}
+            onEdit={() => {
+              setEditModalOpen(true);
+            }}
+            onDelete={(postId: string) => {
+              deletePost.mutate(postId);
+            }}
+            onApply={() => window.alert("onApply yet to be implemented")}
+            onSaveToggle={() =>
+              window.alert("onSaveToggle yet to be implemented")
+            }
+            onViewApplicants={() => {
+              window.alert("onViewApplicants yet to be implemented");
+            }}
+          />
+          <PostInteractionSection
+            post={post}
+            likePending={toggleLike.isPending}
+            commentCount={numOfCommentsContent(post)}
+            onLikeClicked={() => {
+              toggleLike.mutate({
+                postId: post.id,
+                isLiked: post.isLiked ?? false,
+              });
+            }}
+            onCommentClicked={() => openPostModal(post.id, 0)}
+            onShareClicked={() => setShareModalOpen(true)}
+          />
         </div>
-      )}
-
-      {post.content && <PostText text={post.content} />}
-
-      {/* Poll UI */}
-      {post.postType === "poll" && post.pollOptions && (
-        <PostPoll
-          postId={post.id}
-          options={post.pollOptions}
-          votes={post.pollVotes}
-          endsAt={post.pollEndsAt}
+      </>
+    );
+  } else {
+    content = (
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <PostProfile
+          post={post}
           currentUserId={user?.id}
-        />
-      )}
-
-      {/* Media Grid */}
-      {containsVideosOrImages && (
-        <PostMediaGrid
-          postInfo={{
-            id: post.id,
-            username: post.username,
-            profilePic: post.profilePic,
-            createdAt: post.createdAt,
+          postMenuDropDownOpen={postMenuDropDownOpen}
+          setPostMenuDropDownOpen={(state: boolean) =>
+            setPostMenuDropDownOpen(state)
+          }
+          popupOpen={popupOpen}
+          setPopupOpen={(state: boolean) => setPopupOpen(state)}
+          onDelete={(postId: string) => {
+            deletePost.mutate(postId);
           }}
-          media={videosAndImages}
-          title={post.title ? post.title : null}
-          content={post.content}
-          isLoading={isLoading}
-          onClick={(index) => openPostModal(post.id, index)}
+          onEdit={() => {
+            setEditModalOpen(true);
+          }}
         />
-      )}
 
-      {/* File Attachments */}
-      {attachments && attachments.length > 0 && (
-        <PostAttachments
-          media={attachments}
-          addMargin={containsVideosOrImages ? true : false}
-        />
-      )}
+        {post.title && (
+          <div className="px-5 mt-2 mb-3">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {post.title}
+            </h2>
+          </div>
+        )}
 
-      {/* Link Embeds - NEW */}
-      {post.links && post.links.length > 0 && (
-        <LinkEmbedPreview links={post.links} editable={false} />
-      )}
+        {post.content && <PostText text={post.content} />}
 
-      {/* Likes, comments and share counts */}
-      <div className="px-4 py-2">
-        <div className="flex flex-row justify-end">
-          <span className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2">
-            {post.likeCount} likes
-          </span>
-          <span
-            onClick={() => openPostModal(post.id, 0)}
-            className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2"
-          >
-            {numOfCommentsContent(post)}
-          </span>
-          <span className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2">
-            {post.shareCount || 0} shares
-          </span>
-        </div>
-      </div>
+        {/* Poll UI */}
+        {post.postType === "poll" && post.pollOptions && (
+          <PostPoll
+            postId={post.id}
+            options={post.pollOptions}
+            votes={post.pollVotes}
+            endsAt={post.pollEndsAt}
+            currentUserId={user?.id}
+          />
+        )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-evenly py-4 border-t border-gray-200">
-        <button
-          className={`flex items-center gap-2 cursor-pointer disabled:opacity-50 ${
-            post.isLiked ? "text-red-600" : "text-gray-600 hover:text-red-600"
-          }`}
-          disabled={toggleLike.isPending}
-          onClick={() =>
+        {/* Media Grid */}
+        {containsVideosOrImages && (
+          <PostMediaGrid
+            postInfo={{
+              id: post.id,
+              username: post.username,
+              profilePic: post.profilePic,
+              createdAt: post.createdAt,
+            }}
+            media={videosAndImages}
+            title={post.title ? post.title : null}
+            content={post.content}
+            isLoading={isLoading}
+            onClick={(index) => openPostModal(post.id, index)}
+          />
+        )}
+
+        {/* File Attachments */}
+        {attachments && attachments.length > 0 && (
+          <PostAttachments
+            media={attachments}
+            addMargin={containsVideosOrImages ? true : false}
+          />
+        )}
+
+        {/* Link Embeds - NEW */}
+        {post.links && post.links.length > 0 && (
+          <LinkEmbedPreview links={post.links} editable={false} />
+        )}
+
+        <PostInteractionSection
+          post={post}
+          likePending={toggleLike.isPending}
+          commentCount={numOfCommentsContent(post)}
+          onLikeClicked={() => {
             toggleLike.mutate({
               postId: post.id,
               isLiked: post.isLiked ?? false,
-            })
-          }
-        >
-          <ThumbsUp
-            className={`w-5 h-5 ${post.isLiked ? "fill-red-600" : ""}`}
-          />
-          <span>{post.isLiked ? "Liked" : "Like"}</span>
-        </button>
-        <button
-          onClick={() => openPostModal(post.id, 0)}
-          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
-        >
-          <MessageCircle className="w-5 h-5" />
-          <span>Comment</span>
-        </button>
-        <button
-          onClick={() => setShareModalOpen(true)}
-          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
-        >
-          <Send className="w-5 h-5" />
-          <span>Share</span>
-        </button>
-      </div>
+            });
+          }}
+          onCommentClicked={() => openPostModal(post.id, 0)}
+          onShareClicked={() => setShareModalOpen(true)}
+        />
 
-      {/* Share Modal */}
-      <ShareModal
-        isOpen={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-        shareUrl={`${window.location.origin}${POST_DETAIL_PAGE_PATH(post.id, 0, "share")}`}
-      />
+        {/* Share Modal */}
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          shareUrl={`${window.location.origin}${POST_DETAIL_PAGE_PATH(post.id, 0, "share")}`}
+        />
+
+        {/* Edit Post Modal */}
+        {editModalOpen && (
+          <CreatePostModal
+            user={user || { id: "", username: "unknown", slug: "slug" }}
+            isOpen={editModalOpen}
+            setIsOpen={setEditModalOpen}
+            editMode={true}
+            exisistingPost={post}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {content}
 
       {/* Edit Post Modal */}
       {editModalOpen && (
@@ -209,6 +248,6 @@ export default function Post({
           exisistingPost={post}
         />
       )}
-    </div>
+    </>
   );
 }

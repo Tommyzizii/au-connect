@@ -19,6 +19,7 @@ import {
 } from "@/lib/constants";
 import PostsPage from "@/types/PostsPage";
 import LinkEmbed from "@/types/LinkEmbeds";
+import JobDraft from "@/types/JobDraft";
 
 // calls /me
 export async function fetchUser() {
@@ -77,9 +78,15 @@ export async function handleCreatePost(
   // poll params
   pollOptions?: string[],
   pollDuration?: number,
+  // job
+  job?: JobDraft,
 ) {
   try {
     const isPoll = postType === "poll";
+
+    if (postType === "job_post" && !job) {
+      throw new Error("Job post missing job payload");
+    }
 
     const res = await fetch(POST_API_PATH, {
       method: "POST",
@@ -95,11 +102,14 @@ export async function handleCreatePost(
         media: uploadedMedia,
         pollOptions: isPoll ? pollOptions : undefined,
         pollDuration: isPoll ? pollDuration : undefined,
+        ...(postType === "job_post" && job ? { job } : {}),
       }),
     });
 
     if (!res.ok) {
-      throw new Error("Failed to create post");
+      const errorText = await res.text();
+      console.error("Backend error:", errorText);
+      throw new Error(`Failed to create post: ${errorText}`);
     }
 
     const createdPost = await res.json();
@@ -222,7 +232,7 @@ export async function fetchSinglePost(postId: string) {
 
 export function usePost(postId: string) {
   return useQuery({
-    queryKey: ["post", postId],
+    queryKey: ["posts", postId],
     queryFn: () => fetchSinglePost(postId),
     enabled: !!postId, // safety
   });

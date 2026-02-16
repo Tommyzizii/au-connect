@@ -45,6 +45,7 @@ export async function getSinglePost(
         user: true,
         interactions: true,
         comments: true,
+        jobPost: true,
       },
     });
 
@@ -87,6 +88,7 @@ export async function getSinglePost(
       media: mediaWithUrls,
       username: post.user.username,
       profilePic: post.user.profilePic,
+      jobPost: post.jobPost,
     });
   } catch (error) {
     console.error("Failed to fetch post single:", error);
@@ -96,4 +98,3 @@ export async function getSinglePost(
     );
   }
 }
-

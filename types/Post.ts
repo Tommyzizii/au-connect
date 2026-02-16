@@ -1,3 +1,4 @@
+import JobDraft from "./JobDraft";
 import LinkEmbed from "./LinkEmbeds";
 
 type PostType = {
@@ -45,6 +46,7 @@ type PostType = {
   //   multipleChoice?: boolean;
   // } | null;
 
+  jobPost?: JobDraft;
   isLiked?: boolean;
   likeCount?: number;
   commentCount?: number;

@@ -35,6 +35,8 @@ model User {
   location String?
   about    String?
 
+  jobApplications JobApplication[]
+
   connections Int @default(0)
 
   experience Experience[]
@@ -110,22 +112,24 @@ model Post {
   postType   String
   visibility String?
 
-  title         String?
-  content       String
-  media         Json? // [{ url, type, name, mimetype, size }]
-  links         Json?
+  title   String?
+  content String
+  media   Json? // [{ url, type, name, mimetype, size }]
+  links   Json?
 
   commentsDisabled Boolean @default(false)
-  commentCount  Int        @default(0)
-  likeCount     Int        @default(0)
-  shareCount    Int        @default(0)
-  savedCount    Int        @default(0)
+  commentCount     Int     @default(0)
+  likeCount        Int     @default(0)
+  shareCount       Int     @default(0)
+  savedCount       Int     @default(0)
 
   // Poll fields (only when postType === "poll")
-  pollOptions    String[]  // ["Option 1", "Option 2", "Option 3"]
-  pollEndsAt     DateTime? // When poll closes
-  pollVotes      Json?     // { "0": ["userId1"], "1": ["userId2", "userId3"] }
+  pollOptions String[] // ["Option 1", "Option 2", "Option 3"]
+  pollEndsAt  DateTime? // When poll closes
+  pollVotes   Json? // { "0": ["userId1"], "1": ["userId2", "userId3"] }
   // pollSettings   Json?     // { multipleChoice: false } - template for future features
+
+  jobPost JobPost?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -238,6 +242,7 @@ model Notification {
   user     User @relation("NotificationUser", fields: [userId], references: [id])
   fromUser User @relation("NotificationFromUser", fields: [fromUserId], references: [id])
 }
+
 model Conversation {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
@@ -246,8 +251,8 @@ model Conversation {
   userBId String @db.ObjectId
 
   lastMessageAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   userALastReadAt DateTime?
   userBLastReadAt DateTime?
@@ -279,4 +284,81 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([senderId])
   @@index([receiverId, createdAt])
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+  FILLED
+}
+
+enum JobLocationType {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+model JobPost {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // 1–1 relation with Post
+  postId String @unique @db.ObjectId
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // core job info
+  jobTitle     String
+  companyName  String?
+  location     String?
+  locationType JobLocationType?
+
+  jobDetails       String?
+  jobRequirements  String[]
+
+  employmentType EmploymentType
+
+  // compensation
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String?
+
+  // logistics
+  deadline DateTime?
+  status   JobStatus @default(OPEN)
+
+  // application handling
+  applyUrl           String? // if external
+  allowExternalApply Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications JobApplication[]
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  REJECTED
+}
+
+model JobApplication {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  jobPostId String  @db.ObjectId
+  jobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+
+  applicantId String @db.ObjectId
+  applicant   User   @relation(fields: [applicantId], references: [id])
+
+  resumeLetter   String?
+  resumeUrl String
+
+  status ApplicationStatus @default(APPLIED)
+
+  createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+  @@unique([jobPostId, applicantId])
+  @@index([jobPostId])
+  @@index([applicantId])
 }

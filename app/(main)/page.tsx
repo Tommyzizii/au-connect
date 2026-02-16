@@ -58,10 +58,6 @@ export default function Home() {
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  useEffect(() => {
-    console.log(user);
-  }, [user]);
-
   // FLATTEN POSTS
   const posts: PostType[] = data?.pages.flatMap((page) => page.posts) ?? [];
 
