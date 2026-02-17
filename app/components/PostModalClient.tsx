@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchUser } from "../profile/utils/fetchfunctions";
+import { fetchUser } from "../(main)/profile/utils/fetchfunctions";
 import PostDetailsModal from "@/app/components/PostDetailsModal";
 import PostType from "@/types/Post";
 

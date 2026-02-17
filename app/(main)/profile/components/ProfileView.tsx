@@ -21,7 +21,7 @@ import User from "@/types/User";
 import Experience from "@/types/Experience";
 import Education from "@/types/Education";
 import PostType from "@/types/Post";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchProfilePosts } from "../utils/fetchProfilePosts";
@@ -30,6 +30,8 @@ import ConnectionsModal from "./ConnectionsModal";
 import { useRouter } from "next/navigation";
 
 import { useInfiniteScroll } from "../[slug]/hook/useInfiniteScroll";
+import { useQueryClient } from "@tanstack/react-query";
+import { setInvalidateProfilePosts } from "@/lib/services/uploadService";
 
 export default function ProfileView({
   user,
@@ -45,10 +47,10 @@ export default function ProfileView({
   sessionUser: Pick<User, "id" | "username" | "slug" | "profilePic"> | null;
 }) {
 
-
+  const queryClient = useQueryClient();
   const [userState, setUserState] = useState<User>(user);
   const [openContactInfo, setOpenContactInfo] = useState(false);
-  const [tab, setTab] = useState<"all" | "article" | "poll" | "videos" | "images" | "documents">("all");
+  const [tab, setTab] = useState<"all" | "article" | "poll" | "videos" | "images" | "documents" | "links">("all");
 
   const TABS: Array<{ key: typeof tab; label: string }> = [
     { key: "all", label: "All" },
@@ -57,6 +59,7 @@ export default function ProfileView({
     { key: "videos", label: "Videos" },
     { key: "images", label: "Images" },
     { key: "documents", label: "Documents" },
+    { key: "links", label: "Links" },
   ];
 
   const [openModal, setOpenModal] = useState(false);
@@ -137,6 +140,19 @@ export default function ProfileView({
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
   });
+
+  useEffect(() => {
+    // This lets uploadService.ts trigger a profile refresh after edit-with-media
+    setInvalidateProfilePosts(() => {
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+    });
+
+    return () => {
+      // optional cleanup: prevents stale callback if you navigate away
+      setInvalidateProfilePosts(() => { });
+    };
+  }, [queryClient]);
+
 
   // ✅ CHANGED: enable infinite scroll for ALL tabs (not only posts)
   const { rootRef, sentinelRef } = useInfiniteScroll({

@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Clock } from "lucide-react";
-import { useVoteInPoll } from "../profile/utils/fetchfunctions";
+import { useVoteInPoll } from "../(main)/profile/utils/fetchfunctions";
 
 interface PostPollProps {
   postId: string;

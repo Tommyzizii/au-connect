@@ -11,7 +11,7 @@ import {
 } from "@/lib/notifications";
 
 import { timeAgo } from "@/lib/timeAgo";
-import { buildSlug } from "@/app/profile/utils/buildSlug";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 
 type Notification = {
   id: string;

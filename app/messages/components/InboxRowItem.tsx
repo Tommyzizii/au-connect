@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { formatSmartStamp, formatFullDateTime } from "../util/messagingUtils";
 import type { InboxRow } from "@/types/InboxRow";
 

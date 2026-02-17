@@ -11,7 +11,7 @@ import {
   MailPlus,
 } from "lucide-react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import MessageBubble from "./MessageBubble";
 import type { ChatMessage } from "@/types/ChatMessage";
 import { useEffect, useMemo, useRef, useState } from "react";

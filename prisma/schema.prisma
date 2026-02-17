@@ -116,6 +116,7 @@ model Post {
   content String
   media   Json? // [{ url, type, name, mimetype, size }]
   mediaTypes String[] @default([])
+  hasLinks  Boolean @default(false)
   links   Json?
 
   commentsDisabled Boolean @default(false)

@@ -206,8 +206,10 @@ export function useEditPost() {
 
   return useMutation({
     mutationFn: editPost,
+
     onSuccess: (updatedPost) => {
-      // Update the post in the infinite query cache
+
+      // 1️⃣ Update FEED (["posts"])
       queryClient.setQueryData(["posts"], (oldData: any) => {
         if (!oldData?.pages) return oldData;
 
@@ -216,12 +218,29 @@ export function useEditPost() {
           pages: oldData.pages.map((page: any) => ({
             ...page,
             posts: page.posts.map((post: any) =>
-              post.id === updatedPost.id ? updatedPost : post,
+              post.id === updatedPost.id ? updatedPost : post
             ),
           })),
         };
       });
-      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+
+      // 2️⃣ Update ALL profile tabs
+      queryClient.setQueriesData(
+        { queryKey: ["profilePosts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id ? updatedPost : post
+              ),
+            })),
+          };
+        }
+      );
     },
   });
 }

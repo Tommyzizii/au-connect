@@ -6,9 +6,9 @@ import { X, Trash2, Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import User from "@/types/User";
-import ProfilePhotoCropModal from "@/app/profile/components/ProfilePhotoCropModal";
-import { uploadFile } from "@/app/profile/utils/uploadMedia";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import ProfilePhotoCropModal from "@/app/(main)/profile/components/ProfilePhotoCropModal";
+import { uploadFile } from "@/app/(main)/profile/utils/uploadMedia";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { DELETE_PROFILE_PIC_API_PATH,UPLOAD_PROFILE_PIC_API_PATH } from "@/lib/constants";
 
 type ProfilePhotoModalProps = {

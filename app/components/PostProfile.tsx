@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Ellipsis, Pencil, Trash2 } from "lucide-react";
 
 import PostType from "@/types/Post";
-import parseDate from "../profile/utils/parseDate";
-import { buildSlug } from "../profile/utils/buildSlug";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import parseDate from "../(main)/profile/utils/parseDate";
+import { buildSlug } from "../(main)/profile/utils/buildSlug";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import PopupModal from "./PopupModal";
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";

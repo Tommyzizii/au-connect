@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import PostDetailsModal from "@/app/components/PostDetailsModal";
 import { SHARE_POST_API_PATH, POST_DETAIL_PAGE_PATH } from "@/lib/constants";
 import PostType from "@/types/Post";
-import { fetchUser } from "../profile/utils/fetchfunctions";
+import { fetchUser } from "../(main)/profile/utils/fetchfunctions";
 
 export default function PostPageClient({
   post,

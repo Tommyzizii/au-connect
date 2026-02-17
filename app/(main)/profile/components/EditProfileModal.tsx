@@ -104,6 +104,24 @@ export default function EditProfileModal({
     }
   };
 
+  function formatThaiPhone(input: string) {
+    const digits = input.replace(/\D/g, "").slice(0, 10); // cap to 10 digits (TH no country code)
+    if (!digits) return "";
+
+    // If starts with 02 (Bangkok landline) often 9 digits: 02-xxx-xxxx
+    if (digits.startsWith("02")) {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+      return `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5, 9)}`;
+    }
+
+    // Mobile / other: 0xx-xxx-xxxx (10 digits)
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  }
+
+
   const readOnlyEmail = (user.email ?? "").trim();
 
   return (
@@ -167,13 +185,20 @@ export default function EditProfileModal({
         <label className="block mb-3">
           <span className="text-gray-900 text-sm font-medium">Phone Number</span>
           <input
+            type="tel"
             name="phoneNo"
             value={form.phoneNo}
-            onChange={handleChange}
-            placeholder="Your phone number"
+            onChange={(e) => {
+              const formatted = formatThaiPhone(e.target.value);
+              setForm((prev) => ({ ...prev, phoneNo: formatted }));
+            }}
+            placeholder="091-234-5678"
+            inputMode="numeric"
             className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg
-              text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+                      text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
           />
+
+
         </label>
 
         {/* CHECKBOXES */}

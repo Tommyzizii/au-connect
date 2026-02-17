@@ -25,6 +25,7 @@ type PostType = {
 
   commentsDisabled?: boolean;
   mediaTypes?: string[];
+  hasLinks?: boolean;
   media?:
     | {
         blobName: string;

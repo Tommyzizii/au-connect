@@ -1,7 +1,7 @@
 import { useUploadStore } from "@/lib/stores/uploadStore";
-import { uploadFile } from "@/app/profile/utils/uploadMedia";
-import { handleCreatePost } from "@/app/profile/utils/fetchfunctions";
-import { editPost } from "@/app/profile/utils/fetchfunctions";
+import { uploadFile } from "@/app/(main)/profile/utils/uploadMedia";
+import { handleCreatePost } from "@/app/(main)/profile/utils/fetchfunctions";
+import { editPost } from "@/app/(main)/profile/utils/fetchfunctions";
 import PostType from "@/types/Post";
 
 let invalidatePostsFn: (() => void) | null = null;
@@ -18,6 +18,22 @@ function invalidatePostsSafe() {
     console.warn("⚠️ invalidatePostsFn not set yet");
   }
 }
+
+let invalidateProfilePostsFn: (() => void) | null = null;
+
+export function setInvalidateProfilePosts(fn: () => void) {
+  invalidateProfilePostsFn = fn;
+  console.log("✅ invalidateProfilePostsFn set");
+}
+
+function invalidateProfilePostsSafe() {
+  if (invalidateProfilePostsFn) {
+    invalidateProfilePostsFn();
+  } else {
+    console.warn("⚠️ invalidateProfilePostsFn not set yet");
+  }
+}
+
 
 export async function processUpload(jobId: string) {
   // get data from the zustand state
@@ -89,6 +105,7 @@ export async function processUpload(jobId: string) {
     store.updateJobStatus(jobId, "complete");
 
     invalidatePostsSafe();
+    invalidateProfilePostsSafe();
 
     setTimeout(() => store.removeJob(jobId), 3000);
   } catch (error) {
@@ -178,6 +195,7 @@ export async function processEdit(jobId: string) {
     store.updateJobStatus(jobId, "complete");
 
     invalidatePostsSafe();
+    invalidateProfilePostsSafe();
 
     setTimeout(() => store.removeJob(jobId), 3000);
   } catch (err) {

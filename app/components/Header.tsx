@@ -25,10 +25,10 @@ import {
   MESSAGES_PAGE_PATH,
   PROFILE_PAGE_PATH,
 } from "@/lib/constants";
-import { fetchUser, handleLogout } from "../profile/utils/fetchfunctions";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { fetchUser, handleLogout } from "../(main)/profile/utils/fetchfunctions";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
-import { buildSlug } from "@/app/profile/utils/buildSlug";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 import PopupModal from "./PopupModal";
 import { fetchUnreadCount } from "@/lib/notifications";
 

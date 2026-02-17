@@ -11,16 +11,16 @@ import {
   useToggleLike,
   useDeletePost,
   useToggleSave,
-} from "../profile/utils/fetchfunctions";
+} from "../(main)/profile/utils/fetchfunctions";
 import CreatePostModal from "./CreatePostModal";
-import ShareModal from "../profile/components/ShareModal";
+import ShareModal from "../(main)/profile/components/ShareModal";
 import { POST_DETAIL_PAGE_PATH } from "@/lib/constants";
 import PostPoll from "./PostPoll";
 import LinkEmbedPreview from "./Linkembedpreview";
 import { JobPostCard } from "./JobPostCard";
 import PostInteractionSection from "./PostInteractionSection";
 import ApplyJobModal from "./ApplyJobModal";
-import { useApplyJob } from "../profile/utils/jobPostFetchFunctions";
+import { useApplyJob } from "../(main)/profile/utils/jobPostFetchFunctions";
 
 export default function Post({
   user,

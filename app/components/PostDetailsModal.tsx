@@ -11,13 +11,13 @@ import {
   createComment,
   useToggleSave,
   useTopLevelComments,
-} from "../profile/utils/fetchfunctions";
-import parseDate from "../profile/utils/parseDate";
+} from "../(main)/profile/utils/fetchfunctions";
+import parseDate from "../(main)/profile/utils/parseDate";
 import PostDetailsModalTypes from "@/types/PostDetailsModalTypes";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import JobPostDetailView from "./JobPostDetailView";
 import ApplyJobPostModal from "./ApplyJobModal";
-import { useApplyJob } from "../profile/utils/jobPostFetchFunctions";
+import { useApplyJob } from "../(main)/profile/utils/jobPostFetchFunctions";
 import { SINGLE_POST_API_PATH } from "@/lib/constants";
 
 export default function PostDetailsModal({

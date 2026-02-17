@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import parseDate from "../profile/utils/parseDate";
+import parseDate from "../(main)/profile/utils/parseDate";
 import JobDraft from "@/types/JobDraft";
 
 interface JobPostContentViewProps {

@@ -19,7 +19,7 @@ function isValidObjectId(id: string) {
   return /^[a-fA-F0-9]{24}$/.test(id);
 }
 
-type ProfileTab = "all" | "article" | "poll" | "images" | "videos" | "documents";
+type ProfileTab = "all" | "article" | "poll" | "images" | "videos" | "documents" | "links";
 
 export async function getProfilePosts(req: NextRequest, profileUserId: string) {
   try {
@@ -56,6 +56,7 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
       "images",
       "videos",
       "documents",
+      "links",
     ].includes(rawTab)
       ? rawTab
       : "all") as ProfileTab;
@@ -65,10 +66,10 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
       tab === "images"
         ? "image"
         : tab === "videos"
-        ? "video"
-        : tab === "documents"
-        ? "file"
-        : null;
+          ? "video"
+          : tab === "documents"
+            ? "file"
+            : null;
 
     // ✅ Build where clause
     const whereClause: any = {
@@ -86,6 +87,11 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
     if (mediaTypeForTab) {
       whereClause.mediaTypes = { has: mediaTypeForTab };
     }
+    // ✅ LINKS TAB FILTER
+    if (tab === "links") {
+      whereClause.hasLinks = true;
+    }
+
 
     const posts = await prisma.post.findMany({
       where: whereClause,
@@ -150,13 +156,13 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
 
         ...(post.jobPost
           ? {
-              jobPost: {
-                ...post.jobPost,
-                hasApplied,
-                applicationStatus,
-                applications: undefined, // prevent leaking extra array to client
-              },
-            }
+            jobPost: {
+              ...post.jobPost,
+              hasApplied,
+              applicationStatus,
+              applications: undefined, // prevent leaking extra array to client
+            },
+          }
           : {}),
       };
     });
@@ -184,14 +190,14 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
 
         const thumbnailUrl = mediaItem.thumbnailBlobName
           ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
-              {
-                containerName: AZURE_STORAGE_CONTAINER_NAME,
-                blobName: mediaItem.thumbnailBlobName,
-                permissions: BlobSASPermissions.parse("r"),
-                expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
-              },
-              sharedKeyCredential
-            ).toString()}`
+            {
+              containerName: AZURE_STORAGE_CONTAINER_NAME,
+              blobName: mediaItem.thumbnailBlobName,
+              permissions: BlobSASPermissions.parse("r"),
+              expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+            },
+            sharedKeyCredential
+          ).toString()}`
           : undefined;
 
         return {

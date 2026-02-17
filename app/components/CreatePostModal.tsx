@@ -16,9 +16,9 @@ import {
 
 import { useUploadStore } from "@/lib/stores/uploadStore";
 import { processUpload } from "@/lib/services/uploadService";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useDraftStore } from "@/lib/stores/draftStore";
-import { useEditPost } from "@/app/profile/utils/fetchfunctions";
+import { useEditPost } from "@/app/(main)/profile/utils/fetchfunctions";
 import { PostMediaWithUrl } from "@/types/PostMedia";
 import { processEdit } from "@/lib/services/uploadService";
 import VideoPlayer from "./VideoPlayer";

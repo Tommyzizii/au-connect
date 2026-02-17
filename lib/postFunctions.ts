@@ -95,6 +95,7 @@ export async function createPost(req: NextRequest) {
           media: data.media ?? [],
           mediaTypes: extractMediaTypes(data.media ?? []),
           links: data.links ?? [],
+          hasLinks: computeHasLinks(data.links ?? []),
 
           // Poll handling
           pollOptions: data.postType === "poll" ? (data.pollOptions ?? []) : [],
@@ -286,10 +287,10 @@ export async function getPosts(req: NextRequest) {
 
         jobPost: post.jobPost
           ? {
-              ...post.jobPost,
-              hasApplied: post.jobPost.applications.length > 0,
-              applicationStatus: post.jobPost.applications[0]?.status ?? null,
-            }
+            ...post.jobPost,
+            hasApplied: post.jobPost.applications.length > 0,
+            applicationStatus: post.jobPost.applications[0]?.status ?? null,
+          }
           : null,
       };
     });
@@ -491,6 +492,10 @@ export async function editPost(req: NextRequest) {
 
           ...(data.media !== undefined && {
             mediaTypes: extractMediaTypes(data.media),
+          }),
+          
+          ...(data.links !== undefined && {
+            hasLinks: computeHasLinks(data.links),
           }),
 
           ...(pollDuration && {
@@ -728,4 +733,16 @@ function extractMediaTypes(media: unknown): string[] {
 
   // unique
   return Array.from(new Set(types));
+}
+
+function computeHasLinks(links: unknown): boolean {
+  if (!links) return false;
+
+  // your schema stores links as Json? and you currently write links: [] by default
+  if (Array.isArray(links)) return links.length > 0;
+
+  // if someday you store an object instead of array
+  if (typeof links === "object") return Object.keys(links as any).length > 0;
+
+  return false;
 }
