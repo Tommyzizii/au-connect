@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Pencil, Camera, X } from "lucide-react";
 
 import SectionCard from "./SectionCard";
@@ -29,21 +29,36 @@ import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 import ConnectionsModal from "./ConnectionsModal";
 import { useRouter } from "next/navigation";
 
-// ✅ ADDED (Option A)
 import { useInfiniteScroll } from "../[slug]/hook/useInfiniteScroll";
 
 export default function ProfileView({
   user,
   recommendedPeople,
   isOwner,
+  sessionUserId,
+  sessionUser,
 }: {
   user: User;
   recommendedPeople: Array<number>;
   isOwner: boolean;
+  sessionUserId: string | null;
+  sessionUser: Pick<User, "id" | "username" | "slug" | "profilePic"> | null;
 }) {
+
+
   const [userState, setUserState] = useState<User>(user);
   const [openContactInfo, setOpenContactInfo] = useState(false);
-  const [tab, setTab] = useState("posts");
+  const [tab, setTab] = useState<"all" | "article" | "poll" | "videos" | "images" | "documents">("all");
+
+  const TABS: Array<{ key: typeof tab; label: string }> = [
+    { key: "all", label: "All" },
+    { key: "article", label: "Articles" },
+    { key: "poll", label: "Polls" },
+    { key: "videos", label: "Videos" },
+    { key: "images", label: "Images" },
+    { key: "documents", label: "Documents" },
+  ];
+
   const [openModal, setOpenModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openExperienceModal, setOpenExperienceModal] = useState(false);
@@ -94,6 +109,12 @@ export default function ProfileView({
   const [openConnectionsModal, setOpenConnectionsModal] = useState(false);
   const [connectionsList, setConnectionsList] = useState<any[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+
+  useEffect(() => {
+    console.log(user);
+    console.log("Session user ID:", sessionUserId);
+  }, [user, sessionUserId]);
+
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
@@ -358,9 +379,8 @@ export default function ProfileView({
                               <button
                                 onClick={handleRemoveConnection}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${
-                                  connectLoading ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
+                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${connectLoading ? "opacity-50 cursor-not-allowed" : ""
+                                  }`}
                               >
                                 {connectLoading ? "Removing..." : "Remove"}
                               </button>
@@ -374,9 +394,8 @@ export default function ProfileView({
                                 <button
                                   onClick={handleCancelRequest}
                                   disabled={connectLoading}
-                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${
-                                    connectLoading ? "opacity-50 cursor-not-allowed" : ""
-                                  }`}
+                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${connectLoading ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
                                   title="Cancel request"
                                 >
                                   {connectLoading ? "Canceling..." : "Cancel"}
@@ -386,9 +405,8 @@ export default function ProfileView({
                               <button
                                 onClick={handleConnect}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${
-                                  connectLoading ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
+                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${connectLoading ? "opacity-50 cursor-not-allowed" : ""
+                                  }`}
                               >
                                 {connectLoading ? "Sending..." : "Connect"}
                               </button>
@@ -529,20 +547,20 @@ export default function ProfileView({
                   </p>
 
                   <div className="flex gap-4 border-b pb-2">
-                    {["posts", "videos", "images", "documents"].map((t) => (
+                    {TABS.map((t) => (
                       <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={`pb-2 capitalize ${
-                          tab === t
-                            ? "border-b-2 border-blue-600 text-blue-600"
-                            : "text-gray-600"
-                        }`}
+                        key={t.key}
+                        onClick={() => setTab(t.key)}
+                        className={`pb-2 ${tab === t.key
+                          ? "border-b-2 border-blue-600 text-blue-600"
+                          : "text-gray-600"
+                          }`}
                       >
-                        {t}
+                        {t.label}
                       </button>
                     ))}
                   </div>
+
 
                   <div className="mt-4 space-y-4">
                     {isPostsLoading ? (
@@ -553,8 +571,14 @@ export default function ProfileView({
                     ) : tabPosts.length > 0 ? (
                       <>
                         {tabPosts.map((p: PostType) => (
-                          <Post user={user} key={p.id} post={p} isLoading={false} />
+                          <Post
+                            key={p.id}
+                            post={p}
+                            isLoading={false}
+                            user={sessionUser ?? undefined}
+                          />
                         ))}
+
 
                         {/* ✅ CHANGED: sentinel works for ALL tabs */}
                         {hasNextPage && <div ref={sentinelRef} className="h-1" />}
@@ -567,7 +591,7 @@ export default function ProfileView({
                       </>
                     ) : (
                       <div className="text-center text-gray-600 py-10">
-                        No {tab} yet
+                        No {tab === "all" ? "posts" : tab} yet
                       </div>
                     )}
                   </div>

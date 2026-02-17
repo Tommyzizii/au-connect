@@ -19,6 +19,8 @@ function isValidObjectId(id: string) {
   return /^[a-fA-F0-9]{24}$/.test(id);
 }
 
+type ProfileTab = "all" | "article" | "poll" | "images" | "videos" | "documents";
+
 export async function getProfilePosts(req: NextRequest, profileUserId: string) {
   try {
     const [userEmail, viewerUserId] = getHeaderUserInfo(req);
@@ -30,18 +32,8 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
       );
     }
 
-    // ✅ Normalize (double-safe)
     const normalizedProfileUserId = decodeURIComponent(profileUserId).trim();
 
-    // (optional debug)
-    console.log("PROFILE POSTS userId param:", {
-      raw: profileUserId,
-      normalized: normalizedProfileUserId,
-      len: normalizedProfileUserId.length,
-      isValid: isValidObjectId(normalizedProfileUserId),
-    });
-
-    // ✅ Validate only ONCE (use normalized)
     if (!normalizedProfileUserId || !isValidObjectId(normalizedProfileUserId)) {
       return NextResponse.json(
         {
@@ -55,11 +47,21 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
 
     const cursor = req.nextUrl.searchParams.get("cursor");
 
-    // ✅ NEW: tab support
-    const tab = (req.nextUrl.searchParams.get("tab") ?? "posts").toLowerCase();
+    // ✅ NEW: default is "all" (matches your UI)
+    const rawTab = (req.nextUrl.searchParams.get("tab") || "all").toLowerCase();
+    const tab: ProfileTab = ([
+      "all",
+      "article",
+      "poll",
+      "images",
+      "videos",
+      "documents",
+    ].includes(rawTab)
+      ? rawTab
+      : "all") as ProfileTab;
 
-    // Map UI tabs → stored media types
-    const mediaType =
+    //  mediaTypes filtering (you already have String[] field)
+    const mediaTypeForTab =
       tab === "images"
         ? "image"
         : tab === "videos"
@@ -68,11 +70,25 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
         ? "file"
         : null;
 
+    // ✅ Build where clause
+    const whereClause: any = {
+      userId: normalizedProfileUserId,
+    };
+
+    // ✅ NEW: postType filters
+    if (tab === "article") {
+      whereClause.postType = "article";
+    } else if (tab === "poll") {
+      whereClause.postType = "poll";
+    }
+
+    // ✅ Existing: media filter tabs
+    if (mediaTypeForTab) {
+      whereClause.mediaTypes = { has: mediaTypeForTab };
+    }
+
     const posts = await prisma.post.findMany({
-      where: {
-        userId: normalizedProfileUserId, // ✅ important fix
-        ...(mediaType ? { mediaTypes: { has: mediaType } } : {}),
-      },
+      where: whereClause,
       take: POSTS_PER_FETCH,
       ...(cursor && {
         skip: 1,
@@ -81,25 +97,76 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { comments: true } },
+
+        // ✅ include LIKE + SAVED so UI can show correct state
         interactions: {
-          where: { userId: viewerUserId, type: "LIKE" },
-          select: { id: true },
+          where: {
+            userId: viewerUserId,
+            type: { in: ["LIKE", "SAVED"] },
+          },
+          select: { type: true },
+        },
+
+        jobPost: {
+          select: {
+            id: true,
+            jobTitle: true,
+            companyName: true,
+            location: true,
+            locationType: true,
+            employmentType: true,
+            salaryMin: true,
+            salaryMax: true,
+            salaryCurrency: true,
+            deadline: true,
+            status: true,
+            jobDetails: true,
+            jobRequirements: true,
+            applyUrl: true,
+            allowExternalApply: true,
+
+            applications: {
+              where: { applicantId: viewerUserId },
+              select: { status: true },
+              take: 1,
+            },
+          },
         },
       },
     });
 
-    const postWithCommentCount = posts.map((post) => ({
-      ...post,
-      isLiked: post.interactions.length > 0,
-      numOfComments: post._count.comments,
-    }));
+    const postsEnriched = posts.map((post) => {
+      const isLiked = post.interactions?.some((i) => i.type === "LIKE") ?? false;
+      const isSaved = post.interactions?.some((i) => i.type === "SAVED") ?? false;
+
+      const hasApplied = (post.jobPost?.applications?.length ?? 0) > 0;
+      const applicationStatus = post.jobPost?.applications?.[0]?.status;
+
+      return {
+        ...post,
+        isLiked,
+        isSaved,
+        numOfComments: post._count.comments,
+
+        ...(post.jobPost
+          ? {
+              jobPost: {
+                ...post.jobPost,
+                hasApplied,
+                applicationStatus,
+                applications: undefined, // prevent leaking extra array to client
+              },
+            }
+          : {}),
+      };
+    });
 
     const sharedKeyCredential = new StorageSharedKeyCredential(
       AZURE_STORAGE_ACCOUNT_NAME,
       AZURE_STORAGE_ACCOUNT_KEY
     );
 
-    const postsWithMedia = postWithCommentCount.map((post) => {
+    const postsWithMedia = postsEnriched.map((post) => {
       if (!post.media || !Array.isArray(post.media)) return post;
 
       const media = post.media as PostMedia[];

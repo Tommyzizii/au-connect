@@ -174,6 +174,7 @@ export function useDeletePost() {
           })),
         };
       });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
     },
   });
 }
@@ -220,6 +221,7 @@ export function useEditPost() {
           })),
         };
       });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
     },
   });
 }
@@ -366,6 +368,7 @@ export function useToggleLike() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
     },
   });
 }
@@ -454,6 +457,7 @@ export function useVoteInPoll(postId: string, currentUserId: string) {
     onError: (_err, _vars, ctx) => {
       if (ctx?.previousPosts) {
         queryClient.setQueryData(["posts"], ctx.previousPosts);
+        queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
       }
     },
   });
@@ -541,6 +545,7 @@ export function useToggleSave() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
     },
   });
 }
