@@ -36,6 +36,7 @@ export default function ApplicantDetailClient({
   );
   const updateStatus = useUpdateApplicationStatus();
 
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -87,7 +88,7 @@ export default function ApplicantDetailClient({
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+          className="cursor-pointer inline-flex items-center gap-2 mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back

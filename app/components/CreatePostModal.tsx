@@ -29,6 +29,7 @@ import LinkEmbed from "@/types/LinkEmbeds";
 import CreatePostModalPropTypes from "@/types/CreatePostModalPropTypes";
 import { MediaType, MediaItem } from "@/types/Media";
 import JobDraft from "@/types/JobDraft";
+import { validateJobDraft } from "../profile/utils/validateJobPosts";
 
 const getMediaType = (file: File): MediaType => {
   if (file.type.startsWith("image/")) return "image";
@@ -61,6 +62,7 @@ const EMPTY_JOB_DRAFT: JobDraft = {
   salaryMin: undefined,
   salaryMax: undefined,
   salaryCurrency: "USD",
+  status: "OPEN",
   deadline: "",
   applyUrl: "",
   allowExternalApply: false,
@@ -100,6 +102,7 @@ export default function CreatePostModal({
 
   // Job post states
   const [jobDraft, setJobDraft] = useState<JobDraft>(EMPTY_JOB_DRAFT);
+  const [jobErrors, setJobErrors] = useState<Record<string, string>>({});
 
   const editPostMutation = useEditPost();
 
@@ -164,6 +167,7 @@ export default function CreatePostModal({
           salaryMin: job.salaryMin ?? undefined,
           salaryMax: job.salaryMax ?? undefined,
           salaryCurrency: job.salaryCurrency || "USD",
+          status: job.status || "OPEN",
           deadline: job.deadline || "",
           jobDetails: job.jobDetails || "",
           jobRequirements: job.jobRequirements || [],
@@ -280,6 +284,16 @@ export default function CreatePostModal({
   const handleSubmitPost = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+
+    if (postType === "job_post") {
+      const errors = validateJobDraft(jobDraft);
+
+      if (Object.keys(errors).length > 0) {
+        setJobErrors(errors);
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     try {
       if (editMode && exisistingPost) {
@@ -579,7 +593,11 @@ export default function CreatePostModal({
           </div>
 
           {postType === "job_post" && (
-            <JobPostCreationSection value={jobDraft} onChange={setJobDraft} />
+            <JobPostCreationSection
+              value={jobDraft}
+              onChange={setJobDraft}
+              errors={jobErrors}
+            />
           )}
 
           {/* input for title */}

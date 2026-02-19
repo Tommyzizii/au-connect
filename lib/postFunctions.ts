@@ -115,6 +115,8 @@ export async function createPost(req: NextRequest) {
             location: job.location,
             locationType: job.locationType,
             employmentType: job.employmentType,
+            positionsAvailable: job.positionsAvailable ?? 1,
+            status: job.status ?? "OPEN",
             salaryMin: job.salaryMin,
             salaryMax: job.salaryMax,
             salaryCurrency: job.salaryCurrency,
@@ -245,14 +247,20 @@ export async function getPosts(req: NextRequest) {
             location: true,
             locationType: true,
             employmentType: true,
+
+            positionsAvailable: true,
+            status: true,
+
             salaryMin: true,
             salaryMax: true,
             salaryCurrency: true,
             deadline: true,
+
             jobDetails: true,
             jobRequirements: true,
             applyUrl: true,
             allowExternalApply: true,
+
             applications: {
               where: {
                 applicantId: userId,
@@ -260,6 +268,12 @@ export async function getPosts(req: NextRequest) {
               select: {
                 id: true,
                 status: true,
+              },
+            },
+
+            _count: {
+              select: {
+                applications: true,
               },
             },
           },
@@ -286,6 +300,12 @@ export async function getPosts(req: NextRequest) {
         jobPost: post.jobPost
           ? {
               ...post.jobPost,
+
+              positionsFilled: post.jobPost._count.applications,
+              remainingPositions:
+                post.jobPost.positionsAvailable -
+                post.jobPost._count.applications,
+
               hasApplied: post.jobPost.applications.length > 0,
               applicationStatus: post.jobPost.applications[0]?.status ?? null,
             }
@@ -503,6 +523,8 @@ export async function editPost(req: NextRequest) {
             location: job.location,
             locationType: job.locationType,
             employmentType: job.employmentType,
+            positionsAvailable: job.positionsAvailable,
+            status: job.status,
             salaryMin: job.salaryMin,
             salaryMax: job.salaryMax,
             salaryCurrency: job.salaryCurrency,
@@ -519,6 +541,9 @@ export async function editPost(req: NextRequest) {
             location: job.location,
             locationType: job.locationType,
             employmentType: job.employmentType,
+            positionsAvailable: job.positionsAvailable ?? 1,
+            positionsFilled: job.positionsFilled ?? 0,
+            status: job.status ?? "OPEN",
             salaryMin: job.salaryMin,
             salaryMax: job.salaryMax,
             salaryCurrency: job.salaryCurrency,
@@ -645,10 +670,16 @@ export async function deletePost(req: NextRequest) {
       );
     }
 
-    // Check if post exists and belongs to user
+    // Check ownership + get media
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { userId: true, media: true },
+      select: {
+        userId: true,
+        media: true,
+        jobPost: {
+          select: { id: true },
+        },
+      },
     });
 
     if (!post) {
@@ -662,41 +693,83 @@ export async function deletePost(req: NextRequest) {
       );
     }
 
-    // Delete associated blobs from Azure Storage
+    // -------------------------
+    // Delete Azure blobs first
+    // -------------------------
+
     if (post.media && Array.isArray(post.media)) {
       const media = post.media as PostMedia[];
+
       const sharedKeyCredential = new StorageSharedKeyCredential(
         AZURE_STORAGE_ACCOUNT_NAME,
         AZURE_STORAGE_ACCOUNT_KEY,
       );
+
       const blobServiceClient = new BlobServiceClient(
         `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
         sharedKeyCredential,
       );
+
       const containerClient = blobServiceClient.getContainerClient(
         AZURE_STORAGE_CONTAINER_NAME,
       );
 
-      // Delete all blobs and thumbnails
-      for (const mediaItem of media) {
-        try {
-          // Delete main blob
-          await containerClient.deleteBlob(mediaItem.blobName);
+      await Promise.all(
+        media.map(async (mediaItem) => {
+          try {
+            await containerClient.deleteBlob(mediaItem.blobName);
 
-          // Delete thumbnail if exists
-          if (mediaItem.thumbnailBlobName) {
-            await containerClient.deleteBlob(mediaItem.thumbnailBlobName);
+            if (mediaItem.thumbnailBlobName) {
+              await containerClient.deleteBlob(mediaItem.thumbnailBlobName);
+            }
+          } catch (err) {
+            console.error("Blob delete failed:", err);
           }
-        } catch (error) {
-          console.error(`Failed to delete blob ${mediaItem.blobName}:`, error);
-          // Continue deleting other blobs even if one fails
-        }
-      }
+        }),
+      );
     }
 
-    // Delete the post (cascade will handle PostInteractions and Comments)
-    await prisma.post.delete({
-      where: { id: postId },
+    // -------------------------
+    // DATABASE DELETE TRANSACTION
+    // -------------------------
+
+    await prisma.$transaction(async (tx) => {
+      // delete job applications
+      if (post.jobPost) {
+        await tx.jobApplication.deleteMany({
+          where: { jobPostId: post.jobPost.id },
+        });
+
+        await tx.jobPost.delete({
+          where: { id: post.jobPost.id },
+        });
+      }
+
+      // delete replies first
+      await tx.comment.deleteMany({
+        where: {
+          postId,
+          parentId: { not: null },
+        },
+      });
+
+      // delete parent comments
+      await tx.comment.deleteMany({
+        where: {
+          postId,
+          parentId: null,
+        },
+      });
+
+      // delete interactions
+      await tx.postInteraction.deleteMany({
+        where: { postId },
+      });
+
+      // delete post
+      await tx.post.delete({
+        where: { id: postId },
+      });
     });
 
     return NextResponse.json(
@@ -704,7 +777,8 @@ export async function deletePost(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error deleting post:", error);
+    console.error("Delete post error:", error);
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

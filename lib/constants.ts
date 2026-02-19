@@ -62,6 +62,12 @@ export const JOB_APPLICATION_DETAIL_API_PATH = (postId: string, applicationId: s
   BASE_API_PATH + `/posts/${postId}/applications/${applicationId}` 
 export const SAVE_POST_API_PATH = (postId: string) =>
   BASE_API_PATH + `/posts/${postId}/save`;
+export const JOB_POST_API_PATH = (postId: string) => 
+  BASE_API_PATH + `/job-posts/${postId}`
+export const CLOSE_JOB_POST_API_PATH = (postId: string) =>
+  BASE_API_PATH + `/job-posts/${postId}/close`
+export const REOPEN_JOB_POST_API_PATH = (postId: string) =>
+  BASE_API_PATH + `/job-posts/${postId}/reopen`
 
 export const LIKE_POST_API_PATH = (postId: string) =>
   BASE_API_PATH + `/posts/${postId}/like`;

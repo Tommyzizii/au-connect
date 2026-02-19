@@ -1,6 +1,9 @@
 import {
+  CLOSE_JOB_POST_API_PATH,
   JOB_APPLICATION_API_PATH,
   JOB_APPLICATION_DETAIL_API_PATH,
+  JOB_POST_API_PATH,
+  REOPEN_JOB_POST_API_PATH,
   VIEW_JOB_APPLICATIONS_API_PATH,
 } from "@/lib/constants";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -174,6 +177,88 @@ export function useUpdateApplicationStatus() {
       });
       queryClient.invalidateQueries({
         queryKey: ["applicants", variables.postId],
+      });
+    },
+  });
+}
+
+export type JobPostDetail = {
+  id: string;
+  title: string;
+  companyName: string;
+  status: "OPEN" | "CLOSED";
+  applicantCount: number;
+};
+
+export function useJobPost(postId: string) {
+  return useQuery({
+    queryKey: ["jobPostDetail", postId],
+
+    queryFn: async (): Promise<JobPostDetail> => {
+      const res = await fetch(JOB_POST_API_PATH(postId));
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch job post");
+      }
+
+      return res.json();
+    },
+
+    enabled: !!postId,
+  });
+}
+
+export function useCloseJobPost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (postId: string) => {
+      const res = await fetch(CLOSE_JOB_POST_API_PATH(postId), {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to close job");
+      }
+
+      return res.json();
+    },
+
+    onSuccess: (_, postId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["jobPostDetail", postId],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["applicants", postId],
+      });
+    },
+  });
+}
+
+export function useReopenJobPost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (postId: string) => {
+      const res = await fetch(REOPEN_JOB_POST_API_PATH(postId), {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to reopen job");
+      }
+
+      return res.json();
+    },
+
+    onSuccess: (_, postId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["jobPostDetail", postId],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["applicants", postId],
       });
     },
   });

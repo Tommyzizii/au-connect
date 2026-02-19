@@ -1,5 +1,10 @@
 "use client";
-import { useApplicants } from "../profile/utils/jobPostFetchFunctions";
+import {
+  useApplicants,
+  useCloseJobPost,
+  useJobPost,
+  useReopenJobPost,
+} from "../profile/utils/jobPostFetchFunctions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowLeft, Search, MapPin } from "lucide-react";
@@ -11,28 +16,34 @@ const STATUS_STYLES = {
   REJECTED: "bg-red-50 text-red-700 border-red-200",
 };
 
-export default function ApplicantsPageClient({
-  postId,
-}: {
-  postId: string;
-}) {
+export default function ApplicantsPageClient({ postId }: { postId: string }) {
   const router = useRouter();
+  const { data: jobPost } = useJobPost(postId);
   const { data, isLoading } = useApplicants(postId);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("ALL");
+  const closeJobMutation = useCloseJobPost();
+  const reopenJobMutation = useReopenJobPost();
 
   const filtered =
     data?.filter((app) => {
       const matchesSearch =
-        app.applicant.username
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        app.applicant.email
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        app.applicant.username.toLowerCase().includes(search.toLowerCase()) ||
+        app.applicant.email.toLowerCase().includes(search.toLowerCase());
       const matchesFilter = filter === "ALL" || app.status === filter;
       return matchesSearch && matchesFilter;
     }) || [];
+
+  const handleCloseJob = () => {
+    console.log("Close job clicked");
+    closeJobMutation.mutate(postId);
+  };
+
+  const handleReopenJob = () => {
+    reopenJobMutation.mutate(postId);
+  };
+
+  if (!jobPost) return;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,15 +57,64 @@ export default function ApplicantsPageClient({
           Back to Job
         </button>
 
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between">
+            {/* Left */}
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {jobPost.title}
+              </h2>
+
+              <div className="flex items-center gap-3 mt-2">
+                {/* Status badge */}
+                <span
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
+                    jobPost.status === "OPEN"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-gray-100 text-gray-700 border-gray-200"
+                  }`}
+                >
+                  {jobPost.status}
+                </span>
+
+                {/* Applicants count */}
+                <span className="text-sm text-gray-500">
+                  {data?.length ?? 0} applicants
+                </span>
+              </div>
+            </div>
+
+            {/* Right side buttons */}
+            <div>
+              {jobPost.status === "OPEN" && (
+                <button
+                  onClick={handleCloseJob}
+                  className="cursor-pointer px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+                >
+                  Close Job
+                </button>
+              )}
+
+              {jobPost.status === "CLOSED" && (
+                <button
+                  onClick={handleReopenJob}
+                  disabled={reopenJobMutation.isPending}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  {reopenJobMutation.isPending ? "Reopening..." : "Reopen Job"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Main Container */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Header */}
-          <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-8 py-6">
+          <div className="border-b border-gray-200 bg-linear-to-r from-gray-50 to-white px-8 py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Applicants
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900">Applicants</h1>
                 <p className="text-sm text-gray-500 mt-1">
                   Manage and review job applications
                 </p>
@@ -124,7 +184,12 @@ export default function ApplicantsPageClient({
                   <div
                     key={application.id}
                     onClick={() =>
-                        router.push(JOB_APPLICATION_DETAIL_PAGE_PATH(postId, application.id))
+                      router.push(
+                        JOB_APPLICATION_DETAIL_PAGE_PATH(
+                          postId,
+                          application.id,
+                        ),
+                      )
                     }
                     className="group relative border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 cursor-pointer transition-all duration-200"
                   >

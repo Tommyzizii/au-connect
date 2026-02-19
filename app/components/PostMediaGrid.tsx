@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import PostDetailsModal from "./PostDetailsModal";
 import VideoPlayer from "./VideoPlayer";
 
 export default function PostMediaGrid({

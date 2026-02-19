@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getHeaderUserInfo } from "@/lib/authFunctions";
+
 import {
-  BlobServiceClient,
   StorageSharedKeyCredential,
   BlobSASPermissions,
   generateBlobSASQueryParameters,
@@ -14,12 +14,12 @@ export async function GET(
 ) {
   try {
     const [userEmail, userId] = getHeaderUserInfo(req);
+
     if (!userEmail || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { postId, applicationId } = await context.params;
-    console.log(`postId: ${postId}, applicationId: ${applicationId}`);
 
     // Verify ownership
     const post = await prisma.post.findUnique({
@@ -31,8 +31,6 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    console.log("TEST 1");
-    // Fetch application with applicant details
     const application = await prisma.jobApplication.findUnique({
       where: { id: applicationId },
       include: {
@@ -64,52 +62,66 @@ export async function GET(
       );
     }
 
-    if (!application || application.jobPost.postId !== postId) {
+    if (application.jobPost.postId !== postId) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
-    console.log("TEST 2");
 
-    // Generate SAS URL for resume
+    // Azure credential
     const credential = new StorageSharedKeyCredential(
       process.env.AZURE_STORAGE_ACCOUNT_NAME!,
       process.env.AZURE_STORAGE_ACCOUNT_KEY!,
     );
 
-    const blobServiceClient = new BlobServiceClient(
-      `https://${process.env.AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
-      credential,
-    );
+    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME!;
 
-    const containerClient = blobServiceClient.getContainerClient(
-      process.env.AZURE_STORAGE_CONTAINER_NAME!,
-    );
+    function generateBlobUrl(blobName: string) {
+      const sas = generateBlobSASQueryParameters(
+        {
+          containerName,
+          blobName,
+          permissions: BlobSASPermissions.parse("r"),
+          startsOn: new Date(),
+          expiresOn: new Date(Date.now() + 3600 * 1000),
 
-    const blobClient = containerClient.getBlobClient(
-      application.resumeBlobName,
-    );
+          contentDisposition: "inline",
+          contentType: "application/pdf",
+        },
+        credential,
+      ).toString();
 
-    console.log("TEST 3");
-    // Generate SAS token (valid for 1 hour)
-    const sasToken = generateBlobSASQueryParameters(
-      {
-        containerName: process.env.AZURE_STORAGE_CONTAINER_NAME!,
-        blobName: application.resumeBlobName,
-        permissions: BlobSASPermissions.parse("r"), // read only
-        startsOn: new Date(),
-        expiresOn: new Date(new Date().valueOf() + 3600 * 1000), // 1 hour
-      },
-      credential,
-    ).toString();
+      return `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}?${sas}`;
+    }
 
-    const resumeUrl = `${blobClient.url}?${sasToken}`;
-    console.log("TEST 4");
+    // Resume URL (always blob)
+    const resumeUrl = generateBlobUrl(application.resumeBlobName);
+
+    // ProfilePic logic
+    let profilePicUrl = null;
+
+    if (application.applicant.profilePic) {
+      const pic = application.applicant.profilePic;
+
+      if (pic.startsWith("http://") || pic.startsWith("https://")) {
+        // External image → use as-is
+        profilePicUrl = pic;
+      } else {
+        // Blob image → generate SAS
+        profilePicUrl = generateBlobUrl(pic);
+      }
+    }
 
     return NextResponse.json({
       ...application,
       resumeUrl,
+      applicant: {
+        ...application.applicant,
+        profilePic: profilePicUrl,
+      },
     });
   } catch (err) {
     console.error("Error fetching application:", err);
+
     return NextResponse.json(
       { error: "Failed to fetch application" },
       { status: 500 },
@@ -123,15 +135,18 @@ export async function PATCH(
 ) {
   try {
     const [userEmail, userId] = getHeaderUserInfo(req);
+
     if (!userEmail || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { postId, applicationId } = await context.params;
-    const { status } = await req.json();
 
-    if (!["APPLIED", "SHORTLISTED", "REJECTED"].includes(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    const body = await req.json();
+    const { status } = body;
+
+    if (!status) {
+      return NextResponse.json({ error: "Status required" }, { status: 400 });
     }
 
     // Verify ownership
@@ -144,7 +159,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update application status
+    // Update application
     const updated = await prisma.jobApplication.update({
       where: { id: applicationId },
       data: { status },
@@ -153,8 +168,9 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (err) {
     console.error("Error updating application:", err);
+
     return NextResponse.json(
-      { error: "Failed to update application" },
+      { error: "Failed to update application status" },
       { status: 500 },
     );
   }

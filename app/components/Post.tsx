@@ -1,5 +1,5 @@
 'use client'
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PostType from "@/types/Post";
@@ -32,10 +32,6 @@ export default function Post({
   post?: PostType;
   isLoading: boolean;
 }) {
-  if (!post) {
-    return null;
-  }
-
   const router = useRouter();
   const openPostModal = (postId: string, index: number) => {
     router.push(POST_DETAIL_PAGE_PATH(postId, index));

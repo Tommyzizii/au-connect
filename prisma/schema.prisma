@@ -134,8 +134,8 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interactions PostInteraction[]
   comments     Comment[]
+  interactions PostInteraction[]
 }
 
 model Comment {
@@ -156,12 +156,14 @@ model Comment {
 
   // relation to post
   postId String @db.ObjectId
-  post   Post   @relation(fields: [postId], references: [id])
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   // replies (self-relation)
-  parentId String?   @db.ObjectId
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies  Comment[] @relation("CommentReplies")
+  parentId String? @db.ObjectId
+
+  depth   Int       @default(0)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies Comment[] @relation("CommentReplies")
 }
 
 enum RequestStatus {
@@ -311,10 +313,13 @@ model JobPost {
   location     String?
   locationType JobLocationType?
 
-  jobDetails       String?
-  jobRequirements  String[]
+  jobDetails      String?
+  jobRequirements String[]
 
   employmentType EmploymentType
+
+  positionsAvailable Int @default(1) // 
+  positionsFilled    Int @default(0)
 
   // compensation
   salaryMin      Int?
@@ -352,13 +357,13 @@ model JobApplication {
 
   resumeLetter   String?
   expectedSalary Int?
-  availability String?
+  availability   String?
   resumeBlobName String
 
   status ApplicationStatus @default(APPLIED)
 
   createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@unique([jobPostId, applicantId])
   @@index([jobPostId])

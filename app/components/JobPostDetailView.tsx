@@ -3,6 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import parseDate from "../profile/utils/parseDate";
 import JobDraft from "@/types/JobDraft";
+import { useEffect } from "react";
 
 interface JobPostContentViewProps {
   jobData: JobDraft;
@@ -15,6 +16,7 @@ interface JobPostContentViewProps {
   onSave?: () => void;
   onViewApplicants?: () => void;
 }
+
 
 const employmentTypeLabels = {
   FULL_TIME: "Full-time",
@@ -46,6 +48,9 @@ export default function JobPostDetailView({
   onSave,
   onViewApplicants,
 }: JobPostContentViewProps) {
+useEffect(() => {
+  console.log("jobData:\n", jobData);
+}, [jobData])
   const formatSalary = () => {
     const currency = jobData.salaryCurrency || "USD";
     if (jobData.salaryMin && jobData.salaryMax) {
@@ -58,7 +63,10 @@ export default function JobPostDetailView({
   };
 
   const salary = formatSalary();
-  const isJobActive = jobData.status === "OPEN";
+  const now = new Date();
+  const isDeadlinePassed = jobData.deadline && new Date(jobData.deadline) < now;
+  const displayStatus =
+    jobData.status === "OPEN" && isDeadlinePassed ? "CLOSED" : jobData.status;
   const requirements = jobData.jobRequirements || [];
 
   return (
@@ -83,10 +91,10 @@ export default function JobPostDetailView({
 
               <span
                 className={`shrink-0 px-3 py-1 text-xs font-semibold rounded-full border ${
-                  statusColors[jobData.status]
+                  statusColors[displayStatus]
                 }`}
               >
-                {jobData.status}
+                {displayStatus}
               </span>
             </div>
 
@@ -123,6 +131,24 @@ export default function JobPostDetailView({
                   </span>
                   <p className="text-neutral-900 font-medium">
                     {employmentTypeLabels[jobData.employmentType]}
+                  </p>
+                </div>
+              )}
+
+              {jobData.positionsAvailable != null && (
+                <div className="space-y-1">
+                  <span className="text-xs uppercase tracking-wide text-neutral-400">
+                    Positions
+                  </span>
+
+                  <p className="text-neutral-900 font-medium">
+                    {jobData.positionsAvailable} total
+                    {typeof jobData.positionsFilled === "number" && (
+                      <> • {jobData.positionsFilled} filled</>
+                    )}
+                    {typeof jobData.remainingPositions === "number" && (
+                      <> • {jobData.remainingPositions} remaining</>
+                    )}
                   </p>
                 </div>
               )}

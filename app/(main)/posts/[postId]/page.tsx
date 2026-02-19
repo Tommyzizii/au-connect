@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import PostPageClient from "@/app/components/PostPageClient";
 import { getPostWithMedia } from "@/lib/postHelpers";
-import { getHeaderUserInfo } from "@/lib/authFunctions";
 import getCurrentUser from "@/lib/getCurrentUser";
 
 export default async function PostPage({

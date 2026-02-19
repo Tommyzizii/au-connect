@@ -79,6 +79,15 @@ export async function getSinglePost(
             jobRequirements: true,
             applyUrl: true,
             allowExternalApply: true,
+
+            positionsAvailable: true,
+
+            _count: {
+              select: {
+                applications: true,
+              },
+            },
+
             applications: {
               where: {
                 applicantId: userId,
@@ -138,6 +147,12 @@ export async function getSinglePost(
     const jobPostWithStatus = post.jobPost
       ? {
           ...post.jobPost,
+
+          positionsFilled: post.jobPost._count.applications,
+
+          remainingPositions:
+            post.jobPost.positionsAvailable - post.jobPost._count.applications,
+
           hasApplied: post.jobPost.applications.length > 0,
           applicationStatus: post.jobPost.applications[0]?.status ?? null,
         }
