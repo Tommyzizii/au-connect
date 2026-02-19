@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import CommentInput from "./CommentInput";
 import CommentItem from "./CommentItem";
 import CommentType from "@/types/CommentType";
 import MediaCarousel from "./MediaCarousel";
-import PostContentSection from "./PostContentSection";
 import {
   createComment,
   useToggleSave,
@@ -18,7 +18,10 @@ import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMedia
 import JobPostDetailView from "./JobPostDetailView";
 import ApplyJobPostModal from "./ApplyJobModal";
 import { useApplyJob } from "../(main)/profile/utils/jobPostFetchFunctions";
-import { SINGLE_POST_API_PATH } from "@/lib/constants";
+import {
+  JOB_APPLICANTS_PAGE_PATH,
+  SINGLE_POST_API_PATH,
+} from "@/lib/constants";
 
 export default function PostDetailsModal({
   currentUserId,
@@ -29,7 +32,8 @@ export default function PostDetailsModal({
   clickedIndex,
   onClose,
 }: PostDetailsModalTypes) {
-  const { data: post } = useQuery({
+  const router = useRouter();
+  const { data: post, isLoading: postIsLoading } = useQuery({
     queryKey: ["post", postInfo.id],
     queryFn: async () => {
       const res = await fetch(SINGLE_POST_API_PATH(postInfo.id));
@@ -38,10 +42,6 @@ export default function PostDetailsModal({
     },
     initialData: postInfo,
   });
-
-  useEffect(() => {
-    console.log("fetched post:\n", post);
-  }, [post]);
 
   const [applyJobModalOpen, setApplyJobModalOpen] = useState(false);
   const saveMutation = useToggleSave();
@@ -84,22 +84,90 @@ export default function PostDetailsModal({
   } = useTopLevelComments(postInfo.id, commentsDisabled);
 
   const comments: CommentType[] =
-    data?.pages.flatMap((page) => page.comments) ?? [];
+    data?.pages
+      .flatMap((page) => page.comments)
+      .filter(
+        (comment, index, self) =>
+          index === self.findIndex((c) => c.id === comment.id),
+      ) ?? [];
+
+  // Drop-in replacement for the createCommentMutation in PostDetailsModal.tsx
 
   const createCommentMutation = useMutation({
     mutationFn: createComment,
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["comments", variables.postId],
-      });
 
-      if (variables.parentCommentId) {
-        queryClient.invalidateQueries({
-          queryKey: ["replies", variables.parentCommentId],
-        });
+    onSuccess: (newComment, variables) => {
+      // ── TOP LEVEL COMMENT ──────────────────────────────────────────────────
+      if (!variables.parentCommentId) {
+        queryClient.setQueryData(
+          ["comments", variables.postId],
+          (oldData: any) => {
+            if (!oldData) return oldData;
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page: any, index: number) =>
+                index === 0
+                  ? { ...page, comments: [newComment, ...page.comments] }
+                  : page,
+              ),
+            };
+          },
+        );
+        return;
       }
+
+      // ── REPLY ──────────────────────────────────────────────────────────────
+      // 1. Append the new reply into the replies cache for this parent comment
+      queryClient.setQueryData(
+        ["replies", variables.postId, variables.parentCommentId],
+        (oldData: any) => {
+          if (!oldData) {
+            // Replies were never fetched yet — seed the cache from scratch
+            // so the panel can open and show the new reply immediately
+            return {
+              pages: [{ replies: [newComment], nextCursor: null }],
+              pageParams: [null],
+            };
+          }
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any, index: number) =>
+              index === 0
+                ? { ...page, replies: [...page.replies, newComment] }
+                : page,
+            ),
+          };
+        },
+      );
+
+      // 2. Bump replyCount on the parent comment in the top-level comments cache
+      //    so the "View replies (n)" button appears / shows the correct number.
+      queryClient.setQueryData(
+        ["comments", variables.postId],
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              comments: page.comments.map((comment: any) =>
+                comment.id === variables.parentCommentId
+                  ? { ...comment, replyCount: (comment.replyCount ?? 0) + 1 }
+                  : comment,
+              ),
+            })),
+          };
+        },
+      );
     },
   });
+
+  const shouldShowLeft =
+    (isJobPost && postInfo.jobPost) || postInfo.postType === "poll" || hasMedia;
+
+  if (postIsLoading) {
+    return <PostDetailsSkeleton onClose={onClose} />;
+  }
 
   return (
     <div
@@ -125,59 +193,92 @@ export default function PostDetailsModal({
           }}
         >
           {/* LEFT SIDE */}
-          <div
-            style={{
-              width: "65%",
-              minWidth: 0,
-              flexShrink: 0,
-              display: "flex",
-              minHeight: 0,
-            }}
-          >
-            {isJobPost && postInfo.jobPost ? (
-              <JobPostDetailView
-                jobData={postInfo.jobPost}
-                isOwner={postInfo.userId === currentUserId}
-                hasApplied={post.jobPost.hasApplied}
-                isSaved={post.isSaved}
-                onApply={() =>
-                  handleJobApply(
-                    postInfo.jobPost?.allowExternalApply ?? false,
-                    postInfo.jobPost?.applyUrl ?? "",
-                  )
-                }
-              />
-            ) : postInfo.postType === "poll" ? (
-              <MediaCarousel
-                postType={postInfo.postType}
-                pollOptions={postInfo.pollOptions ?? []}
-                pollVotes={postInfo.pollVotes}
-                pollEndsAt={postInfo.pollEndsAt}
-                mediaList={mediaList}
-                clickedIndex={clickedIndex}
-                onClose={onClose}
-              />
-            ) : hasMedia ? (
-              <MediaCarousel
-                postType={postInfo.postType ?? "media"}
-                mediaList={mediaList}
-                clickedIndex={clickedIndex}
-                onClose={onClose}
-              />
-            ) : (
-              <div className="p-6">
-                <PostContentSection title={title} content={content} />
-              </div>
-            )}
-          </div>
+          {shouldShowLeft && (
+            <div
+              style={{
+                width: "65%",
+                minWidth: 0,
+                flexShrink: 0,
+                display: "flex",
+                minHeight: 0,
+                backgroundColor: "#000", // optional, matches media background style
+              }}
+            >
+              {isJobPost && postInfo.jobPost ? (
+                <JobPostDetailView
+                  jobData={postInfo.jobPost}
+                  isOwner={postInfo.userId === currentUserId}
+                  hasApplied={post.jobPost?.hasApplied}
+                  applicationStatus={post.jobPost?.applicationStatus}
+                  isSaved={post.isSaved}
+                  onApply={() =>
+                    handleJobApply(
+                      postInfo.jobPost?.allowExternalApply ?? false,
+                      postInfo.jobPost?.applyUrl ?? "",
+                    )
+                  }
+                  onSave={() => saveMutation.mutate(post.id)}
+                  onViewApplicants={() => {
+                    router.push(JOB_APPLICANTS_PAGE_PATH(post.id));
+                  }}
+                />
+              ) : postInfo.postType === "poll" ? (
+                <MediaCarousel
+                  postType={postInfo.postType}
+                  pollOptions={postInfo.pollOptions ?? []}
+                  pollVotes={postInfo.pollVotes}
+                  pollEndsAt={postInfo.pollEndsAt}
+                  mediaList={mediaList}
+                  clickedIndex={clickedIndex}
+                  onClose={onClose}
+                />
+              ) : hasMedia ? (
+                <MediaCarousel
+                  postType={postInfo.postType ?? "media"}
+                  mediaList={mediaList}
+                  clickedIndex={clickedIndex}
+                  onClose={onClose}
+                />
+              ) : (
+                /* Empty state placeholder */
+                <div className="flex items-center justify-center w-full h-full bg-black">
+                  <div className="text-center text-gray-400">
+                    <svg
+                      className="w-12 h-12 mx-auto mb-3 opacity-50"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                        ry="2"
+                        strokeWidth="2"
+                      />
+                      <circle cx="8.5" cy="8.5" r="1.5" strokeWidth="2" />
+                      <path strokeWidth="2" d="M21 15l-5-5L5 21" />
+                    </svg>
+
+                    <p className="text-sm">No media</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* RIGHT SIDE (COMMENTS) */}
           <div
-            className="border-l flex flex-col min-h-0"
             style={{
-              width: "35%",
+              width: shouldShowLeft ? "35%" : "100%",
               minWidth: 0,
-              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              overflow: "hidden",
+              borderLeft: shouldShowLeft ? "1px solid #e5e7eb" : "none",
             }}
           >
             <Header />
@@ -195,8 +296,8 @@ export default function PostDetailsModal({
                   onClick={() => setMobileView("content")}
                   className={`flex-1 p-3 text-sm font-medium ${
                     mobileView === "content"
-                      ? "border-b-2 border-black"
-                      : "text-gray-500"
+                      ? "border-b-2 border-black text-black"
+                      : "text-neutral-600"
                   }`}
                 >
                   Job
@@ -205,8 +306,8 @@ export default function PostDetailsModal({
                   onClick={() => setMobileView("comments")}
                   className={`flex-1 p-3 text-sm font-medium ${
                     mobileView === "comments"
-                      ? "border-b-2 border-black"
-                      : "text-gray-500"
+                      ? "border-b-2 border-black text-black"
+                      : "text-neutral-600"
                   }`}
                 >
                   Comments
@@ -241,17 +342,15 @@ export default function PostDetailsModal({
                   clickedIndex={clickedIndex}
                   onClose={onClose}
                 />
-              ) : hasMedia ? (
-                <MediaCarousel
-                  postType={postInfo.postType ?? "media"}
-                  mediaList={mediaList}
-                  clickedIndex={clickedIndex}
-                  onClose={onClose}
-                />
               ) : (
-                <div className="p-6">
-                  <PostContentSection title={title} content={content} />
-                </div>
+                hasMedia && (
+                  <MediaCarousel
+                    postType={postInfo.postType ?? "media"}
+                    mediaList={mediaList}
+                    clickedIndex={clickedIndex}
+                    onClose={onClose}
+                  />
+                )
               )}
 
               {/* Then comments below */}
@@ -280,7 +379,7 @@ export default function PostDetailsModal({
             console.log("Calling mutation now");
 
             await applyMutation.mutateAsync({
-                postId: post.id,
+              postId: post.id,
               jobPostId: postInfo.jobPost.id,
               ...data,
             });
@@ -296,26 +395,47 @@ export default function PostDetailsModal({
 
   function Header() {
     return (
-      <div className="flex items-center gap-3 p-4 border-b">
-        <img
-          src={avatarUrl}
-          className="w-10 h-10 rounded-full object-cover"
-          alt=""
-        />
-        <div>
-          <div className="font-semibold text-sm text-gray-900">
-            {postInfo.username}
+      <div className="border-b">
+        <div className="flex items-center gap-3 p-4">
+          <img
+            src={avatarUrl}
+            className="w-10 h-10 rounded-full object-cover"
+            alt=""
+          />
+
+          <div className="flex-1">
+            <div className="font-semibold text-sm text-gray-900">
+              {postInfo.username}
+            </div>
+
+            <div className="text-xs text-gray-500">
+              {parseDate(postInfo.createdAt || "")}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            {parseDate(postInfo.createdAt || "")}
-          </div>
+
+          <button
+            onClick={onClose}
+            className="text-gray-900 hover:text-gray-500"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="ml-auto text-gray-900 hover:text-gray-500"
-        >
-          ✕
-        </button>
+
+        {(title || content) && (
+          <div className="px-4 pb-4">
+            {title && (
+              <h2 className="font-semibold text-gray-900 text-[15px] mb-1">
+                {title}
+              </h2>
+            )}
+
+            {content && (
+              <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                {content}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -416,4 +536,50 @@ export default function PostDetailsModal({
       </>
     );
   }
+}
+
+function PostDetailsSkeleton({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full max-w-xl h-[90vh] rounded-lg flex overflow-hidden"
+      >
+        <div className="flex flex-col w-full animate-pulse">
+          {/* Header skeleton */}
+          <div className="flex items-center gap-3 p-4 border-b">
+            <div className="w-10 h-10 bg-gray-300 rounded-full" />
+
+            <div className="flex flex-col gap-2">
+              <div className="h-3 w-24 bg-gray-300 rounded" />
+              <div className="h-2 w-16 bg-gray-200 rounded" />
+            </div>
+          </div>
+
+          {/* Content skeleton */}
+          <div className="px-4 py-3 space-y-3 border-b">
+            <div className="h-4 w-3/4 bg-gray-300 rounded" />
+            <div className="h-3 w-full bg-gray-200 rounded" />
+            <div className="h-3 w-5/6 bg-gray-200 rounded" />
+          </div>
+
+          {/* Comments skeleton */}
+          <div className="flex-1 p-4 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="w-8 h-8 bg-gray-300 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-32 bg-gray-300 rounded" />
+                  <div className="h-3 w-full bg-gray-200 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

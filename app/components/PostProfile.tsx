@@ -103,7 +103,7 @@ export default function PostProfile({
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setPostMenuDropDownOpen(!postMenuDropDownOpen)}
-            className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="cursor-pointer p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
           >
             <Ellipsis className="text-gray-400" />
           </button>
@@ -113,14 +113,14 @@ export default function PostProfile({
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
               <button
                 onClick={handleEdit}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Pencil className="w-4 h-4" />
                 Edit post
               </button>
               <button
                 onClick={handleDelete}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete post

@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpen, Image as ImageIcon, MessageSquare } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 

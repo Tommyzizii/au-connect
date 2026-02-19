@@ -12,6 +12,8 @@ const JobSchema = z
       "FREELANCE",
       "INTERNSHIP",
     ]),
+    positionsAvailable: z.number().min(1).optional(),
+    status: z.enum(["OPEN", "CLOSED", "FILLED"]).optional(),
     salaryMin: z.number().optional(),
     salaryMax: z.number().optional(),
     salaryCurrency: z.string().optional(),

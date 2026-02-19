@@ -21,6 +21,7 @@ import {
 import PostsPage from "@/types/PostsPage";
 import LinkEmbed from "@/types/LinkEmbeds";
 import JobDraft from "@/types/JobDraft";
+import CommentType from "@/types/CommentType";
 
 // calls /me
 export async function fetchUser() {
@@ -165,7 +166,6 @@ export function useDeletePost() {
       // Update the infinite query structure
       queryClient.setQueryData(["posts"], (oldData: any) => {
         if (!oldData?.pages) return oldData;
-
         return {
           ...oldData,
           pages: oldData.pages.map((page: any) => ({
@@ -305,52 +305,6 @@ export async function createComment({
   }
 
   return res.json();
-}
-
-export function useTopLevelComments(postId: string, commentsDisabled = false) {
-  return useInfiniteQuery({
-    queryKey: ["comments", postId],
-    initialPageParam: null,
-    enabled: !commentsDisabled,
-    queryFn: async ({ pageParam }) => {
-      const res = await fetch(
-        COMMENT_API_PATH(postId) + (pageParam ? `?cursor=${pageParam}` : ""),
-      );
-      if (!res.ok) throw new Error("Failed to fetch comments");
-      return res.json();
-    },
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
-  });
-}
-
-export async function fetchReplies({
-  postId,
-  commentId,
-  cursor,
-}: {
-  postId: string;
-  commentId: string;
-  cursor?: string | null;
-}) {
-  const params = cursor ? `?cursor=${cursor}` : "";
-  const res = await fetch(`${REPLIES_API_PATH(postId, commentId)}${params}`);
-  if (!res.ok) throw new Error("Failed to fetch replies");
-  return res.json();
-}
-
-export function useReplies(postId: string, commentId: string, enabled = true) {
-  return useInfiniteQuery({
-    queryKey: ["replies", commentId],
-    initialPageParam: null,
-    enabled,
-    queryFn: ({ pageParam }) =>
-      fetchReplies({
-        postId,
-        commentId,
-        cursor: pageParam,
-      }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
-  });
 }
 
 type PostsInfiniteData = InfiniteData<PostsPage>;
@@ -532,28 +486,29 @@ export const useFetchLinkPreview = () => {
 
 export function useToggleSave() {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
     mutationFn: async (postId: string) => {
       console.log("Saving post:", postId);
-
       const res = await fetch(SAVE_POST_API_PATH(postId), {
         method: "POST",
       });
-
       if (!res.ok) throw new Error("Failed to toggle save");
-
       return res.json();
     },
-
+    
     onMutate: async (postId: string) => {
+      // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: ["posts"] });
-
+      await queryClient.cancelQueries({ queryKey: ["post", postId] });
+      
+      // Snapshot previous values
       const previousPosts = queryClient.getQueryData(["posts"]);
-
+      const previousPost = queryClient.getQueryData(["post", postId]);
+      
+      // Optimistically update feed cache
       queryClient.setQueryData(["posts"], (oldData: any) => {
         if (!oldData?.pages) return oldData;
-
         return {
           ...oldData,
           pages: oldData.pages.map((page: any) => ({
@@ -572,20 +527,102 @@ export function useToggleSave() {
           })),
         };
       });
-
-      return { previousPosts };
+      
+      // Optimistically update single post cache
+      queryClient.setQueryData(["post", postId], (oldPost: any) => {
+        if (!oldPost) return oldPost;
+        return {
+          ...oldPost,
+          isSaved: !oldPost.isSaved,
+          savedCount: oldPost.isSaved
+            ? oldPost.savedCount - 1
+            : oldPost.savedCount + 1,
+        };
+      });
+      
+      return { previousPosts, previousPost };
     },
-
-    onError: (_err, _postId, context) => {
+    
+    onError: (_err, postId, context) => {
+      // Rollback on error
       if (context?.previousPosts) {
         queryClient.setQueryData(["posts"], context.previousPosts);
       }
+      if (context?.previousPost) {
+        queryClient.setQueryData(["post", postId], context.previousPost);
+      }
     },
-
-    onSettled: () => {
+    
+    onSettled: (_data, _error, postId) => {
+      // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
       queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
     },
+  });
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+// Make sure these match the values in your API constants file too.
+// REPLIES_PER_FETCH = 5  ← controls how many replies load per page
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+type CommentsResponse = {
+  comments: CommentType[];
+  nextCursor: string | null;
+};
+
+type RepliesResponse = {
+  replies: CommentType[];
+  nextCursor: string | null;
+};
+
+// ─── Top-level comments ───────────────────────────────────────────────────────
+export function useTopLevelComments(postId: string, commentsDisabled = false) {
+  return useInfiniteQuery<CommentsResponse>({
+    queryKey: ["comments", postId],
+    initialPageParam: null,
+    enabled: !commentsDisabled && !!postId,
+    queryFn: async ({ pageParam }) => {
+      const url =
+        COMMENT_API_PATH(postId) + (pageParam ? `?cursor=${pageParam}` : "");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch comments");
+      return res.json();
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
+  });
+}
+
+// ─── Replies ─────────────────────────────────────────────────────────────────
+export async function fetchReplies({
+  postId,
+  commentId,
+  cursor,
+}: {
+  postId: string;
+  commentId: string;
+  cursor?: string | null;
+}): Promise<RepliesResponse> {
+  const url =
+    REPLIES_API_PATH(postId, commentId) + (cursor ? `?cursor=${cursor}` : "");
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch replies");
+  return res.json();
+}
+
+export function useReplies(
+  postId: string,
+  commentId: string,
+  enabled = true,
+) {
+  return useInfiniteQuery<RepliesResponse>({
+    queryKey: ["replies", postId, commentId],
+    initialPageParam: null,
+    // Only fires when the user clicks "View replies"
+    enabled: enabled && !!postId && !!commentId,
+    queryFn: ({ pageParam }) =>
+      fetchReplies({ postId, commentId, cursor: pageParam as string | null }),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
   });
 }

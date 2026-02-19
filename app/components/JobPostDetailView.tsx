@@ -3,16 +3,20 @@
 import { AlertTriangle } from "lucide-react";
 import parseDate from "../(main)/profile/utils/parseDate";
 import JobDraft from "@/types/JobDraft";
+import { useEffect } from "react";
 
 interface JobPostContentViewProps {
   jobData: JobDraft;
   applicantCount?: number;
   hasApplied?: boolean;
+  applicationStatus?: "APPLIED" | "SHORTLISTED" | "REJECTED" | null;
   isSaved?: boolean;
   isOwner: boolean;
   onApply?: () => void;
   onSave?: () => void;
+  onViewApplicants?: () => void;
 }
+
 
 const employmentTypeLabels = {
   FULL_TIME: "Full-time",
@@ -37,11 +41,16 @@ export default function JobPostDetailView({
   jobData,
   applicantCount = 0,
   hasApplied = false,
+  applicationStatus,
   isSaved = false,
   isOwner,
   onApply,
   onSave,
+  onViewApplicants,
 }: JobPostContentViewProps) {
+useEffect(() => {
+  console.log("jobData:\n", jobData);
+}, [jobData])
   const formatSalary = () => {
     const currency = jobData.salaryCurrency || "USD";
     if (jobData.salaryMin && jobData.salaryMax) {
@@ -54,7 +63,10 @@ export default function JobPostDetailView({
   };
 
   const salary = formatSalary();
-  const isJobActive = jobData.status === "OPEN";
+  const now = new Date();
+  const isDeadlinePassed = jobData.deadline && new Date(jobData.deadline) < now;
+  const displayStatus =
+    jobData.status === "OPEN" && isDeadlinePassed ? "CLOSED" : jobData.status;
   const requirements = jobData.jobRequirements || [];
 
   return (
@@ -79,10 +91,10 @@ export default function JobPostDetailView({
 
               <span
                 className={`shrink-0 px-3 py-1 text-xs font-semibold rounded-full border ${
-                  statusColors[jobData.status]
+                  statusColors[displayStatus]
                 }`}
               >
-                {jobData.status}
+                {displayStatus}
               </span>
             </div>
 
@@ -119,6 +131,24 @@ export default function JobPostDetailView({
                   </span>
                   <p className="text-neutral-900 font-medium">
                     {employmentTypeLabels[jobData.employmentType]}
+                  </p>
+                </div>
+              )}
+
+              {jobData.positionsAvailable != null && (
+                <div className="space-y-1">
+                  <span className="text-xs uppercase tracking-wide text-neutral-400">
+                    Positions
+                  </span>
+
+                  <p className="text-neutral-900 font-medium">
+                    {jobData.positionsAvailable} total
+                    {typeof jobData.positionsFilled === "number" && (
+                      <> • {jobData.positionsFilled} filled</>
+                    )}
+                    {typeof jobData.remainingPositions === "number" && (
+                      <> • {jobData.remainingPositions} remaining</>
+                    )}
                   </p>
                 </div>
               )}
@@ -205,21 +235,34 @@ export default function JobPostDetailView({
           )}
 
           <div className="flex flex-row mt-6 mb-5">
-            <button className="mr-3 cursor-pointer hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white">
+            <button
+              disabled={isSaved}
+              onClick={onSave}
+              className="mr-3 cursor-pointer hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white"
+            >
               {isSaved ? "Saved" : "Save"}
             </button>
 
             {isOwner ? (
-              <button className="cursor-pointer rounded-lg bg-white hover:bg-neutral-100 py-2 px-4 text-neutral-800 border border-neutral-400">
+              <button
+                onClick={onViewApplicants}
+                className="cursor-pointer rounded-lg bg-white hover:bg-neutral-100 py-2 px-4 text-neutral-800 border border-neutral-400"
+              >
                 View Applicants
               </button>
             ) : (
               <button
                 disabled={hasApplied}
                 onClick={onApply}
-                className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white"
+                className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white disabled:bg-neutral-400"
               >
-                {hasApplied ? "Applied" : "Apply"}
+                {applicationStatus === "SHORTLISTED"
+                  ? "Shortlisted"
+                  : applicationStatus === "REJECTED"
+                    ? "Rejected"
+                    : applicationStatus === "APPLIED"
+                      ? "Applied"
+                      : "Apply"}
               </button>
             )}
           </div>

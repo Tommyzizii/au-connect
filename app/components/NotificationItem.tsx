@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { timeAgo } from "@/lib/timeAgo";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "../(main)/profile/utils/useResolvedMediaUrl";
 
 export default function NotificationItem({ n }: { n: any }) {
   const fromUser = n.fromUser;

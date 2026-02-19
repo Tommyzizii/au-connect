@@ -1,4 +1,5 @@
-import { useState } from "react";
+'use client'
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PostType from "@/types/Post";
@@ -13,8 +14,10 @@ import {
   useToggleSave,
 } from "../(main)/profile/utils/fetchfunctions";
 import CreatePostModal from "./CreatePostModal";
+
 import ShareModal from "../(main)/profile/components/ShareModal";
-import { POST_DETAIL_PAGE_PATH } from "@/lib/constants";
+import { JOB_APPLICANTS_PAGE_PATH, POST_DETAIL_PAGE_PATH } from "@/lib/constants";
+
 import PostPoll from "./PostPoll";
 import LinkEmbedPreview from "./Linkembedpreview";
 import { JobPostCard } from "./JobPostCard";
@@ -31,10 +34,6 @@ export default function Post({
   post?: PostType;
   isLoading: boolean;
 }) {
-  if (!post) {
-    return null;
-  }
-
   const router = useRouter();
   const openPostModal = (postId: string, index: number) => {
     router.push(POST_DETAIL_PAGE_PATH(postId, index));
@@ -117,7 +116,7 @@ export default function Post({
             onApply={() => setApplyJobModalOpen(true)}
             onSaveToggle={() => toggleSaveMutation.mutate(post.id)}
             onViewApplicants={() => {
-              window.alert("onViewApplicants yet to be implemented");
+              router.push(JOB_APPLICANTS_PAGE_PATH(post.id));
             }}
           />
           <PostInteractionSection
@@ -263,23 +262,15 @@ export default function Post({
         jobTitle={post.jobPost?.jobTitle || ""}
         companyName={post.jobPost?.companyName}
         onSubmit={async (data) => {
-          console.log("Parent onSubmit called");
-          console.log("jobPostId:", post.jobPost?.id);
-
           if (!post.jobPost?.id) {
             console.log("No jobPostId, returning early");
             return;
           }
-
-          console.log("Calling mutation now");
-
           await applyMutation.mutateAsync({
             postId: post.id,
             jobPostId: post.jobPost.id,
             ...data,
           });
-
-          console.log("Mutation finished");
         }}
       />
     </>

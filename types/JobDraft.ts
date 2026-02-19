@@ -1,5 +1,5 @@
 type JobDraft = {
-  id: string;
+  id?: string;
   jobTitle: string;
   companyName?: string;
   location?: string;
@@ -8,6 +8,8 @@ type JobDraft = {
   salaryMin?: number;
   salaryMax?: number;
   salaryCurrency?: string;
+  status: "OPEN" | "CLOSED" | "FILLED";
+  positionsAvailable?: number;
   deadline?: string;
   jobDetails?: string;
   jobRequirements?: string[];
@@ -16,7 +18,9 @@ type JobDraft = {
 
   // application status
   hasApplied?: boolean;
-  applicationStatus?: "APPLIED" | "SHORTLISTED" | "REJECTED";
+  applicationStatus?: "APPLIED" | "SHORTLISTED" | "REJECTED" | null;
+  positionsFilled?: number;
+  remainingPositions?: number;
 };
 
 export default JobDraft;

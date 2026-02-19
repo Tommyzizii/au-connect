@@ -49,6 +49,12 @@ const formatSalary = (job: any) => {
   return null;
 };
 
+const statusColors = {
+  OPEN: "text-green-600 border-green-600",
+  CLOSED: "text-gray-500 border-gray-500",
+  FILLED: "text-blue-600 border-blue-600",
+};
+
 export const JobPostCard: React.FC<JobPostCardProps> = ({
   post,
   job,
@@ -69,6 +75,13 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
   const salary = formatSalary(job);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [externalConfirm, setExternalConfirm] = useState(false);
+
+  const now = new Date();
+
+  const isDeadlinePassed = job.deadline && new Date(job.deadline) < now;
+
+  const displayStatus =
+    job.status === "OPEN" && isDeadlinePassed ? "CLOSED" : job.status;
 
   const handleEdit = () => {
     setPostMenuDropDownOpen(false);
@@ -99,7 +112,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
   }, [postMenuDropDownOpen]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 pl-9">
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <span className="font-semibold bg-gray-100 text-black px-2 py-1 rounded">
@@ -136,8 +149,10 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
             )}
           </div>
         ) : (
-          <span className="text-sm font-semibold text-green-500 border border-green-500 py-1 px-3 rounded-xl">
-            OPEN
+          <span
+            className={`text-sm font-semibold border py-1 px-3 rounded-xl ${statusColors[displayStatus]}`}
+          >
+            {displayStatus}
           </span>
         )}
       </div>
@@ -177,6 +192,28 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
           <span>Apply by {new Date(job.deadline).toLocaleDateString()}</span>
         )}
       </div>
+
+      {/* Positions Available (Owner View) */}
+      {isOwner && job.positionsAvailable && (
+        <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700">
+          <span>
+            {job.positionsFilled || 0} / {job.positionsAvailable} positions
+            filled
+          </span>
+          {job.remainingPositions !== undefined &&
+            job.remainingPositions <= 2 &&
+            job.remainingPositions > 0 && (
+              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded">
+                {job.remainingPositions} left
+              </span>
+            )}
+          {job.remainingPositions === 0 && (
+            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded">
+              All filled
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">

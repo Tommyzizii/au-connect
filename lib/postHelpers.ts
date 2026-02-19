@@ -40,6 +40,12 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
               status: true,
             },
           },
+
+          _count: {
+            select: {
+              applications: true,
+            },
+          },
         },
       },
     },
@@ -87,9 +93,10 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
     jobPost: post.jobPost
       ? {
           ...post.jobPost,
-
+          positionsFilled: post.jobPost._count.applications,
+          remainingPositions:
+            post.jobPost.positionsAvailable - post.jobPost._count.applications,
           hasApplied: post.jobPost.applications.length > 0,
-
           applicationStatus: post.jobPost.applications[0]?.status ?? null,
         }
       : null,
