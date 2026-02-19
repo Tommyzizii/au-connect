@@ -28,6 +28,7 @@ import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 
 import ConnectionsModal from "./ConnectionsModal";
 import { useRouter } from "next/navigation";
+import PopupModal from "@/app/components/PopupModal";
 
 export default function ProfileView({
   user,
@@ -64,7 +65,7 @@ export default function ProfileView({
 
   //  local cover value so UI updates after upload/delete without refresh
   const [coverPhotoValue, setCoverPhotoValue] = useState<string>(
-    user.coverPhoto || "/default_cover.jpg"
+    user.coverPhoto || "/default_cover.jpg",
   );
 
   //  resolve URLs using hook (cached)
@@ -75,7 +76,7 @@ export default function ProfileView({
 
   const resolvedCoverPhotoUrl = useResolvedMediaUrl(
     coverPhotoValue,
-    "/default_cover.jpg"
+    "/default_cover.jpg",
   );
 
   // Connect button states
@@ -91,6 +92,8 @@ export default function ProfileView({
   const [openConnectionsModal, setOpenConnectionsModal] = useState(false);
   const [connectionsList, setConnectionsList] = useState<any[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+
+  const [openRemoveModal, setOpenRemoveModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
@@ -114,16 +117,16 @@ export default function ProfileView({
 
   const posts: PostType[] =
     postData?.pages.flatMap((page: { posts: PostType[] }) => page.posts) ?? [];
-  const imagePosts = posts.filter(
-    (p) => (p.media ?? []).some((m) => m.type === "image")
+  const imagePosts = posts.filter((p) =>
+    (p.media ?? []).some((m) => m.type === "image"),
   );
 
-  const videoPosts = posts.filter(
-    (p) => (p.media ?? []).some((m) => m.type === "video")
+  const videoPosts = posts.filter((p) =>
+    (p.media ?? []).some((m) => m.type === "video"),
   );
 
-  const documentPosts = posts.filter(
-    (p) => (p.media ?? []).some((m) => m.type === "file")
+  const documentPosts = posts.filter((p) =>
+    (p.media ?? []).some((m) => m.type === "file"),
   );
 
   let tabPosts: PostType[] = [];
@@ -139,9 +142,12 @@ export default function ProfileView({
     tabPosts = [];
   }
 
-
   const isPostsLoading = loading || profilePostLoading;
   // On profile load: check connection status (connected or pending request)
+
+  const [incomingRequestId, setIncomingRequestId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (isOwner) return;
@@ -150,40 +156,62 @@ export default function ProfileView({
 
     async function loadConnectionStatus() {
       try {
-        // Check if already connected
-        const connectionsRes = await fetch(
-          "/api/connect/v1/connect/status?otherUserId=" + user.id,
-          { credentials: "include" }
+        // 1️⃣ Check if already connected
+        const statusRes = await fetch(
+          `/api/connect/v1/connect/status?otherUserId=${user.id}`,
+          { credentials: "include" },
         );
 
-        if (connectionsRes.ok) {
-          const connectionsJson = await connectionsRes.json();
-          if (!ignore && connectionsJson.isConnected) {
+        if (statusRes.ok) {
+          const statusJson = await statusRes.json();
+          if (!ignore && statusJson.isConnected) {
             setIsConnected(true);
-            return; // If connected, don't check for pending requests
+            return;
           }
         }
 
-        // If not connected, check for pending outgoing request
-        const requestsRes = await fetch(
+        // 2️⃣ Check outgoing requests
+        const outgoingRes = await fetch(
           "/api/connect/v1/connect/requests?type=outgoing",
-        );
-        const requestsJson = await requestsRes.json();
-
-        if (!requestsRes.ok) return;
-
-        const outgoing = (requestsJson.data || []) as any[];
-        const existingRequest = outgoing.find(
-          (r) => r.toUserId === user.id || r.toUser?.id === user.id,
-
+          { credentials: "include" },
         );
 
-        if (!ignore && existingRequest) {
-          setConnectSuccess(true);
-          setRequestId(existingRequest.id);
+        if (outgoingRes.ok) {
+          const outgoingJson = await outgoingRes.json();
+          const outgoing = outgoingJson.data || [];
+
+          const existingOutgoing = outgoing.find(
+            (r: any) => r.toUserId === user.id || r.toUser?.id === user.id,
+          );
+
+          if (!ignore && existingOutgoing) {
+            setConnectSuccess(true);
+            setRequestId(existingOutgoing.id);
+            return;
+          }
+        }
+
+        // 3️⃣ Check incoming requests
+        const incomingRes = await fetch(
+          "/api/connect/v1/connect/requests?type=incoming",
+          { credentials: "include" },
+        );
+
+        if (incomingRes.ok) {
+          const incomingJson = await incomingRes.json();
+          const incoming = incomingJson.data || [];
+
+          const existingIncoming = incoming.find(
+            (r: any) => r.fromUserId === user.id || r.fromUser?.id === user.id,
+          );
+
+          if (!ignore && existingIncoming) {
+            setIncomingRequestId(existingIncoming.id);
+            return;
+          }
         }
       } catch {
-        // ignore silently
+        // silent
       }
     }
 
@@ -274,7 +302,7 @@ export default function ProfileView({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       const json = await res.json();
@@ -294,21 +322,14 @@ export default function ProfileView({
   }
 
   async function handleRemoveConnection() {
-    if (!confirm("Are you sure you want to remove this connection?")) {
-      return;
-    }
-
     try {
       setConnectError(null);
       setConnectLoading(true);
 
-      const res = await fetch(
-        `/api/connect/v1/connect/${user.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`/api/connect/v1/connect/${user.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
 
       const json = await res.json();
 
@@ -316,10 +337,52 @@ export default function ProfileView({
         throw new Error(json?.error || "Failed to remove connection");
       }
 
-      // success => reset to not connected state
       setIsConnected(false);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
+    } finally {
+      setConnectLoading(false);
+    }
+  }
+
+  async function handleAcceptIncoming() {
+    if (!incomingRequestId) return;
+
+    try {
+      setConnectLoading(true);
+
+      const res = await fetch(
+        `/api/connect/v1/connect/request/${incomingRequestId}/accept`,
+        { method: "POST", credentials: "include" },
+      );
+
+      if (!res.ok) throw new Error("Failed to accept request");
+
+      setIncomingRequestId(null);
+      setIsConnected(true);
+    } catch (err) {
+      setConnectError("Failed to accept request");
+    } finally {
+      setConnectLoading(false);
+    }
+  }
+
+  async function handleDeclineIncoming() {
+    if (!incomingRequestId) return;
+
+    try {
+      setConnectLoading(true);
+
+      const res = await fetch(
+        `/api/connect/v1/connect/request/${incomingRequestId}/decline`,
+        { method: "POST", credentials: "include" },
+      );
+
+      if (!res.ok) throw new Error("Failed to decline request");
+
+      setIncomingRequestId(null);
+    } catch (err) {
+      setConnectError("Failed to decline request");
     } finally {
       setConnectLoading(false);
     }
@@ -367,19 +430,37 @@ export default function ProfileView({
                       <>
                         {/* IMPROVED: Show different UI based on connection state */}
                         {isConnected ? (
-                          // Connected state - Show Remove button
+                          // CONNECTED
                           <button
-                            onClick={handleRemoveConnection}
+                            onClick={() => setOpenRemoveModal(true)}
                             disabled={connectLoading}
-                            className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${connectLoading ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
+                            className="px-4 py-2 rounded-lg shadow text-white bg-red-500 hover:bg-red-600 disabled:opacity-50"
                           >
                             {connectLoading ? "Removing..." : "Remove"}
                           </button>
+                        ) : incomingRequestId ? (
+                          // INCOMING REQUEST
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleAcceptIncoming}
+                              disabled={connectLoading}
+                              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {connectLoading ? "Accepting..." : "Accept"}
+                            </button>
+
+                            <button
+                              onClick={handleDeclineIncoming}
+                              disabled={connectLoading}
+                              className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50"
+                            >
+                              Decline
+                            </button>
+                          </div>
                         ) : connectSuccess ? (
-                          // Requested state - Show "Requested" with Cancel button
+                          // OUTGOING REQUEST
                           <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 border border-gray-300">
+                            <div className="px-4 py-2 rounded-lg bg-gray-100 border border-gray-300">
                               <span className="text-sm font-medium text-gray-700">
                                 Requested
                               </span>
@@ -387,26 +468,26 @@ export default function ProfileView({
                             <button
                               onClick={handleCancelRequest}
                               disabled={connectLoading}
-                              className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${connectLoading ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
-                              title="Cancel request"
+                              className="px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 disabled:opacity-50"
                             >
-                              {connectLoading ? "Canceling..." : "Cancel"}
+                              Cancel
                             </button>
                           </div>
                         ) : (
-                          // Not connected - Show Connect button
+                          // NOT CONNECTED
                           <button
                             onClick={handleConnect}
                             disabled={connectLoading}
-                            className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${connectLoading ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
+                            className="px-4 py-2 rounded-lg shadow text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                           >
                             {connectLoading ? "Sending..." : "Connect"}
                           </button>
                         )}
+
                         <button
-                          onClick={() => router.push(`/messages?userId=${user.id}`)}
+                          onClick={() =>
+                            router.push(`/messages?userId=${user.id}`)
+                          }
                           className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white"
                         >
                           Message
@@ -456,7 +537,6 @@ export default function ProfileView({
                   >
                     Contact info
                   </button>
-
                 </p>
 
                 <button
@@ -544,10 +624,11 @@ export default function ProfileView({
                   <button
                     key={t}
                     onClick={() => setTab(t)}
-                    className={`pb-2 capitalize ${tab === t
-                      ? "border-b-2 border-blue-600 text-blue-600"
-                      : "text-gray-600"
-                      }`}
+                    className={`pb-2 capitalize ${
+                      tab === t
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-600"
+                    }`}
                   >
                     {t}
                   </button>
@@ -579,7 +660,9 @@ export default function ProfileView({
                     )}
                   </>
                 ) : (
-                  <div className="text-center text-gray-600 py-10">No {tab} yet</div>
+                  <div className="text-center text-gray-600 py-10">
+                    No {tab} yet
+                  </div>
                 )}
               </div>
             </SectionCard>
@@ -625,7 +708,6 @@ export default function ProfileView({
         onUserUpdated={(u) => setUserState((prev) => ({ ...prev, ...u }))}
       />
 
-
       <ExperienceManagerModal
         open={openExperienceModal}
         onClose={() => setOpenExperienceModal(false)}
@@ -646,7 +728,6 @@ export default function ProfileView({
         user={userState}
         isOwner={isOwner}
       />
-
 
       <EditAboutModal
         open={openAboutModal}
@@ -674,6 +755,18 @@ export default function ProfileView({
         user={user}
         resolvedCoverPhotoUrl={resolvedCoverPhotoUrl}
         onCoverPhotoChanged={(newCover: string) => setCoverPhotoValue(newCover)}
+      />
+
+      <PopupModal
+        open={openRemoveModal}
+        onClose={() => setOpenRemoveModal(false)}
+        onConfirm={() => {
+          setOpenRemoveModal(false);
+          handleRemoveConnection();
+        }}
+        title="Remove Connection"
+        titleText="Are you sure you want to remove this connection? You will need to send a new request to connect again."
+        actionText="Remove"
       />
     </>
   );

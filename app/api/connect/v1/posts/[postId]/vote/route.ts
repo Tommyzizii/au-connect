@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getHeaderUserInfo } from "@/lib/authFunctions";
+import { createNotification } from "@/lib/server/notifications.server";
 
 export async function POST(
   req: NextRequest,
@@ -30,6 +31,7 @@ export async function POST(
     const post = await prisma.post.findUnique({
       where: { id: postId },
       select: {
+        userId: true,
         pollOptions: true,
         pollVotes: true,
         pollEndsAt: true,
@@ -70,6 +72,18 @@ export async function POST(
         pollVotes: updatedVotes,
       },
     });
+
+    // ===============================
+    // CREATE NOTIFICATION
+    // ===============================
+    if (post.userId !== userId) {
+      await createNotification({
+        userId: post.userId,     // post owner
+        fromUserId: userId,      // who voted
+        type: "POST_VOTED",
+        entityId: postId,
+      });
+    }
 
     return NextResponse.json(
       { success: true, pollVotes: updatedVotes },

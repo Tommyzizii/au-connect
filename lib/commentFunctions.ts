@@ -4,6 +4,8 @@ import { getHeaderUserInfo } from "@/lib/authFunctions";
 import prisma from "@/lib/prisma";
 import { REPLIES_PER_FETCH, TOP_LEVEL_COMMENTS_FETCH_LIMIT } from "./constants";
 import { CreateCommentSchema } from "@/zod/CommentSchema";
+import { createNotification } from "@/lib/server/notifications.server";
+
 
 // function to create comments/replies
 export async function createComments(
@@ -79,6 +81,45 @@ export async function createComments(
         commentCount: { increment: 1 },
       },
     });
+
+    // ===============================
+// 🔔 Notification Logic
+// ===============================
+
+// If this is a reply
+if (parentId) {
+  const parentComment = await prisma.comment.findUnique({
+    where: { id: parentId },
+    select: { userId: true },
+  });
+
+  if (
+    parentComment &&
+    parentComment.userId !== user.id
+  ) {
+    await createNotification({
+      userId: parentComment.userId, // original comment owner
+      fromUserId: user.id,          // who replied
+      type: "COMMENT_REPLIED",
+      entityId: comment.id,
+    });
+  }
+} else {
+  // This is a normal comment on post
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { userId: true },
+  });
+
+  if (post && post.userId !== user.id) {
+    await createNotification({
+      userId: post.userId,          // post owner
+      fromUserId: user.id,          // who commented
+      type: "POST_COMMENTED",
+      entityId: postId,
+    });
+  }
+}
 
     return NextResponse.json(comment, { status: 201 });
   } catch (err) {

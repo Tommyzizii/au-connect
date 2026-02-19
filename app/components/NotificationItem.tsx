@@ -3,9 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { timeAgo } from "@/lib/timeAgo";
+import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 
 export default function NotificationItem({ n }: { n: any }) {
   const fromUser = n.fromUser;
+
+  const avatarUrl = useResolvedMediaUrl(
+    fromUser?.profilePic,
+    "/default_profile.jpg",
+  );
 
   return (
     <Link
@@ -15,11 +21,11 @@ export default function NotificationItem({ n }: { n: any }) {
       }`}
     >
       <Image
-        src={fromUser?.profilePic || "/default_profile.jpg"}
+        src={avatarUrl}
         alt={fromUser?.username || "User"}
         width={40}
         height={40}
-        className="rounded-full"
+        className="rounded-full object-cover"
       />
 
       <div className="flex-1">
@@ -34,9 +40,7 @@ export default function NotificationItem({ n }: { n: any }) {
         </p>
       </div>
 
-      <span className="text-xs text-gray-400">
-        {timeAgo(n.createdAt)}
-      </span>
+      <span className="text-xs text-gray-400">{timeAgo(n.createdAt)}</span>
     </Link>
   );
 }

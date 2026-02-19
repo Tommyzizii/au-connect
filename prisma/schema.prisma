@@ -222,6 +222,11 @@ enum PostInteractionType {
 enum NotificationType {
   CONNECTION_REQUEST
   CONNECTION_ACCEPTED
+  POST_LIKED
+  POST_COMMENTED
+  COMMENT_REPLIED
+  POST_SHARED
+  POST_VOTED
 }
 
 model Notification {
@@ -229,7 +234,7 @@ model Notification {
   userId     String @db.ObjectId
   fromUserId String @db.ObjectId
 
-  type     String
+  type     NotificationType
   entityId String?
   isRead   Boolean @default(false)
 

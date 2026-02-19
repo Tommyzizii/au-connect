@@ -1,6 +1,8 @@
 import { getHeaderUserInfo } from "@/lib/authFunctions";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { createNotification } from "@/lib/server/notifications.server";
+
 
 // like or unlike a post
 export async function POST(
@@ -56,6 +58,16 @@ export async function POST(
           where: { id: postId },
           data: { likeCount: { increment: 1 } },
         });
+
+        // 🔔 CREATE NOTIFICATION (only if not liking own post)
+        if (post.userId !== userId) {
+          await createNotification({
+            userId: post.userId, // post owner
+            fromUserId: userId,  // who liked
+            type: "POST_LIKED",
+            entityId: postId,
+          });
+        }
 
         return { isLiked: true, likeCount: post.likeCount };
       }

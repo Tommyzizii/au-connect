@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { normalizePair } from "@/lib/connect";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
-import { createNotification } from "@/lib/notifications";
+import { createNotification } from "@/lib/server/notifications.server";
 
 
 export async function POST(
