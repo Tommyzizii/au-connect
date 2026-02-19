@@ -30,7 +30,7 @@ import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
 import { buildSlug } from "@/app/profile/utils/buildSlug";
 import PopupModal from "./PopupModal";
-import { fetchUnreadCount } from "@/lib/notifications";
+import { fetchUnreadCount } from "@/lib/client/notifications.client";
 
 const Skeleton = ({ className = "" }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
