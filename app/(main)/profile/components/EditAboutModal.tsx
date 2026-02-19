@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { updateAbout } from "../[slug]/hook/updateAbout"; //  USE NEW API
+import { updateAbout } from "../[slug]/hook/updateAbout"; 
 
 export default function EditAboutModal({
   open,

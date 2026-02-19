@@ -12,12 +12,36 @@ import {
 } from "./env";
 import { SAS_TOKEN_EXPIRE_DURATION } from "./constants";
 
-export async function getPostWithMedia(postId: string) {
+export async function getPostWithMedia(postId: string, currentUserId: string) {
   const post = await prisma.post.findUnique({
     where: { id: postId },
+
     include: {
       user: true,
-      interactions: true,
+
+      interactions: {
+        where: {
+          userId: currentUserId,
+          type: "SAVED",
+        },
+        select: {
+          id: true,
+        },
+      },
+
+      jobPost: {
+        include: {
+          applications: {
+            where: {
+              applicantId: currentUserId,
+            },
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -52,8 +76,22 @@ export async function getPostWithMedia(postId: string) {
 
   return {
     ...post,
+
     media: mediaWithUrls,
+
     username: post.user.username,
     profilePic: post.user.profilePic,
+
+    isSaved: post.interactions.length > 0,
+
+    jobPost: post.jobPost
+      ? {
+          ...post.jobPost,
+
+          hasApplied: post.jobPost.applications.length > 0,
+
+          applicationStatus: post.jobPost.applications[0]?.status ?? null,
+        }
+      : null,
   };
 }

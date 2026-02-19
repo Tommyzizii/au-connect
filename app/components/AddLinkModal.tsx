@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Link as LinkIcon, Loader2 } from "lucide-react";
-import { useFetchLinkPreview } from "@/app/profile/utils/fetchfunctions";
+import { useFetchLinkPreview } from "@/app/(main)/profile/utils/fetchfunctions";
 
 type AddLinkModalProps = {
   isOpen: boolean;

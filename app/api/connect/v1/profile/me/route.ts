@@ -3,7 +3,7 @@ import { JWT_COOKIE } from "@/lib/constants";
 import { verifyJwtToken } from "@/lib/authFunctions";
 import prisma from "@/lib/prisma";
 import { safeUserSelect } from "@/lib/safeUserCall";
-import { buildSlug } from "@/app/profile/utils/buildSlug";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(JWT_COOKIE)?.value;

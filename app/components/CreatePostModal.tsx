@@ -14,19 +14,21 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
-import CreatePostModalPropTypes from "@/types/CreatePostModalPropTypes";
-import { MediaType, MediaItem } from "@/types/Media";
 import { useUploadStore } from "@/lib/stores/uploadStore";
 import { processUpload } from "@/lib/services/uploadService";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useDraftStore } from "@/lib/stores/draftStore";
-import { useEditPost } from "@/app/profile/utils/fetchfunctions";
+import { useEditPost } from "@/app/(main)/profile/utils/fetchfunctions";
 import { PostMediaWithUrl } from "@/types/PostMedia";
 import { processEdit } from "@/lib/services/uploadService";
 import VideoPlayer from "./VideoPlayer";
+import JobPostCreationSection from "./JobPostCreationSection";
 import AddLinkModal from "./AddLinkModal";
 import LinkEmbedPreview from "./Linkembedpreview";
 import LinkEmbed from "@/types/LinkEmbeds";
+import CreatePostModalPropTypes from "@/types/CreatePostModalPropTypes";
+import { MediaType, MediaItem } from "@/types/Media";
+import JobDraft from "@/types/JobDraft";
 
 const getMediaType = (file: File): MediaType => {
   if (file.type.startsWith("image/")) return "image";
@@ -48,6 +50,21 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
+
+const EMPTY_JOB_DRAFT: JobDraft = {
+  id: "",
+  jobTitle: "",
+  companyName: "",
+  location: "",
+  locationType: "",
+  employmentType: "",
+  salaryMin: undefined,
+  salaryMax: undefined,
+  salaryCurrency: "USD",
+  deadline: "",
+  applyUrl: "",
+  allowExternalApply: false,
+};
 
 export default function CreatePostModal({
   user,
@@ -81,6 +98,9 @@ export default function CreatePostModal({
   const [pollDuration, setPollDuration] = useState(7);
   const [showBody, setShowBody] = useState(false);
 
+  // Job post states
+  const [jobDraft, setJobDraft] = useState<JobDraft>(EMPTY_JOB_DRAFT);
+
   const editPostMutation = useEditPost();
 
   const resolvedProfilePicUrl = useResolvedMediaUrl(
@@ -100,12 +120,23 @@ export default function CreatePostModal({
     postType === "poll" &&
     title.trim().length > 0 &&
     pollOptions.filter((opt) => opt.trim().length > 0).length >= 2;
+  const hasValidJob =
+    postType === "job_post" &&
+    jobDraft &&
+    jobDraft.jobTitle.trim().length > 0 &&
+    jobDraft.employmentType !== "";
 
   const canPost =
-    hasTextContent || hasTitle || hasMedia || hasLinks || hasValidPoll;
+    postType === "job_post"
+      ? hasValidJob
+      : hasTextContent || hasTitle || hasMedia || hasLinks || hasValidPoll;
 
   // Total media count for carousel
   const totalMedia = [...existingMedia, ...newMedia];
+
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
   // Load initial post data when in edit mode
   useEffect(() => {
@@ -114,6 +145,32 @@ export default function CreatePostModal({
       setTitle(exisistingPost.title || "");
       setPostContent(exisistingPost.content || "");
       setSelectedVisibility(exisistingPost.visibility || "everyone");
+
+      // Load existing job post data
+      if (exisistingPost.postType === "poll" && exisistingPost.pollOptions) {
+        setPollOptions(exisistingPost.pollOptions);
+      }
+
+      // Load existing job post data
+      if (exisistingPost.postType === "job_post" && exisistingPost.jobPost) {
+        const job = exisistingPost.jobPost;
+
+        setJobDraft({
+          jobTitle: job.jobTitle || "",
+          companyName: job.companyName || "",
+          location: job.location || "",
+          locationType: job.locationType || "",
+          employmentType: job.employmentType || "",
+          salaryMin: job.salaryMin ?? undefined,
+          salaryMax: job.salaryMax ?? undefined,
+          salaryCurrency: job.salaryCurrency || "USD",
+          deadline: job.deadline || "",
+          jobDetails: job.jobDetails || "",
+          jobRequirements: job.jobRequirements || [],
+          applyUrl: job.applyUrl || "",
+          allowExternalApply: job.allowExternalApply ?? false,
+        });
+      }
 
       // Load existing media
       if (exisistingPost.media && exisistingPost.media.length > 0) {
@@ -241,6 +298,7 @@ export default function CreatePostModal({
             media: newMedia,
             existingMedia: existingMedia,
             links: links,
+            ...(postType === "job_post" && { job: jobDraft }),
           };
 
           if (postType === "poll") {
@@ -270,6 +328,7 @@ export default function CreatePostModal({
               size: m.size,
             })),
             links: links,
+            ...(postType === "job_post" && { job: jobDraft }),
           };
 
           if (postType === "poll") {
@@ -296,6 +355,7 @@ export default function CreatePostModal({
           disableComments,
           media: newMedia,
           links: links,
+          job: jobDraft,
         };
 
         if (postType === "poll") {
@@ -376,10 +436,6 @@ export default function CreatePostModal({
     },
   ];
 
-  const handleClose = () => {
-    setIsOpen(false);
-  };
-
   if (!isOpen) return null;
 
   const currentVisibility = visibilityOptions.find(
@@ -391,8 +447,14 @@ export default function CreatePostModal({
 
   return (
     <>
-      <main className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 animate-in fade-in duration-200">
-        <div className="w-full max-w-2xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-y-auto transform animate-in zoom-in-95 duration-300">
+      <div
+        onMouseDown={() => setIsOpen(false)}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 animate-in fade-in duration-200"
+      >
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          className="w-full max-w-2xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-y-auto transform animate-in zoom-in-95 duration-300"
+        >
           {/* Header */}
           <div className="flex items-start gap-4 px-6 pt-6 pb-4 border-b border-neutral-100">
             <div className="relative">
@@ -410,10 +472,12 @@ export default function CreatePostModal({
             </div>
 
             <div className="flex-1">
+              {/* header title */}
               <div className="text-base font-bold text-neutral-900">
                 {editMode ? "Edit Post" : user.username}
               </div>
 
+              {/*  visibility option button */}
               <div className="relative mt-2">
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
@@ -436,6 +500,7 @@ export default function CreatePostModal({
                   </svg>
                 </button>
 
+                {/*  visibility option dropdown */}
                 {showDropdown && (
                   <div className="absolute top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200 z-10">
                     {visibilityOptions.map((option) => (
@@ -466,6 +531,7 @@ export default function CreatePostModal({
             </div>
 
             <div className="flex justify-center">
+              {/* clear draft button */}
               {!editMode && (
                 <button
                   title="clear draft"
@@ -476,6 +542,7 @@ export default function CreatePostModal({
                 </button>
               )}
 
+              {/* exist create post modal button */}
               <button
                 title="close"
                 onClick={handleClose}
@@ -486,13 +553,14 @@ export default function CreatePostModal({
             </div>
           </div>
 
+          {/* post type selector */}
           <div className="px-6 pt-4 pb-2 border-b border-neutral-100">
             <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl">
               {[
                 { id: "media", label: "Standard", icon: "✨" },
                 { id: "article", label: "Article", icon: "📝" },
                 { id: "poll", label: "Poll", icon: "📊" },
-                { id: "opportunity", label: "Opportunity", icon: "💼" },
+                { id: "job_post", label: "Job Post", icon: "💼" },
               ].map((type) => (
                 <button
                   key={type.id}
@@ -510,6 +578,11 @@ export default function CreatePostModal({
             </div>
           </div>
 
+          {postType === "job_post" && (
+            <JobPostCreationSection value={jobDraft} onChange={setJobDraft} />
+          )}
+
+          {/* input for title */}
           {(postType === "article" || postType == "poll") && (
             <div className="my-4 mx-5">
               <input
@@ -525,6 +598,7 @@ export default function CreatePostModal({
             </div>
           )}
 
+          {/* input for poll options */}
           {postType === "poll" && !showBody && (
             <div className="px-6 pb-5">
               <button
@@ -536,7 +610,8 @@ export default function CreatePostModal({
             </div>
           )}
 
-          {(postType !== "poll" || showBody) && (
+          {/* text area input for all options except job_post and poll on condition*/}
+          {((postType !== "job_post" && postType !== "poll") || showBody) && (
             <div className="px-6 pt-2 pb-2">
               <textarea
                 value={postContent}
@@ -555,6 +630,7 @@ export default function CreatePostModal({
             </div>
           )}
 
+          {/* poll option inputs */}
           {postType === "poll" && (
             <div className="px-6 pb-4">
               <div className="space-y-3 mb-4">
@@ -604,6 +680,7 @@ export default function CreatePostModal({
                 )}
               </div>
 
+              {/* poll duration input */}
               <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-200">
                 <span className="text-sm font-medium text-neutral-700">
                   Poll Duration
@@ -790,7 +867,7 @@ export default function CreatePostModal({
               }}
             />
 
-            {postType !== "poll" && (
+            {postType !== "poll" && postType !== "job_post" && (
               <div className="flex items-center gap-2 text-neutral-500 text-sm bg-neutral-50 rounded-2xl p-4 border border-neutral-200">
                 <span className="text-xs font-semibold text-neutral-600 mr-2">
                   Add to your post
@@ -845,6 +922,7 @@ export default function CreatePostModal({
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
+                disabled={postType === "job_post"}
                 checked={disableComments}
                 onChange={(e) => setDisableComments(e.target.checked)}
                 className="cursor-pointer h-4 w-4"
@@ -880,7 +958,7 @@ export default function CreatePostModal({
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Add Link Modal */}
       <AddLinkModal

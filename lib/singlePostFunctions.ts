@@ -43,8 +43,53 @@ export async function getSinglePost(
       where: { id: postId },
       include: {
         user: true,
-        interactions: true,
-        comments: true,
+
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+
+        interactions: {
+          where: {
+            userId: userId,
+            type: {
+              in: ["LIKE", "SAVED"],
+            },
+          },
+          select: {
+            id: true,
+            type: true,
+          },
+        },
+
+        jobPost: {
+          select: {
+            id: true,
+            jobTitle: true,
+            companyName: true,
+            location: true,
+            locationType: true,
+            employmentType: true,
+            salaryMin: true,
+            salaryMax: true,
+            salaryCurrency: true,
+            deadline: true,
+            jobDetails: true,
+            jobRequirements: true,
+            applyUrl: true,
+            allowExternalApply: true,
+            applications: {
+              where: {
+                applicantId: userId,
+              },
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -82,11 +127,34 @@ export async function getSinglePost(
       });
     }
 
+    const isLiked = post.interactions.some(
+      (interaction) => interaction.type === "LIKE",
+    );
+
+    const isSaved = post.interactions.some(
+      (interaction) => interaction.type === "SAVED",
+    );
+
+    const jobPostWithStatus = post.jobPost
+      ? {
+          ...post.jobPost,
+          hasApplied: post.jobPost.applications.length > 0,
+          applicationStatus: post.jobPost.applications[0]?.status ?? null,
+        }
+      : null;
+
     return NextResponse.json({
       ...post,
       media: mediaWithUrls,
+
       username: post.user.username,
       profilePic: post.user.profilePic,
+
+      isLiked,
+      isSaved,
+      numOfComments: post._count.comments,
+
+      jobPost: jobPostWithStatus,
     });
   } catch (error) {
     console.error("Failed to fetch post single:", error);
@@ -96,4 +164,3 @@ export async function getSinglePost(
     );
   }
 }
-

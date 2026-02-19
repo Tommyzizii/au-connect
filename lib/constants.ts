@@ -50,6 +50,11 @@ export const COMMENT_API_PATH = (postId: string) =>
 
 export const REPLIES_API_PATH = (postId: string, commentId: string) =>
   BASE_API_PATH + `/posts/${postId}/comments/${commentId}/replies`;
+export const JOB_APPLICATION_API_PATH = (jobPostId: string) =>
+  BASE_API_PATH + `/jobs/${jobPostId}/apply`;
+
+export const SAVE_POST_API_PATH = (postId: string) =>
+  BASE_API_PATH + `/posts/${postId}/save`;
 
 export const LIKE_POST_API_PATH = (postId: string) =>
   BASE_API_PATH + `/posts/${postId}/like`;

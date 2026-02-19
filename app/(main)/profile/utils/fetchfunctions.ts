@@ -16,9 +16,11 @@ import {
   SINGLE_POST_API_PATH,
   VOTE_POST_API_PATH,
   LINK_PREVIEW_API_PATH,
+  SAVE_POST_API_PATH,
 } from "@/lib/constants";
 import PostsPage from "@/types/PostsPage";
 import LinkEmbed from "@/types/LinkEmbeds";
+import JobDraft from "@/types/JobDraft";
 
 // calls /me
 export async function fetchUser() {
@@ -77,9 +79,15 @@ export async function handleCreatePost(
   // poll params
   pollOptions?: string[],
   pollDuration?: number,
+  // job
+  job?: JobDraft,
 ) {
   try {
     const isPoll = postType === "poll";
+
+    if (postType === "job_post" && !job) {
+      throw new Error("Job post missing job payload");
+    }
 
     const res = await fetch(POST_API_PATH, {
       method: "POST",
@@ -95,11 +103,14 @@ export async function handleCreatePost(
         media: uploadedMedia,
         pollOptions: isPoll ? pollOptions : undefined,
         pollDuration: isPoll ? pollDuration : undefined,
+        ...(postType === "job_post" && job ? { job } : {}),
       }),
     });
 
     if (!res.ok) {
-      throw new Error("Failed to create post");
+      const errorText = await res.text();
+      console.error("Backend error:", errorText);
+      throw new Error(`Failed to create post: ${errorText}`);
     }
 
     const createdPost = await res.json();
@@ -163,6 +174,8 @@ export function useDeletePost() {
           })),
         };
       });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+      queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
     },
   });
 }
@@ -194,8 +207,10 @@ export function useEditPost() {
 
   return useMutation({
     mutationFn: editPost,
+
     onSuccess: (updatedPost) => {
-      // ✅ Update the post in the infinite query cache
+
+      // 1️⃣ Update FEED (["posts"])
       queryClient.setQueryData(["posts"], (oldData: any) => {
         if (!oldData?.pages) return oldData;
 
@@ -204,11 +219,46 @@ export function useEditPost() {
           pages: oldData.pages.map((page: any) => ({
             ...page,
             posts: page.posts.map((post: any) =>
-              post.id === updatedPost.id ? updatedPost : post,
+              post.id === updatedPost.id ? updatedPost : post
             ),
           })),
         };
       });
+
+      // 2️⃣ Update ALL profile tabs
+      queryClient.setQueriesData(
+        { queryKey: ["profilePosts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id ? updatedPost : post
+              ),
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["profileJobPosts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id ? updatedPost : post
+              ),
+            })),
+          };
+        }
+      );
     },
   });
 }
@@ -222,7 +272,7 @@ export async function fetchSinglePost(postId: string) {
 
 export function usePost(postId: string) {
   return useQuery({
-    queryKey: ["post", postId],
+    queryKey: ["posts", postId],
     queryFn: () => fetchSinglePost(postId),
     enabled: !!postId, // safety
   });
@@ -355,6 +405,8 @@ export function useToggleLike() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+      queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
     },
   });
 }
@@ -443,6 +495,8 @@ export function useVoteInPoll(postId: string, currentUserId: string) {
     onError: (_err, _vars, ctx) => {
       if (ctx?.previousPosts) {
         queryClient.setQueryData(["posts"], ctx.previousPosts);
+        queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+        queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
       }
     },
   });
@@ -475,3 +529,63 @@ export const useFetchLinkPreview = () => {
     },
   });
 };
+
+export function useToggleSave() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (postId: string) => {
+      console.log("Saving post:", postId);
+
+      const res = await fetch(SAVE_POST_API_PATH(postId), {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Failed to toggle save");
+
+      return res.json();
+    },
+
+    onMutate: async (postId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      const previousPosts = queryClient.getQueryData(["posts"]);
+
+      queryClient.setQueryData(["posts"], (oldData: any) => {
+        if (!oldData?.pages) return oldData;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((post: any) =>
+              post.id === postId
+                ? {
+                    ...post,
+                    isSaved: !post.isSaved,
+                    savedCount: post.isSaved
+                      ? post.savedCount - 1
+                      : post.savedCount + 1,
+                  }
+                : post,
+            ),
+          })),
+        };
+      });
+
+      return { previousPosts };
+    },
+
+    onError: (_err, _postId, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts"], context.previousPosts);
+      }
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+      queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
+    },
+  });
+}

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import LeftProfile from "../components/Feed_LeftProfile";
 import MainFeed from "../components/Feed_MainFeed";
 import RightEvents from "../components/Feed_RightEvents";
-import { fetchPosts, fetchUser } from "../profile/utils/fetchfunctions";
+import { fetchPosts, fetchUser } from "./profile/utils/fetchfunctions";
 import PostType from "@/types/Post";
 import {
   useInfiniteQuery,
@@ -57,10 +57,6 @@ export default function Home() {
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
-
-  useEffect(() => {
-    console.log(user);
-  }, [user]);
 
   // FLATTEN POSTS
   const posts: PostType[] = data?.pages.flatMap((page) => page.posts) ?? [];

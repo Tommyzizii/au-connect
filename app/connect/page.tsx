@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useRouter } from "next/navigation";
-import { buildSlug } from "@/app/profile/utils/buildSlug";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 
 type IncomingRequest = {
   id: string;

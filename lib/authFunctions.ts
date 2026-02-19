@@ -79,11 +79,10 @@ export async function googleAuthSignIn(req: NextRequest) {
     // Pattern A: import provider avatar into Azure (new users only)
     const providerAvatarUrl: string | null =
       typeof profile.picture === "string" ? profile.picture : null;
-
-    const importedBlobName =
-      providerAvatarUrl && !isDefaultPicture(providerAvatarUrl)
-        ? await importProviderAvatarToAzure(providerAvatarUrl)
-        : null;
+    // not filtered out by isDefaultPicture()
+    const importedBlobName = providerAvatarUrl
+      ? await importProviderAvatarToAzure(providerAvatarUrl)
+      : null;
 
     user = await prisma.user.create({
       data: {
@@ -100,21 +99,37 @@ export async function googleAuthSignIn(req: NextRequest) {
   } else {
     let profilePic: string | null = user.profilePic;
 
+    // ✅ If DB currently stores provider URL, import to Azure once and replace it
+    if (profilePic && profilePic.startsWith("https://lh3.googleusercontent.com/")) {
+      const importedFromDb = await importProviderAvatarToAzure(profilePic);
+      if (importedFromDb) profilePic = importedFromDb;
+    }
+
     // if the user had a default picture, update it
-    if (isDefaultPicture(user.profilePic)) {
+    if (!user.profilePic || isDefaultPicture(user.profilePic)) {
       // but only if the picture from google is not default, use it
       if (!isDefaultPicture(profile.picture)) {
-        profilePic = profile.picture;
+        // Import provider avatar into Azure and store the blobName instead.
+        const providerAvatarUrl: string | null =
+          typeof profile.picture === "string" ? profile.picture : null;
+        const importedBlobName = providerAvatarUrl
+          ? await importProviderAvatarToAzure(providerAvatarUrl)
+          : null;
+
+        // if Azure import worked, use blobName; otherwise keep existing picture
+        if (importedBlobName) {
+          profilePic = importedBlobName;
+        }
       }
       // else keep existing picture
     }
 
-    // update existing user with Google ID
     user = await prisma.user.update({
       where: { email: profile.email },
       data: {
         googleId: profile.sub,
         profilePic: profilePic,
+        profilePicOriginal: profilePic,
       },
     });
   }
@@ -159,7 +174,6 @@ export async function linkedinAuthSignIn(req: NextRequest) {
   });
 
   const userInfo = await infoRes.json();
-  
 
   // check if user exists
   let user = await checkExistUser(userInfo.email);
@@ -168,11 +182,9 @@ export async function linkedinAuthSignIn(req: NextRequest) {
   if (!user) {
     //  Pattern A: import provider avatar into Azure (new users only)
     const providerAvatarUrl = getLinkedInAvatarUrl(userInfo);
-
-    const importedBlobName =
-      providerAvatarUrl && !isDefaultPicture(providerAvatarUrl)
-        ? await importProviderAvatarToAzure(providerAvatarUrl)
-        : null;
+    const importedBlobName = providerAvatarUrl
+      ? await importProviderAvatarToAzure(providerAvatarUrl)
+      : null;
 
     user = await prisma.user.create({
       data: {
@@ -191,10 +203,20 @@ export async function linkedinAuthSignIn(req: NextRequest) {
     let profilePic: string | null = user.profilePic;
 
     // if the user had a default picture, update it
-    if (isDefaultPicture(user.profilePic)) {
+    if (!user.profilePic || isDefaultPicture(user.profilePic)) {
       // but only if the picture from linkedin is not default, use it
       if (!isDefaultPicture(userInfo.picture)) {
-        profilePic = userInfo.picture.original.url;
+        // Import provider avatar into Azure and store the blobName instead.
+        const providerAvatarUrl = getLinkedInAvatarUrl(userInfo);
+
+        const importedBlobName = providerAvatarUrl
+          ? await importProviderAvatarToAzure(providerAvatarUrl)
+          : null;
+
+        // if Azure import worked, use blobName; otherwise keep existing picture
+        if (importedBlobName) {
+          profilePic = importedBlobName;
+        }
       }
       // else keep existing picture
     }
@@ -205,6 +227,7 @@ export async function linkedinAuthSignIn(req: NextRequest) {
         linkedinId: userInfo.sub,
         // only update profile picture if it's not a default avatar
         profilePic: profilePic,
+        profilePicOriginal: profilePic,
       },
     });
   }
@@ -248,8 +271,7 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
       throw new Error(
-        `Token exchange failed: ${
-          errorData.error_description || errorData.error
+        `Token exchange failed: ${errorData.error_description || errorData.error
         }`
       );
     }
@@ -270,10 +292,13 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
 
     const userData = await userResponse.json();
 
-  console.log("SERVER SIDE LOG:\nMicrosoft User Info:", userData);
+    console.log("SERVER SIDE LOG:\nMicrosoft User Info:", userData);
 
     // check if user exists
     let user = await checkExistUser(userData.mail);
+
+    // ✅ Microsoft profile photo import into Azure (same pattern as Google/LinkedIn)
+    const importedMicrosoftBlobName = await importMicrosoftAvatarToAzure(accessToken);
 
     // if user does not exist create new user record
     if (!user) {
@@ -283,15 +308,31 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
           username: userData.displayName,
           microsoftId: userData.id,
           phoneNo: userData.mobilePhone,
+
+          // store blobName (internal) for both
+          profilePic: importedMicrosoftBlobName ?? null,
+          profilePicOriginal: importedMicrosoftBlobName ?? null,
+          profilePicCrop: null,
         },
       });
     } else {
       // update if doesn't exist
+      let profilePic: string | null = user.profilePic;
+
+      // only set if missing/default and we successfully imported
+      if ((!profilePic || isDefaultPicture(profilePic)) && importedMicrosoftBlobName) {
+        profilePic = importedMicrosoftBlobName;
+      }
+
       user = await prisma.user.update({
         where: { email: userData.mail },
         data: {
           microsoftId: userData.id,
           phoneNo: userData.mobilePhone,
+
+          // keep profile pictures in sync
+          profilePic: profilePic,
+          profilePicOriginal: profilePic,
         },
       });
     }
@@ -368,7 +409,7 @@ export function createUserSession(
       value: token,
       httpOnly: true,
       secure: NODE_ENV === "production",
-      maxAge: JWT_COOKIE_EXPIRATION_TIME, 
+      maxAge: JWT_COOKIE_EXPIRATION_TIME,
     });
   }
 
@@ -413,7 +454,7 @@ function isDefaultPicture(imageString: string | null) {
 }
 
 export function getHeaderUserInfo(req: NextRequest) {
-  return [req.headers.get("x-user-email"), req.headers.get("x-user-id")]
+  return [req.headers.get("x-user-email"), req.headers.get("x-user-id")];
 }
 
 /**
@@ -423,7 +464,9 @@ export function getHeaderUserInfo(req: NextRequest) {
  * - uploads to Azure as blob
  * - returns blobName
  */
-async function importProviderAvatarToAzure(imageUrl: string): Promise<string | null> {
+async function importProviderAvatarToAzure(
+  imageUrl: string
+): Promise<string | null> {
   try {
     // fetch provider image
     const res = await fetch(imageUrl);
@@ -479,6 +522,80 @@ async function importProviderAvatarToAzure(imageUrl: string): Promise<string | n
 }
 
 /**
+ * Microsoft profile photo import into Azure
+ * - downloads Microsoft Graph photo ($value)
+ * - validates type & size
+ * - uploads to Azure as blob
+ * - returns blobName
+ */
+async function importMicrosoftAvatarToAzure(
+  accessToken: string
+): Promise<string | null> {
+  try {
+    // fetch provider image (Microsoft Graph photo)
+    const res = await fetch("https://graph.microsoft.com/v1.0/me/photo/$value", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    // 404 means user has no profile photo in Microsoft
+    if (res.status === 404) {
+      console.log("Microsoft user has no profile photo");
+      return null;
+    }
+
+    if (!res.ok) {
+      console.log("Failed to fetch Microsoft avatar:", res.status);
+      return null;
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(contentType)) {
+      console.log("Microsoft avatar type not allowed:", contentType);
+      return null;
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+
+    // max 5MB
+    const maxBytes = 5 * 1024 * 1024;
+    if (arrayBuffer.byteLength > maxBytes) {
+      console.log("Microsoft avatar too large:", arrayBuffer.byteLength);
+      return null;
+    }
+
+    const extension = EXTENSIONS[contentType] || ".jpg";
+    const blobName = `images/provider/${crypto.randomUUID()}${extension}`;
+
+    const blobServiceClient = BlobServiceClient.fromConnectionString(
+      AZURE_STORAGE_CONNECTION_STRING
+    );
+
+    const containerClient = blobServiceClient.getContainerClient(
+      AZURE_STORAGE_CONTAINER_NAME
+    );
+
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    await blockBlobClient.uploadData(Buffer.from(arrayBuffer), {
+      blobHTTPHeaders: {
+        blobContentType: contentType,
+      },
+    });
+
+    return blobName;
+  } catch (err) {
+    console.log(
+      err instanceof Error ? err.message : "Failed to import Microsoft avatar"
+    );
+    return null;
+  }
+}
+
+/**
  * LinkedIn userinfo picture shape can vary. This safely extracts a usable URL.
  * We only use this for NEW USER avatar import.
  */
@@ -490,7 +607,10 @@ function getLinkedInAvatarUrl(userInfo: any): string | null {
     if (typeof userInfo.picture === "string") return userInfo.picture;
 
     // common nested structure
-    if (userInfo.picture?.original?.url && typeof userInfo.picture.original.url === "string") {
+    if (
+      userInfo.picture?.original?.url &&
+      typeof userInfo.picture.original.url === "string"
+    ) {
       return userInfo.picture.original.url;
     }
 

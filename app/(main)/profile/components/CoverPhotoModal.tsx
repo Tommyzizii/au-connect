@@ -7,8 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import User from "@/types/User";
 import CoverPhotoCropModal from "./CoverPhotoCropModal";
-import { uploadFile } from "@/app/profile/utils/uploadMedia";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { uploadFile } from "@/app/(main)/profile/utils/uploadMedia";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { DELETE_PROFILE_COVER_API_PATH ,UPLOAD_PROFILE_COVER_API_PATH} from "@/lib/constants";
 
 const DEFAULT_COVER = "/default_cover.jpg";

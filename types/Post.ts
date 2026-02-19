@@ -1,3 +1,4 @@
+import JobDraft from "./JobDraft";
 import LinkEmbed from "./LinkEmbeds";
 
 type PostType = {
@@ -23,7 +24,8 @@ type PostType = {
   content?: string;
 
   commentsDisabled?: boolean;
-
+  mediaTypes?: string[];
+  hasLinks?: boolean;
   media?:
     | {
         blobName: string;
@@ -45,7 +47,9 @@ type PostType = {
   //   multipleChoice?: boolean;
   // } | null;
 
+  jobPost?: JobDraft;
   isLiked?: boolean;
+  isSaved?: boolean;
   likeCount?: number;
   commentCount?: number;
   shareCount?: number;

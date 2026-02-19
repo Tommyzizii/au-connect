@@ -8,7 +8,7 @@ import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import Post from "./Post";
 import CreatePostModal from "./CreatePostModal";
 import { MainFeedPropTypes } from "@/types/FeedPagePropTypes";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
 
 export default function MainFeed({

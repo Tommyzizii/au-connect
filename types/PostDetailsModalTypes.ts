@@ -1,6 +1,7 @@
 import PostType from "./Post";
 
 type PostDetailsModalTypes = {
+  currentUserId: string;
   postInfo: PostType;
   media?: { url: string; type: string }[] | null;
   title?: string | null;

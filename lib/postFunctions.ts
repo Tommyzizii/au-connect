@@ -43,7 +43,8 @@ export async function createPost(req: NextRequest) {
       );
     }
 
-    const { pollDuration, ...data } = parsed.data;
+    // separating certain data
+    const { pollDuration, job, ...data } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: {
@@ -74,17 +75,61 @@ export async function createPost(req: NextRequest) {
       }
     }
 
-    const post = await prisma.post.create({
-      data: {
-        userId,
-        username: user.username,
-        profilePic:
-          user.profilePic && user.profilePic.trim() !== ""
-            ? user.profilePic
-            : "/default_profile.jpg",
-        ...pollData,
-        ...data, // title, content, media, visibility and stuff
-      },
+    const post = await prisma.$transaction(async (tx) => {
+      // 🔹 Build Post payload safely
+      const basePost = await tx.post.create({
+        data: {
+          userId,
+          username: user.username,
+          profilePic:
+            user.profilePic && user.profilePic.trim() !== ""
+              ? user.profilePic
+              : "/default_profile.jpg",
+
+          postType: data.postType,
+          visibility: data.visibility,
+          title: data.title,
+          content: data.content,
+          commentsDisabled: data.commentsDisabled,
+
+          media: data.media ?? [],
+          mediaTypes: extractMediaTypes(data.media ?? []),
+          links: data.links ?? [],
+          hasLinks: computeHasLinks(data.links ?? []),
+
+          // Poll handling
+          pollOptions: data.postType === "poll" ? (data.pollOptions ?? []) : [],
+          pollVotes: data.postType === "poll" ? {} : undefined,
+          pollEndsAt:
+            data.postType === "poll" && pollDuration
+              ? new Date(Date.now() + pollDuration * 24 * 60 * 60 * 1000)
+              : undefined,
+        },
+      });
+
+      // 🔹 If job post → create JobPost record
+      if (data.postType === "job_post" && job) {
+        await tx.jobPost.create({
+          data: {
+            postId: basePost.id,
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            location: job.location,
+            locationType: job.locationType,
+            employmentType: job.employmentType,
+            salaryMin: job.salaryMin,
+            salaryMax: job.salaryMax,
+            salaryCurrency: job.salaryCurrency,
+            deadline: job.deadline ? new Date(job.deadline) : undefined,
+            jobDetails: job.jobDetails,
+            jobRequirements: job.jobRequirements,
+            applyUrl: job.applyUrl,
+            allowExternalApply: job.allowExternalApply,
+          },
+        });
+      }
+
+      return basePost;
     });
 
     if (Array.isArray(post.media)) {
@@ -108,14 +153,14 @@ export async function createPost(req: NextRequest) {
 
           const thumbnailUrl = mediaItem.thumbnailBlobName
             ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
-                {
-                  containerName: AZURE_STORAGE_CONTAINER_NAME,
-                  blobName: mediaItem.thumbnailBlobName,
-                  permissions: BlobSASPermissions.parse("r"),
-                  expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
-                },
-                sharedKeyCredential,
-              ).toString()}`
+              {
+                containerName: AZURE_STORAGE_CONTAINER_NAME,
+                blobName: mediaItem.thumbnailBlobName,
+                permissions: BlobSASPermissions.parse("r"),
+                expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+              },
+              sharedKeyCredential,
+            ).toString()}`
             : undefined;
 
           return {
@@ -172,28 +217,83 @@ export async function getPosts(req: NextRequest) {
         cursor: { id: cursor },
       }),
       orderBy: { createdAt: "desc" },
+      // get comment count
       include: {
         _count: {
           select: {
             comments: true,
           },
         },
+        // get likes and shares
         interactions: {
           where: {
             userId: userId,
-            type: "LIKE",
+            type: {
+              in: ["LIKE", "SAVED"],
+            },
           },
-          select: { id: true },
+          select: {
+            id: true,
+            type: true,
+          },
+        },
+
+        // get job post related info
+        jobPost: {
+          select: {
+            id: true,
+            jobTitle: true,
+            companyName: true,
+            location: true,
+            locationType: true,
+            employmentType: true,
+            salaryMin: true,
+            salaryMax: true,
+            salaryCurrency: true,
+            deadline: true,
+            jobDetails: true,
+            jobRequirements: true,
+            applyUrl: true,
+            allowExternalApply: true,
+            applications: {
+              where: {
+                applicantId: userId,
+              },
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+          },
         },
       },
     });
 
     // adding comments count from _count
-    const postWithCommentCount = posts.map((post) => ({
-      ...post,
-      isLiked: post.interactions.length > 0,
-      numOfComments: post._count.comments,
-    }));
+    const postWithCommentCount = posts.map((post) => {
+      const isLiked = post.interactions.some(
+        (interaction) => interaction.type === "LIKE",
+      );
+
+      const isSaved = post.interactions.some(
+        (interaction) => interaction.type === "SAVED",
+      );
+
+      return {
+        ...post,
+        isLiked,
+        isSaved,
+        numOfComments: post._count.comments,
+
+        jobPost: post.jobPost
+          ? {
+            ...post.jobPost,
+            hasApplied: post.jobPost.applications.length > 0,
+            applicationStatus: post.jobPost.applications[0]?.status ?? null,
+          }
+          : null,
+      };
+    });
 
     // Azure credential (reuse for all media)
     const sharedKeyCredential = new StorageSharedKeyCredential(
@@ -284,7 +384,7 @@ export async function editPost(req: NextRequest) {
       );
     }
 
-    const { pollDuration, ...data } = parsed.data;
+    const { pollDuration, job, ...data } = parsed.data;
 
     // Check if post exists and belongs to user
     const existingPost = await prisma.post.findUnique({
@@ -383,17 +483,81 @@ export async function editPost(req: NextRequest) {
     }
 
     // Update the post
-    const updatedPost = await prisma.post.update({
-      where: { id: postId },
-      data: {
-        ...data,
-        // Calculate pollEndsAt if pollDuration is provided
-        ...(pollDuration && {
-          pollEndsAt: new Date(Date.now() + pollDuration * 86400000),
-        }),
-        updatedAt: new Date(),
-      },
+
+    const updatedPost = await prisma.$transaction(async (tx) => {
+      await tx.post.update({
+        where: { id: postId },
+        data: {
+          ...data,
+
+          ...(data.media !== undefined && {
+            mediaTypes: extractMediaTypes(data.media),
+          }),
+          
+          ...(data.links !== undefined && {
+            hasLinks: computeHasLinks(data.links),
+          }),
+
+          ...(pollDuration && {
+            pollEndsAt: new Date(Date.now() + pollDuration * 86400000),
+          }),
+
+          updatedAt: new Date(),
+        },
+      });
+
+      if (data.postType === "job_post" && job) {
+        await tx.jobPost.upsert({
+          where: { postId },
+          update: {
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            location: job.location,
+            locationType: job.locationType,
+            employmentType: job.employmentType,
+            salaryMin: job.salaryMin,
+            salaryMax: job.salaryMax,
+            salaryCurrency: job.salaryCurrency,
+            deadline: job.deadline ? new Date(job.deadline) : null,
+            jobDetails: job.jobDetails,
+            jobRequirements: job.jobRequirements,
+            applyUrl: job.applyUrl,
+            allowExternalApply: job.allowExternalApply,
+          },
+          create: {
+            postId,
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            location: job.location,
+            locationType: job.locationType,
+            employmentType: job.employmentType,
+            salaryMin: job.salaryMin,
+            salaryMax: job.salaryMax,
+            salaryCurrency: job.salaryCurrency,
+            deadline: job.deadline ? new Date(job.deadline) : null,
+            jobDetails: job.jobDetails,
+            jobRequirements: job.jobRequirements,
+            applyUrl: job.applyUrl,
+            allowExternalApply: job.allowExternalApply,
+          },
+        });
+      }
+
+      // 🔥 FETCH AGAIN AFTER UPSERT
+      return tx.post.findUnique({
+        where: { id: postId },
+        include: {
+          jobPost: true,
+        },
+      });
     });
+
+    if (!updatedPost) {
+      return NextResponse.json(
+        { error: "Internal server error; fetching posts" },
+        { status: 500 },
+      );
+    }
 
     // Generate SAS tokens for media if present
     if (Array.isArray(updatedPost.media)) {
@@ -418,14 +582,14 @@ export async function editPost(req: NextRequest) {
           // generate thumbnail url if exists
           const thumbnailUrl = mediaItem.thumbnailBlobName
             ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
-                {
-                  containerName: AZURE_STORAGE_CONTAINER_NAME,
-                  blobName: mediaItem.thumbnailBlobName,
-                  permissions: BlobSASPermissions.parse("r"),
-                  expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
-                },
-                sharedKeyCredential,
-              ).toString()}`
+              {
+                containerName: AZURE_STORAGE_CONTAINER_NAME,
+                blobName: mediaItem.thumbnailBlobName,
+                permissions: BlobSASPermissions.parse("r"),
+                expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+              },
+              sharedKeyCredential,
+            ).toString()}`
             : undefined;
 
           return {
@@ -558,4 +722,27 @@ export async function deletePost(req: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function extractMediaTypes(media: unknown): string[] {
+  if (!Array.isArray(media)) return [];
+  const types = media
+    .map((m: any) => m?.type)
+    .filter((t: any) => typeof t === "string" && t.trim().length > 0)
+    .map((t: string) => t.trim().toLowerCase());
+
+  // unique
+  return Array.from(new Set(types));
+}
+
+function computeHasLinks(links: unknown): boolean {
+  if (!links) return false;
+
+  // your schema stores links as Json? and you currently write links: [] by default
+  if (Array.isArray(links)) return links.length > 0;
+
+  // if someday you store an object instead of array
+  if (typeof links === "object") return Object.keys(links as any).length > 0;
+
+  return false;
 }

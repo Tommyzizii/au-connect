@@ -11,8 +11,8 @@ import {
 } from "@/lib/client/notifications.client";
 
 import { timeAgo } from "@/lib/timeAgo";
-import { buildSlug } from "@/app/profile/utils/buildSlug";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 
 type NotificationType =
   | "CONNECTION_REQUEST"

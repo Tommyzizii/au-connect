@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Ellipsis, Pencil, Trash2 } from "lucide-react";
 
 import PostType from "@/types/Post";
-import parseDate from "../profile/utils/parseDate";
-import { buildSlug } from "../profile/utils/buildSlug";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import parseDate from "../(main)/profile/utils/parseDate";
+import { buildSlug } from "../(main)/profile/utils/buildSlug";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import PopupModal from "./PopupModal";
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
@@ -15,6 +15,10 @@ const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
 interface PostProfileProps {
   post: PostType;
   currentUserId?: string; // Pass the current logged-in user's ID
+  postMenuDropDownOpen: boolean;
+  setPostMenuDropDownOpen: (state: boolean) => void;
+  popupOpen: boolean;
+  setPopupOpen: (state: boolean) => void;
   onEdit?: () => void;
   onDelete?: (postId: string) => void;
 }
@@ -22,11 +26,13 @@ interface PostProfileProps {
 export default function PostProfile({
   post,
   currentUserId,
+  postMenuDropDownOpen,
+  setPostMenuDropDownOpen,
+  popupOpen,
+  setPopupOpen,
   onEdit,
   onDelete,
 }: PostProfileProps) {
-  const [postMenuDropDownOpen, setPostMenuDropDownOpen] = useState(false);
-  const [popupOpen, setPopupOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const slug = buildSlug(post.username || "", post.userId || "");

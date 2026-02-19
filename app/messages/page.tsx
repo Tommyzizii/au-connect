@@ -23,9 +23,23 @@ export default function MessagePages() {
     retryMessage,
     deleteLocalMessage,
     getRowPreview,
+    draftPeer,
+    deleteMessageForEveryone,
+    clearConversation,
   } = useMessaging();
 
-  const selectedRow = inbox.find((x) => x.user.id === selectedUserId) ?? null;
+  const selectedRow =
+    inbox.find((x) => x.user.id === selectedUserId) ?? null;
+
+  const headerName =
+    selectedRow?.user.username ??
+    draftPeer?.username ??
+    "Messages";
+
+  const headerPic =
+    selectedRow?.user.profilePic ??
+    draftPeer?.profilePic ??
+    null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -41,8 +55,8 @@ export default function MessagePages() {
         <ChatPane
           showChatMobile={showChatMobile}
           onBackMobile={() => setShowChatMobile(false)}
-          selectedName={selectedRow?.user.username ?? "Messages"}
-          selectedProfilePic={selectedRow?.user.profilePic ?? null}
+          selectedName={headerName}
+          selectedProfilePic={headerPic}
           selectedUserId={selectedUserId}
           selectedConversationId={selectedConversationId}
           messages={activeMessages}
@@ -55,6 +69,8 @@ export default function MessagePages() {
           loadingOlder={loadingOlder}
           onRetryMessage={retryMessage}
           onDeleteLocalMessage={deleteLocalMessage}
+          onDeleteForEveryone={deleteMessageForEveryone}
+          onClearConversation={clearConversation}
         />
       </div>
     </div>

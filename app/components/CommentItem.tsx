@@ -2,10 +2,10 @@ import { UseMutationResult } from "@tanstack/react-query";
 import { useState } from "react";
 
 import CommentInput from "./CommentInput";
-import parseDate from "../profile/utils/parseDate";
-import { useReplies } from "../profile/utils/fetchfunctions";
+import parseDate from "../(main)/profile/utils/parseDate";
+import { useReplies } from "../(main)/profile/utils/fetchfunctions";
 import CommentType from "@/types/CommentType";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
 

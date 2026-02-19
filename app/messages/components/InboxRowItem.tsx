@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
-import { formatTime } from "../util/messagingUtils";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
+import { formatSmartStamp, formatFullDateTime } from "../util/messagingUtils";
 import type { InboxRow } from "@/types/InboxRow";
 
 export default function InboxRowItem({
@@ -17,7 +17,7 @@ export default function InboxRowItem({
   isSelected: boolean;
   onOpen: () => void;
 
-  // ✅ overrides (from client state)
+  // overrides (from client state)
   previewText: string | null;
   previewTime: string | null;
   previewFailed: boolean;
@@ -69,13 +69,15 @@ export default function InboxRowItem({
             {row.user.username}
           </h3>
 
+          {/* ✅ Smart stamp + hover full */}
           <span
             className={[
-              "text-xs shrink-0 ml-2",
+              "text-xs shrink-0 ml-2 cursor-default",
               previewFailed ? "text-red-600" : unread ? "text-gray-700" : "text-gray-500",
             ].join(" ")}
+            title={formatFullDateTime(displayTime)}
           >
-            {formatTime(displayTime)}
+            {formatSmartStamp(displayTime)}
           </span>
         </div>
 
@@ -83,7 +85,11 @@ export default function InboxRowItem({
           <p
             className={[
               "text-sm truncate mt-0.5",
-              previewFailed ? "text-red-600 font-semibold" : unread ? "text-gray-900 font-semibold" : "text-gray-600",
+              previewFailed
+                ? "text-red-600 font-semibold"
+                : unread
+                  ? "text-gray-900 font-semibold"
+                  : "text-gray-600",
             ].join(" ")}
           >
             {displayText}

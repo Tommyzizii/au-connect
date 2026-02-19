@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
-import { buildSlug } from "@/app/profile/utils/buildSlug";
+import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 
 type Props = {
   user: {

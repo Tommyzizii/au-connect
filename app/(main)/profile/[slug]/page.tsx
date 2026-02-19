@@ -28,7 +28,7 @@ export default async function ProfilePage(props: {
   const { id } = parseSlug(slug);
   if (!id || !isValidObjectId(id)) redirect("/404");
 
-  // Fetch from DB using safe select
+  // Fetch profile user (viewed user)
   const user = await prisma.user.findUnique({
     where: { id },
     select: safeUserSelect,
@@ -40,13 +40,42 @@ export default async function ProfilePage(props: {
   const correctSlug = buildSlug(user.username, user.id);
   if (slug !== correctSlug) redirect(`/profile/${correctSlug}`);
 
-  // Get logged-in user
+  // Session
   const session = await getCurrentUser();
-  const isOwner = session?.userId === user.id;
+  const sessionUserId = session?.userId ?? null;
+
+  // Minimal session user (viewer) - IMPORTANT: no "slug" select because Prisma model doesn't have it
+  const sessionUser: Pick<User, "id" | "username" | "slug" | "profilePic"> | null =
+    sessionUserId
+      ? await prisma.user
+          .findUnique({
+            where: { id: sessionUserId },
+            select: {
+              id: true,
+              username: true,
+              profilePic: true,
+            },
+          })
+          .then((u) =>
+            u
+              ? {
+                  id: u.id,
+                  username: u.username,
+                  slug: buildSlug(u.username, u.id), // ✅ computed, not selected
+                  profilePic:
+                    u.profilePic && u.profilePic.trim() !== ""
+                      ? u.profilePic
+                      : "/default_profile.jpg",
+                }
+              : null
+          )
+      : null;
+
+  const isOwner = sessionUserId === user.id;
   const canSeePhone = isOwner || user.phonePublic === true;
   const canSeeEmail = isOwner || user.emailPublic === true;
 
-  // Build final typed user object
+  // Build final typed profile user object
   const userData: User = {
     id: user.id,
     username: user.username,
@@ -55,6 +84,7 @@ export default async function ProfilePage(props: {
     title: user.title || "",
     about: user.about || "",
     location: user.location || "",
+
     coverPhoto:
       user.coverPhoto && user.coverPhoto.trim() !== ""
         ? user.coverPhoto
@@ -80,11 +110,17 @@ export default async function ProfilePage(props: {
     })),
 
     education: user.education,
-    //posts: user.posts,
   };
 
   return (
-    //TODO:recommendedPeople type needs to be fixed
-    <ProfileView user={userData} recommendedPeople={new Array<number>()} isOwner={isOwner} />
+    <div className="h-full min-h-0 flex flex-col">
+      <ProfileView
+        user={userData}
+        recommendedPeople={new Array<number>()}
+        isOwner={isOwner}
+        sessionUserId={sessionUserId}
+        sessionUser={sessionUser} 
+      />
+    </div>
   );
 }
