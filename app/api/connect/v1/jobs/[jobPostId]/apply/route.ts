@@ -5,6 +5,7 @@ import {
   BlobServiceClient,
   StorageSharedKeyCredential,
 } from "@azure/storage-blob";
+import { createNotification } from "@/lib/server/notifications.server";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
@@ -102,6 +103,21 @@ export async function POST(
         availability: availability || undefined,
       },
     });
+
+    // 🔔 Notify the job post owner
+    const jobPost = await prisma.jobPost.findUnique({
+      where: { id: jobPostId },
+      select: { post: { select: { userId: true } } },
+    });
+
+    if (jobPost?.post?.userId && jobPost.post.userId !== applicantId) {
+      await createNotification({
+        userId: jobPost.post.userId,   // post owner receives notification
+        fromUserId: applicantId,       // applicant is the sender
+        type: "JOB_APPLICATION",
+        entityId: jobPostId,
+      }).catch((err) => console.error("❌ Job application notification failed:", err));
+    }
 
     return NextResponse.json({
       success: true,

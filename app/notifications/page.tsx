@@ -21,7 +21,8 @@ type NotificationType =
   | "POST_COMMENTED"
   | "COMMENT_REPLIED"
   | "POST_SHARED"
-  | "POST_VOTED";
+  | "POST_VOTED"
+  | "JOB_APPLICATION";
 
 type Notification = {
   id: string;
@@ -44,6 +45,7 @@ const notificationMessages: Record<NotificationType, string> = {
   COMMENT_REPLIED: "replied to your comment",
   POST_SHARED: "shared your post",
   POST_VOTED: "voted on your poll",
+  JOB_APPLICATION: "applied to your job post",
 };
 
 function NotificationAvatar({
