@@ -64,7 +64,7 @@ export async function createComments(
       if (!parent) break;
 
       depth++;
-      currentParentId = parent.parentId;
+      currentParentId = parent.parentId || "";
 
       if (depth > MAX_COMMENT_DEPTH) {
         return NextResponse.json(

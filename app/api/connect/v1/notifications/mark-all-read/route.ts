@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
 
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   const userId = getAuthUserIdFromReq(req);
 
   await prisma.notification.updateMany({

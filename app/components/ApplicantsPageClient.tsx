@@ -99,7 +99,7 @@ export default function ApplicantsPageClient({ postId }: { postId: string }) {
                 <button
                   onClick={handleReopenJob}
                   disabled={reopenJobMutation.isPending}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                  className="cursor-pointer px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {reopenJobMutation.isPending ? "Reopening..." : "Reopen Job"}
                 </button>

@@ -232,6 +232,14 @@ export function useCloseJobPost() {
       queryClient.invalidateQueries({
         queryKey: ["applicants", postId],
       });
+
+      queryClient.invalidateQueries({
+        queryKey: ["post", postId],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["posts"],
+      });
     },
   });
 }
@@ -259,6 +267,14 @@ export function useReopenJobPost() {
 
       queryClient.invalidateQueries({
         queryKey: ["applicants", postId],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["post", postId],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["posts"],
       });
     },
   });

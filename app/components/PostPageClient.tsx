@@ -6,8 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import PostDetailsModal from "@/app/components/PostDetailsModal";
 import { SHARE_POST_API_PATH, POST_DETAIL_PAGE_PATH } from "@/lib/constants";
-import PostType from "@/types/Post";
 import { fetchUser } from "../(main)/profile/utils/fetchfunctions";
+import PostArg from "@/types/PostArg";
+import PostType from "@/types/Post";
 
 export default function PostPageClient({
   post,
@@ -15,7 +16,7 @@ export default function PostPageClient({
   initialIndex,
   hasRefShare,
 }: {
-  post: PostType;
+  post: PostArg;
   postId: string;
   initialIndex: number;
   hasRefShare: boolean;
@@ -44,11 +45,12 @@ export default function PostPageClient({
   }, [hasRefShare, postId, initialIndex, router]);
 
   if (userLoading || !user) return null;
+  const postAsPostType = post as unknown as PostType;
 
   return (
     <PostDetailsModal
       currentUserId={user?.id}
-      postInfo={post}
+      postInfo={postAsPostType}
       media={post.media}
       title={post.title}
       content={post.content}

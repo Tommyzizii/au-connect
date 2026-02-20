@@ -940,7 +940,6 @@ export default function CreatePostModal({
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
-                disabled={postType === "job_post"}
                 checked={disableComments}
                 onChange={(e) => setDisableComments(e.target.checked)}
                 className="cursor-pointer h-4 w-4"

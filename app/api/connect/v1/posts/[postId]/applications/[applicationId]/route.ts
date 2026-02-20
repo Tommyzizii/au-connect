@@ -69,7 +69,7 @@ export async function GET(
     // Azure credential (Shared Key)
     const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
     const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
-    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
+    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || "";
 
     if (!accountName || !accountKey || !containerName) {
       return NextResponse.json(
@@ -187,13 +187,96 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update application
-    const updated = await prisma.jobApplication.update({
-      where: { id: applicationId },
-      data: { status },
+    // Use transaction to ensure consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Get existing application
+      const existingApplication = await tx.jobApplication.findUnique({
+        where: { id: applicationId },
+        select: {
+          status: true,
+          jobPostId: true,
+        },
+      });
+
+      if (!existingApplication) {
+        throw new Error("Application not found");
+      }
+
+      const previousStatus = existingApplication.status;
+
+      // Get job post
+      const jobPost = await tx.jobPost.findUnique({
+        where: { id: existingApplication.jobPostId },
+        select: {
+          positionsAvailable: true,
+          positionsFilled: true,
+          status: true,
+        },
+      });
+
+      if (!jobPost) {
+        throw new Error("Job post not found");
+      }
+
+      let increment = 0;
+
+      // SHORTLISTED → increment
+      if (previousStatus !== "SHORTLISTED" && status === "SHORTLISTED") {
+        if (jobPost.positionsFilled >= jobPost.positionsAvailable) {
+          throw new Error("No positions available");
+        }
+
+        increment = 1;
+      }
+
+      // REJECTED → decrement
+      if (previousStatus === "SHORTLISTED" && status === "REJECTED") {
+        increment = -1;
+      }
+
+      // Update application status
+      const updatedApplication = await tx.jobApplication.update({
+        where: { id: applicationId },
+        data: { status },
+      });
+
+      // Update positionsFilled if needed
+      if (increment !== 0) {
+        const updatedJobPost = await tx.jobPost.update({
+          where: { id: existingApplication.jobPostId },
+          data: {
+            positionsFilled: {
+              increment,
+            },
+          },
+        });
+
+        // Mark FILLED if full
+        if (
+          updatedJobPost.positionsFilled >= updatedJobPost.positionsAvailable
+        ) {
+          await tx.jobPost.update({
+            where: { id: existingApplication.jobPostId },
+            data: { status: "FILLED" },
+          });
+        }
+
+        // Reopen if slot freed
+        if (
+          updatedJobPost.positionsFilled < updatedJobPost.positionsAvailable &&
+          updatedJobPost.status === "FILLED"
+        ) {
+          await tx.jobPost.update({
+            where: { id: existingApplication.jobPostId },
+            data: { status: "OPEN" },
+          });
+        }
+      }
+
+      return updatedApplication;
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(result);
   } catch (err) {
     console.error("Error updating application:", err);
 

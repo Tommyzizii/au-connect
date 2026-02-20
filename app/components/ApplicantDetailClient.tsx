@@ -15,7 +15,6 @@ import {
   DollarSign,
   Clock,
 } from "lucide-react";
-import { useEffect } from "react";
 
 const STATUS_STYLES = {
   APPLIED: "bg-blue-50 text-blue-700 border-blue-200",
@@ -260,7 +259,7 @@ export default function ApplicantDetailClient({
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleMessage}
-                className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition"
+                className="cursor-pointer px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition"
               >
                 Message Applicant
               </button>
@@ -269,7 +268,7 @@ export default function ApplicantDetailClient({
                 <button
                   onClick={() => handleStatusChange("SHORTLISTED")}
                   disabled={updateStatus.isPending}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                  className="cursor-pointer px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {updateStatus.isPending ? "Updating..." : "Shortlist"}
                 </button>
@@ -279,7 +278,7 @@ export default function ApplicantDetailClient({
                 <button
                   onClick={() => handleStatusChange("REJECTED")}
                   disabled={updateStatus.isPending}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                  className="cursor-pointer px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {updateStatus.isPending ? "Updating..." : "Reject"}
                 </button>

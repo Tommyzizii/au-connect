@@ -81,6 +81,7 @@ export async function getSinglePost(
             allowExternalApply: true,
 
             positionsAvailable: true,
+            positionsFilled: true,
 
             _count: {
               select: {
@@ -115,8 +116,7 @@ export async function getSinglePost(
       AZURE_STORAGE_ACCOUNT_KEY,
     );
 
-    let mediaWithUrls = post.media;
-
+    let mediaWithUrls: PostMedia[] | null = post.media as PostMedia[] | null;
     if (post.media && Array.isArray(post.media)) {
       mediaWithUrls = (post.media as PostMedia[]).map((mediaItem) => {
         const sasToken = generateBlobSASQueryParameters(
@@ -148,10 +148,10 @@ export async function getSinglePost(
       ? {
           ...post.jobPost,
 
-          positionsFilled: post.jobPost._count.applications,
+          positionsFilled: post.jobPost.positionsFilled,
 
           remainingPositions:
-            post.jobPost.positionsAvailable - post.jobPost._count.applications,
+            post.jobPost.positionsAvailable - post.jobPost.positionsFilled,
 
           hasApplied: post.jobPost.applications.length > 0,
           applicationStatus: post.jobPost.applications[0]?.status ?? null,

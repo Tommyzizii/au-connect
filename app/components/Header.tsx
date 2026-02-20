@@ -11,6 +11,7 @@ import {
   X,
   MessageCircleMore,
   LogOut,
+  UserRound,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +26,10 @@ import {
   MESSAGES_PAGE_PATH,
   PROFILE_PAGE_PATH,
 } from "@/lib/constants";
-import { fetchUser, handleLogout } from "../(main)/profile/utils/fetchfunctions";
+import {
+  fetchUser,
+  handleLogout,
+} from "../(main)/profile/utils/fetchfunctions";
 import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
 import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
@@ -58,9 +62,7 @@ const SearchResultItem = ({ user, onClick }: any) => {
       />
       <div>
         <p className="text-sm font-medium text-gray-900">{user.username}</p>
-        {user.title && (
-          <p className="text-xs text-gray-500">{user.title}</p>
-        )}
+        {user.title && <p className="text-xs text-gray-500">{user.title}</p>}
       </div>
     </button>
   );
@@ -178,8 +180,7 @@ export default function Header() {
                     </div>
                   ) : searchResults.length > 0 ? (
                     searchResults.map((u: any) => {
-                      const userSlug =
-                        u.slug || buildSlug(u.username, u.id);
+                      const userSlug = u.slug || buildSlug(u.username, u.id);
 
                       return (
                         <SearchResultItem
@@ -194,9 +195,7 @@ export default function Header() {
                       );
                     })
                   ) : (
-                    <div className="p-3 text-sm text-gray-500">
-                      No results
-                    </div>
+                    <div className="p-3 text-sm text-gray-500">No results</div>
                   )}
                 </div>
               )}
@@ -245,10 +244,9 @@ export default function Header() {
                     refetchUnread();
                   }
                 }}
-                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${currentPage === item.href
-                    ? "text-red-500"
-                    : "text-gray-600"
-                  }`}
+                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${
+                  currentPage === item.href ? "text-red-500" : "text-gray-600"
+                }`}
                 title={item.label}
               >
                 {item.icon}
@@ -259,7 +257,9 @@ export default function Header() {
             {/* PROFILE + LOGOUT */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => user?.slug && router.push(`/profile/${user.slug}`)}
+                onClick={() =>
+                  user?.slug && router.push(`/profile/${user.slug}`)
+                }
                 disabled={userLoading}
               >
                 <Image
@@ -281,14 +281,119 @@ export default function Header() {
             </div>
           </nav>
 
-          {/* MOBILE MENU BUTTON */}
+          {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden"
+            className="cursor-pointer md:hidden text-gray-600 hover:text-red-600"
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
+
+        {/* Mobile Search */}
+        <div className="md:hidden mt-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpenResults(true);
+              }}
+              onBlur={() => setTimeout(() => setOpenResults(false), 150)}
+              type="text"
+              placeholder="Search"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none focus:border-red-400"
+            />
+            {openResults && query.length >= 2 && (
+              <div className="absolute top-full mt-2 w-full bg-white border rounded-lg shadow-lg z-50">
+                {isFetching ? (
+                  <div className="p-3 text-sm text-gray-500">Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((u: any) => {
+                    const userSlug = u.slug || buildSlug(u.username, u.id);
+                    return (
+                      <SearchResultItem
+                        key={u.id}
+                        user={u}
+                        onClick={() => {
+                          router.push(`/profile/${userSlug}`);
+                          setQuery("");
+                          setOpenResults(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      />
+                    );
+                  })
+                ) : (
+                  <div className="p-3 text-sm text-gray-500">No results</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4">
+            <div className="flex flex-col gap-3">
+              {[
+                {
+                  href: MAIN_PAGE_PATH,
+                  icon: <Home className="w-5 h-5" />,
+                  label: "Home",
+                },
+                {
+                  href: CONNECT_PAGE_PATH,
+                  icon: <UserPlus className="w-5 h-5" />,
+                  label: "Connect",
+                },
+                {
+                  href: MESSAGES_PAGE_PATH,
+                  icon: <MessageCircleMore className="w-5 h-5" />,
+                  label: "Messaging",
+                },
+                {
+                  href: NOTIFICATION_PAGE_PATH,
+                  icon: <Bell className="w-5 h-5" />,
+                  label: "Notifications",
+                },
+              ].map((item, i) => (
+                <Link
+                  key={i}
+                  href={item.href}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (item.href === NOTIFICATION_PAGE_PATH) refetchUnread();
+                  }}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer ${
+                    currentPage === item.href
+                      ? "bg-red-50 text-red-500"
+                      : "text-gray-600"
+                  } hover:bg-red-50 hover:text-red-600`}
+                >
+                  {item.icon}
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              ))}
+
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowModal(true);
+                }}
+                className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+          </nav>
+        )}
 
         <PopupModal
           title="Confirm Logout"

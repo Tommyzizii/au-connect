@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
-import { PostMedia } from "@/types/PostMedia";
+import { PostMedia, PostMediaWithUrl } from "@/types/PostMedia";
+import LinkEmbed from "@/types/LinkEmbeds";
 import {
   BlobSASPermissions,
   generateBlobSASQueryParameters,
@@ -15,10 +16,8 @@ import { SAS_TOKEN_EXPIRE_DURATION } from "./constants";
 export async function getPostWithMedia(postId: string, currentUserId: string) {
   const post = await prisma.post.findUnique({
     where: { id: postId },
-
     include: {
       user: true,
-
       interactions: {
         where: {
           userId: currentUserId,
@@ -28,7 +27,6 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
           id: true,
         },
       },
-
       jobPost: {
         include: {
           applications: {
@@ -40,7 +38,6 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
               status: true,
             },
           },
-
           _count: {
             select: {
               applications: true,
@@ -60,7 +57,8 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
     AZURE_STORAGE_ACCOUNT_KEY,
   );
 
-  let mediaWithUrls = post.media;
+  let mediaWithUrls: PostMediaWithUrl[] | null = null;
+
   if (post.media && Array.isArray(post.media)) {
     mediaWithUrls = (post.media as PostMedia[]).map((mediaItem) => {
       const sasToken = generateBlobSASQueryParameters(
@@ -73,23 +71,24 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
         sharedKeyCredential,
       ).toString();
 
-      return {
+      const result: PostMediaWithUrl = {
         ...mediaItem,
         url: `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.blobName}?${sasToken}`,
       };
+      return result;
     });
   }
 
   return {
     ...post,
-
     media: mediaWithUrls,
-
+    links: post.links as LinkEmbed[] | null,
+    pollVotes: post.pollVotes as Record<string, string[]> | undefined,
+    pollOptions: post.pollOptions ?? null,
+    pollEndsAt: post.pollEndsAt ?? undefined,
     username: post.user.username,
     profilePic: post.user.profilePic,
-
     isSaved: post.interactions.length > 0,
-
     jobPost: post.jobPost
       ? {
           ...post.jobPost,

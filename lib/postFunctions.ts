@@ -155,14 +155,14 @@ export async function createPost(req: NextRequest) {
 
           const thumbnailUrl = mediaItem.thumbnailBlobName
             ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
-              {
-                containerName: AZURE_STORAGE_CONTAINER_NAME,
-                blobName: mediaItem.thumbnailBlobName,
-                permissions: BlobSASPermissions.parse("r"),
-                expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
-              },
-              sharedKeyCredential,
-            ).toString()}`
+                {
+                  containerName: AZURE_STORAGE_CONTAINER_NAME,
+                  blobName: mediaItem.thumbnailBlobName,
+                  permissions: BlobSASPermissions.parse("r"),
+                  expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+                },
+                sharedKeyCredential,
+              ).toString()}`
             : undefined;
 
           return {
@@ -251,6 +251,7 @@ export async function getPosts(req: NextRequest) {
             employmentType: true,
 
             positionsAvailable: true,
+            positionsFilled: true,
             status: true,
 
             salaryMin: true,
@@ -303,10 +304,10 @@ export async function getPosts(req: NextRequest) {
           ? {
               ...post.jobPost,
 
-              positionsFilled: post.jobPost._count.applications,
+              positionsFilled: post.jobPost.positionsFilled,
+
               remainingPositions:
-                post.jobPost.positionsAvailable -
-                post.jobPost._count.applications,
+                post.jobPost.positionsAvailable - post.jobPost.positionsFilled,
 
               hasApplied: post.jobPost.applications.length > 0,
               applicationStatus: post.jobPost.applications[0]?.status ?? null,
@@ -513,7 +514,7 @@ export async function editPost(req: NextRequest) {
           ...(data.media !== undefined && {
             mediaTypes: extractMediaTypes(data.media),
           }),
-          
+
           ...(data.links !== undefined && {
             hasLinks: computeHasLinks(data.links),
           }),
@@ -554,7 +555,6 @@ export async function editPost(req: NextRequest) {
             locationType: job.locationType,
             employmentType: job.employmentType,
             positionsAvailable: job.positionsAvailable ?? 1,
-            positionsFilled: job.positionsFilled ?? 0,
             status: job.status ?? "OPEN",
             salaryMin: job.salaryMin,
             salaryMax: job.salaryMax,
@@ -607,14 +607,14 @@ export async function editPost(req: NextRequest) {
           // generate thumbnail url if exists
           const thumbnailUrl = mediaItem.thumbnailBlobName
             ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
-              {
-                containerName: AZURE_STORAGE_CONTAINER_NAME,
-                blobName: mediaItem.thumbnailBlobName,
-                permissions: BlobSASPermissions.parse("r"),
-                expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
-              },
-              sharedKeyCredential,
-            ).toString()}`
+                {
+                  containerName: AZURE_STORAGE_CONTAINER_NAME,
+                  blobName: mediaItem.thumbnailBlobName,
+                  permissions: BlobSASPermissions.parse("r"),
+                  expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+                },
+                sharedKeyCredential,
+              ).toString()}`
             : undefined;
 
           return {

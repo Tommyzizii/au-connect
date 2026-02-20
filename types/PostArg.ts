@@ -1,0 +1,63 @@
+export type PostArg = {
+  id: string;
+  userId: string;
+  username: string;
+  profilePic: string | null;
+  postType: string;
+  visibility: string | null;
+  title: string | null;
+  content: string;
+  commentsDisabled: boolean;
+  mediaTypes: string[];
+  hasLinks: boolean;
+  media: {
+    blobName: string;
+    thumbnailBlobName?: string;
+    url: string;
+    type: string;
+    name: string;
+    mimetype: string;
+    size: number;
+  }[] | null;
+  links: {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+  }[] | null;
+  pollOptions: string[] | null;
+  pollEndsAt: Date | undefined;
+  pollVotes: Record<string, string[]> | undefined;
+  isSaved: boolean;
+  isLiked?: boolean;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  savedCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  jobPost: {
+    id: string;
+    jobTitle: string;
+    companyName: string | null;
+    location: string | null;
+    locationType: string | null;
+    jobDetails: string | null;
+    jobRequirements: string[];
+    employmentType: string;
+    positionsAvailable: number;
+    positionsFilled: number;
+    remainingPositions: number;
+    salaryMin: number | null;
+    salaryMax: number | null;
+    salaryCurrency: string | null;
+    deadline: Date | null;
+    status: string;
+    applyUrl: string | null;
+    allowExternalApply: boolean;
+    hasApplied: boolean;
+    applicationStatus: string | null;
+  } | null;
+};
+
+export default PostArg;

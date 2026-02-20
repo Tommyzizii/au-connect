@@ -31,8 +31,11 @@ const formatEmployment = (type?: EmploymentType) =>
     .toLowerCase()
     .replace(/\b\w/g, (l) => l.toUpperCase());
 
-const formatLocationType = (type?: LocationType) =>
-  type?.charAt(0) + type?.slice(1).toLowerCase();
+const formatLocationType = (type?: LocationType) => {
+  if (type) {
+    return type?.charAt(0) + type?.slice(1).toLowerCase();
+  }
+};
 
 const formatSalary = (job: any) => {
   if (!job.salaryMin && !job.salaryMax) return null;
@@ -82,6 +85,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
 
   const displayStatus =
     job.status === "OPEN" && isDeadlinePassed ? "CLOSED" : job.status;
+  const isClosed = displayStatus !== "OPEN";
 
   const handleEdit = () => {
     setPostMenuDropDownOpen(false);
@@ -172,7 +176,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
 
       {/* Meta */}
       <p className="text-gray-600 text-sm mt-1">
-        {[job.location, formatLocationType(job.locationType)]
+        {[job.location, formatLocationType(job.locationType || "ONSITE")]
           .filter(Boolean)
           .join(" · ")}
         {job.employmentType && <> · {formatEmployment(job.employmentType)}</>}
@@ -194,7 +198,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
       </div>
 
       {/* Positions Available (Owner View) */}
-      {isOwner && job.positionsAvailable && (
+      {job.positionsAvailable && (
         <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700">
           <span>
             {job.positionsFilled || 0} / {job.positionsAvailable} positions
@@ -227,6 +231,8 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
         ) : (
           <button
             onClick={() => {
+              if (isClosed || hasApplied) return;
+
               if (job.allowExternalApply && job.applyUrl) {
                 setExternalConfirm(true);
                 setPopupOpen(true);
@@ -234,14 +240,14 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
                 onApply();
               }
             }}
-            disabled={hasApplied}
+            disabled={hasApplied || isClosed}
             className={`cursor-pointer px-5 py-2 rounded-lg text-sm transition ${
-              hasApplied
+              hasApplied || isClosed
                 ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                 : "bg-black text-white hover:opacity-90"
             }`}
           >
-            {hasApplied ? "Applied" : "Apply"}
+            {isClosed ? (hasApplied && "Applied") : (hasApplied ? "Applied" : "Apply")}
           </button>
         )}
 
