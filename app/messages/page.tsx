@@ -43,8 +43,8 @@ export default function MessagePages() {
     null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-12 gap-6 h-[calc(100vh-97px)] overflow-hidden">
+    <div className="max-w-7xl mx-auto h-[calc(100dvh-97px)] overflow-hidden px-0 py-0 md:px-4 md:pt-6 md:pb-0">
+      <div className="grid grid-cols-12 gap-0 md:gap-6 h-full overflow-hidden">
         <ConversationsPane
           inbox={inbox}
           selectedUserId={selectedUserId}

@@ -1,5 +1,5 @@
-'use client'
-import { useEffect, useState } from "react";
+"use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PostType from "@/types/Post";
@@ -16,7 +16,10 @@ import {
 import CreatePostModal from "./CreatePostModal";
 
 import ShareModal from "../(main)/profile/components/ShareModal";
-import { JOB_APPLICANTS_PAGE_PATH, POST_DETAIL_PAGE_PATH } from "@/lib/constants";
+import {
+  JOB_APPLICANTS_PAGE_PATH,
+  POST_DETAIL_PAGE_PATH,
+} from "@/lib/constants";
 
 import PostPoll from "./PostPoll";
 import LinkEmbedPreview from "./Linkembedpreview";
@@ -130,7 +133,10 @@ export default function Post({
               });
             }}
             onCommentClicked={() => openPostModal(post.id, 0)}
-            onShareClicked={() => setShareModalOpen(true)}
+            onShareClicked={() => {
+              console.log("Share clicked", shareModalOpen);
+              setShareModalOpen(true);
+            }}
           />
         </div>
       </>
@@ -220,13 +226,6 @@ export default function Post({
           onShareClicked={() => setShareModalOpen(true)}
         />
 
-        {/* Share Modal */}
-        <ShareModal
-          isOpen={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
-          shareUrl={`${window.location.origin}${POST_DETAIL_PAGE_PATH(post.id, 0, "share")}`}
-        />
-
         {/* Edit Post Modal */}
         {editModalOpen && (
           <CreatePostModal
@@ -272,6 +271,13 @@ export default function Post({
             ...data,
           });
         }}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareUrl={`${window.location.origin}${POST_DETAIL_PAGE_PATH(post.id, 0, "share")}`}
       />
     </>
   );

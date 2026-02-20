@@ -53,7 +53,9 @@ function safeReadPending(convId: string): ChatMessage[] {
     return arr
       .filter(Boolean)
       .map((m: ChatMessage) => ({ ...m, status: "failed" as const }))
-      .filter((m: ChatMessage) => typeof m.id === "string" && typeof m.createdAt === "string");
+      .filter(
+        (m: ChatMessage) => typeof m.id === "string" && typeof m.createdAt === "string"
+      );
   } catch {
     return [];
   }
@@ -98,9 +100,11 @@ export function useMessaging() {
   const [initialUnreadByConv, setInitialUnreadByConv] = useState<Record<string, number>>({});
 
   // Draft header fallback (when user not in inbox yet)
-  const [draftPeer, setDraftPeer] = useState<{ id: string; username: string; profilePic: string | null } | null>(
-    null
-  );
+  const [draftPeer, setDraftPeer] = useState<{
+    id: string;
+    username: string;
+    profilePic: string | null;
+  } | null>(null);
 
   // reverse scroll state (per conversation)
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -194,7 +198,6 @@ export function useMessaging() {
       const convId = selectedConvRef.current;
       if (convId && !isDraftConvId(convId)) {
         const serverRow = rows.find((r) => r.conversationId === convId);
-
         const serverLast = serverRow?.lastMessageAt ?? null;
 
         // ✅ NEW: version check (updatedAt) catches delete of older messages
@@ -226,7 +229,8 @@ export function useMessaging() {
       setSelectedUserId((prev) => {
         if (prev) return prev;
 
-        const lastUser = typeof window !== "undefined" ? localStorage.getItem(LS_LAST_USER) : null;
+        const lastUser =
+          typeof window !== "undefined" ? localStorage.getItem(LS_LAST_USER) : null;
         if (lastUser && rows.some((r) => r.user.id === lastUser)) return lastUser;
 
         return rows[0]?.user.id ?? null;
@@ -235,7 +239,8 @@ export function useMessaging() {
       setSelectedConversationId((prev) => {
         if (prev) return prev;
 
-        const lastConv = typeof window !== "undefined" ? localStorage.getItem(LS_LAST_CONV) : null;
+        const lastConv =
+          typeof window !== "undefined" ? localStorage.getItem(LS_LAST_CONV) : null;
         if (lastConv && rows.some((r) => r.conversationId === lastConv)) return lastConv;
 
         return rows[0]?.conversationId ?? null;
@@ -269,7 +274,9 @@ export function useMessaging() {
   const fetchMessagesReplace = async (conversationId: string) => {
     if (isDraftConvId(conversationId)) return;
 
-    const res = await fetch(`/api/connect/v1/messages/${conversationId}`, { credentials: "include" });
+    const res = await fetch(`/api/connect/v1/messages/${conversationId}`, {
+      credentials: "include",
+    });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return;
 
@@ -290,7 +297,9 @@ export function useMessaging() {
     if (isDraftConvId(conversationId)) return [];
 
     const qs = cursorISO ? `?cursor=${encodeURIComponent(cursorISO)}` : "";
-    const res = await fetch(`/api/connect/v1/messages/${conversationId}${qs}`, { credentials: "include" });
+    const res = await fetch(`/api/connect/v1/messages/${conversationId}${qs}`, {
+      credentials: "include",
+    });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return [];
 
@@ -399,18 +408,22 @@ export function useMessaging() {
 
     if (existing?.conversationId) {
       // Existing real conversation
+      const convId = existing.conversationId; // ✅ string (narrowed by if)
+
       setDraftPeer(null);
       setSelectedUserId(existing.user.id);
-      setSelectedConversationId(existing.conversationId);
+      setSelectedConversationId(convId);
+
       setInitialUnreadByConv((prev) => ({
         ...prev,
-        [existing.conversationId]: existing.unreadCount ?? 0,
+        [convId]: existing.unreadCount ?? 0,
       }));
+
       setShowChatMobile(true);
 
       // ✅ store version
       if (existing.conversationUpdatedAt) {
-        convVersionRef.current[existing.conversationId] = existing.conversationUpdatedAt;
+        convVersionRef.current[convId] = existing.conversationUpdatedAt;
       }
 
       router.replace("/messages");
@@ -527,14 +540,16 @@ export function useMessaging() {
     setShowChatMobile(true);
 
     if (row.conversationId) {
-      setSelectedConversationId(row.conversationId);
+      const convId = row.conversationId; // ✅ string (narrowed)
+
+      setSelectedConversationId(convId);
       setInitialUnreadByConv((prev) => ({
         ...prev,
-        [row.conversationId!]: row.unreadCount ?? 0,
+        [convId]: row.unreadCount ?? 0,
       }));
 
       // ✅ store version when opening
-      convVersionRef.current[row.conversationId] = row.conversationUpdatedAt ?? "";
+      convVersionRef.current[convId] = row.conversationUpdatedAt ?? "";
       return;
     }
 
@@ -646,22 +661,27 @@ export function useMessaging() {
     if (!res) {
       markMessageStatus(realConvId, optimisticId, "failed");
       // persist only if real conversation exists
-      if (!isDraftConvId(realConvId)) safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
+      if (!isDraftConvId(realConvId))
+        safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
       return;
     }
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       markMessageStatus(realConvId, optimisticId, "failed");
-      if (!isDraftConvId(realConvId)) safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
+      if (!isDraftConvId(realConvId))
+        safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
       return;
     }
 
-    const sent: ChatMessage | undefined = json?.data ? { ...json.data, status: "sent" } : undefined;
+    const sent: ChatMessage | undefined = json?.data
+      ? { ...json.data, status: "sent" }
+      : undefined;
 
     if (!sent) {
       markMessageStatus(realConvId, optimisticId, "failed");
-      if (!isDraftConvId(realConvId)) safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
+      if (!isDraftConvId(realConvId))
+        safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
       return;
     }
 
@@ -728,7 +748,9 @@ export function useMessaging() {
       return;
     }
 
-    const sent: ChatMessage | undefined = json?.data ? { ...json.data, status: "sent" } : undefined;
+    const sent: ChatMessage | undefined = json?.data
+      ? { ...json.data, status: "sent" }
+      : undefined;
 
     if (!sent) {
       markMessageStatus(convId, messageId, "failed");
@@ -807,26 +829,50 @@ export function useMessaging() {
   const getRowPreview = useCallback((row: InboxRow) => {
     const convId = row.conversationId;
     if (!convId)
-      return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+      return {
+        text: row.lastMessageText ?? null,
+        time: row.lastMessageAt ?? null,
+        isFailed: false,
+      };
 
     const msgs = messagesByConvRef.current[convId] ?? [];
     if (!msgs.length)
-      return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+      return {
+        text: row.lastMessageText ?? null,
+        time: row.lastMessageAt ?? null,
+        isFailed: false,
+      };
 
     const last = msgs[msgs.length - 1];
     if (!last)
-      return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+      return {
+        text: row.lastMessageText ?? null,
+        time: row.lastMessageAt ?? null,
+        isFailed: false,
+      };
 
     const isMine = last.senderId === "__me__" || last.senderId !== row.user.id;
 
     if (isMine && last.status === "failed") {
-      return { text: `(Failed) You: ${last.text ?? ""}`, time: last.createdAt ?? null, isFailed: true };
+      return {
+        text: `(Failed) You: ${last.text ?? ""}`,
+        time: last.createdAt ?? null,
+        isFailed: true,
+      };
     }
     if (isMine && last.status === "sending") {
-      return { text: `(Sending…) You: ${last.text ?? ""}`, time: last.createdAt ?? null, isFailed: false };
+      return {
+        text: `(Sending…) You: ${last.text ?? ""}`,
+        time: last.createdAt ?? null,
+        isFailed: false,
+      };
     }
 
-    return { text: row.lastMessageText ?? null, time: row.lastMessageAt ?? null, isFailed: false };
+    return {
+      text: row.lastMessageText ?? null,
+      time: row.lastMessageAt ?? null,
+      isFailed: false,
+    };
   }, []);
 
   const selectedInitialUnreadCount = useMemo(() => {

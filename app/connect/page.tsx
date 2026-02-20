@@ -123,9 +123,9 @@ export default function ConnectPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="h-full overflow-y-auto flex flex-col items-center pt-6 px-4 sm:pt-8 md:pt-10">
-        <section className="w-full sm:w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2">
+    <div className="h-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 py-6 h-full overflow-y-auto">
+        <section className="w-full">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-lg font-bold text-neutral-800">
               Connect Requests
@@ -145,7 +145,7 @@ export default function ConnectPage() {
           {error && <p className="text-red-600 text-sm">{error}</p>}
 
           {!loading && !error && requests.length === 0 && (
-            <div className="py-20 text-center">
+            <div className="py-20 text-center lg:translate-x-10">
               <h3 className="text-lg font-semibold text-neutral-800">
                 No connection requests
               </h3>
@@ -165,10 +165,10 @@ export default function ConnectPage() {
                   key={req.id}
                   className="group relative overflow-hidden rounded-2xl bg-linear-to-br from-neutral-50 to-neutral-100/50 p-6 border border-neutral-200/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     {/* LEFT — clickable profile */}
                     <div
-                      className="flex items-start md:items-center gap-4 cursor-pointer hover:opacity-90"
+                      className="flex items-start lg:items-center gap-4 cursor-pointer hover:opacity-90"
                       onClick={() => {
                         if (!u?.id) return;
                         const slug = buildSlug(u.username || "", u.id);
@@ -201,14 +201,14 @@ export default function ConnectPage() {
                     </div>
 
                     {/* RIGHT — actions */}
-                    <div className="flex items-center gap-3 ml-auto">
+                    <div className="flex w-full sm:w-auto items-center justify-end gap-3 lg:ml-auto">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAccept(req.id);
                         }}
                         disabled={actingId === req.id}
-                        className="rounded-xl bg-blue-100 hover:bg-blue-200 px-6 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-60"
+                        className="rounded-xl bg-blue-100 hover:bg-blue-200 px-4 sm:px-5 lg:px-6 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-60"
                       >
                         {actingId === req.id ? "Accepting..." : "Accept"}
                       </button>
@@ -219,7 +219,7 @@ export default function ConnectPage() {
                           handleDecline(req.id);
                         }}
                         disabled={actingId === req.id}
-                        className="rounded-xl bg-neutral-200 hover:bg-neutral-300 px-6 py-2.5 text-sm font-semibold text-neutral-700 disabled:opacity-60"
+                        className="rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 sm:px-5 lg:px-6 py-2.5 text-sm font-semibold text-neutral-700 disabled:opacity-60"
                       >
                         {actingId === req.id ? "Declining..." : "Decline"}
                       </button>
@@ -231,6 +231,11 @@ export default function ConnectPage() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }
+
+
+
+
+

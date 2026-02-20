@@ -119,9 +119,9 @@ export default function NotificationsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="h-full overflow-y-auto flex flex-col items-center pt-6 px-4">
-        <section className="w-full sm:w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2">
+    <div className="h-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 py-6 h-full overflow-y-auto">
+        <section className="w-full">
 
           {/* HEADER */}
           <div className="flex items-center gap-3 mb-6">
@@ -157,7 +157,7 @@ export default function NotificationsPage() {
 
           {/* EMPTY STATE */}
           {!loading && notifications.length === 0 && (
-            <div className="py-20 text-center">
+            <div className="py-20 text-center lg:translate-x-10">
               <h3 className="text-lg font-semibold text-neutral-800">
                 No notifications yet
               </h3>
@@ -229,6 +229,6 @@ export default function NotificationsPage() {
 
         </section>
       </div>
-    </main>
+    </div>
   );
 }

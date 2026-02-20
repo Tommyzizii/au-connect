@@ -138,8 +138,11 @@ export default function ChatPane({
     <div
       className={[
         "col-span-12 md:col-span-7 lg:col-span-8",
-        "bg-white border rounded-lg overflow-hidden",
-        "flex flex-col min-h-0",
+        "bg-white flex flex-col min-h-0 h-full",
+        // ✅ mobile: full screen (no card)
+        "rounded-none border-0",
+        // ✅ desktop: card look
+        "md:border md:rounded-lg md:overflow-hidden",
         showChatMobile ? "flex" : "hidden md:flex",
       ].join(" ")}
     >
@@ -215,7 +218,7 @@ export default function ChatPane({
           </div>
 
           {/* Messages */}
-          <div className="flex-1 min-h-0 bg-gray-50">
+          <div className="flex-1 min-h-0 bg-gray-50 pb-24 md:pb-0">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center p-6">
                 <div className="max-w-md w-full bg-white border rounded-xl p-6 text-center shadow-sm">
@@ -277,7 +280,14 @@ export default function ChatPane({
           </div>
 
           {/* Input */}
-          <div className="px-4 py-3 md:px-6 border-t shrink-0 bg-white">
+          <div
+            className="border-t bg-white z-10
+             fixed inset-x-0 bottom-0 px-4 pt-3
+             md:static md:px-6 md:pt-3"
+            style={{
+              paddingBottom: "calc(max(0.75rem, env(safe-area-inset-bottom)) + 0.25rem)",
+            }}
+          >
             <div className="flex items-center bg-white border border-gray-300 rounded-full px-3 py-2 md:px-5 md:py-3 gap-2">
               <input
                 type="text"
@@ -288,16 +298,7 @@ export default function ChatPane({
                 onKeyDown={(e) => e.key === "Enter" && onSend()}
               />
 
-              <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                <ImagePlus className="w-5 h-5 text-gray-500 cursor-pointer hover:text-gray-700" />
-                <Paperclip className="w-5 h-5 text-gray-500 cursor-pointer hover:text-gray-700 hidden sm:block" />
-                <Smile className="w-5 h-5 text-gray-500 cursor-pointer hover:text-gray-700 hidden sm:block" />
-                <button
-                  type="button"
-                  className="px-2 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hidden sm:block"
-                >
-                  GIF
-                </button>
+              <div className="flex items-center shrink-0">
                 <button type="button" onClick={onSend} aria-label="Send">
                   <Send className="w-5 h-5 text-gray-700 cursor-pointer hover:text-gray-900" />
                 </button>
