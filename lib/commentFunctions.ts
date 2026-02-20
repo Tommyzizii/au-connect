@@ -113,7 +113,7 @@ export async function createComments(
           userId: parentComment.userId, // original comment owner
           fromUserId: user.id,          // who replied
           type: "COMMENT_REPLIED",
-          entityId: comment.id,
+          entityId: postId,
         });
       }
     } else {
