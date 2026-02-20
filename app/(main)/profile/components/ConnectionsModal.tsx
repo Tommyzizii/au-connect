@@ -67,7 +67,7 @@ export default function ConnectionsModal({
             </div>
             <button
               onClick={onClose}
-              className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200 active:scale-95"
+              className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200 active:scale-95 cursor-pointer"
               aria-label="Close modal"
             >
               <svg

@@ -81,7 +81,7 @@ export default function CoverPhotoCropModal({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="text-gray-600 hover:text-gray-900 disabled:opacity-50 cursor-pointer"
           >
             ✕
           </button>
@@ -124,7 +124,7 @@ export default function CoverPhotoCropModal({
                 type="button"
                 onClick={onCancel}
                 disabled={busy}
-                className="px-4 py-2 border rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 border rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
@@ -132,7 +132,7 @@ export default function CoverPhotoCropModal({
                 type="button"
                 onClick={handleSave}
                 disabled={busy || !croppedAreaPixels}
-                className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
               >
                 Save cover
               </button>

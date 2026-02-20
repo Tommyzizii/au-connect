@@ -64,7 +64,7 @@ export default function ConversationsPane({
           {/* clickable new message (top right) */}
           <button
             type="button"
-            className="shrink-0 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200"
+            className="shrink-0 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 cursor-pointer"
             aria-label="New message"
             onClick={() => setOpenNewMessage(true)}
           >

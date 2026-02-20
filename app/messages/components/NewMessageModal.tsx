@@ -19,7 +19,7 @@ function Row({ u, onPick }: { u: ConnectionUser; onPick: (u: ConnectionUser) => 
     <button
       type="button"
       onClick={() => onPick(u)}
-      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-left"
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-left cursor-pointer"
     >
       <div className="relative w-10 h-10 shrink-0">
         <Image src={avatar} alt={u.username} fill className="rounded-full object-cover" />
@@ -100,7 +100,7 @@ export default function NewMessageModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5 text-gray-700" />

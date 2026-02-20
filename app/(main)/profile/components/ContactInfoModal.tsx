@@ -55,7 +55,7 @@ export default function ContactInfoModal({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-900"
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-900 cursor-pointer"
             aria-label="Close"
             type="button"
           >

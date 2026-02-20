@@ -208,7 +208,7 @@ export default function ConnectPage() {
                           handleAccept(req.id);
                         }}
                         disabled={actingId === req.id}
-                        className="rounded-xl bg-blue-100 hover:bg-blue-200 px-4 sm:px-5 lg:px-6 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-60"
+                        className="cursor-pointer rounded-xl bg-blue-100 hover:bg-blue-200 px-4 sm:px-5 lg:px-6 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-60"
                       >
                         {actingId === req.id ? "Accepting..." : "Accept"}
                       </button>
@@ -219,7 +219,7 @@ export default function ConnectPage() {
                           handleDecline(req.id);
                         }}
                         disabled={actingId === req.id}
-                        className="rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 sm:px-5 lg:px-6 py-2.5 text-sm font-semibold text-neutral-700 disabled:opacity-60"
+                        className="cursor-pointer rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 sm:px-5 lg:px-6 py-2.5 text-sm font-semibold text-neutral-700 disabled:opacity-60"
                       >
                         {actingId === req.id ? "Declining..." : "Decline"}
                       </button>

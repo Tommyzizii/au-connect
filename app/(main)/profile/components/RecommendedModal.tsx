@@ -13,7 +13,7 @@ export default function RecommendedModal({ open, onClose, users }: any) {
           <h2 className="text-xl font-semibold text-gray-900">
             People you may be interested in
           </h2>
-          <button onClick={onClose} className="text-gray-600 text-xl">×</button>
+          <button onClick={onClose} className="text-gray-600 text-xl cursor-pointer">×</button>
         </div>
 
         {/* List */}

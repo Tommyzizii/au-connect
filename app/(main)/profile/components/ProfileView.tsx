@@ -501,7 +501,7 @@ export default function ProfileView({
                     {isOwner && (
                       <button
                         onClick={() => setOpenCoverPhotoModal(true)}
-                        className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow"
+                        className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow cursor-pointer"
                         type="button"
                         aria-label="Edit cover photo"
                       >
@@ -517,7 +517,7 @@ export default function ProfileView({
                         {isOwner ? (
                           <button
                             onClick={() => setOpenEditModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white"
+                            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
                           >
                             <Pencil size={16} />
                             Edit Profile
@@ -529,7 +529,7 @@ export default function ProfileView({
                               <button
                                 onClick={() => setOpenRemoveModal(true)}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${connectLoading
+                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 cursor-pointer ${connectLoading
                                   ? "opacity-50 cursor-not-allowed"
                                   : ""
                                   }`}
@@ -541,7 +541,7 @@ export default function ProfileView({
                                 <button
                                   onClick={handleAcceptIncoming}
                                   disabled={connectLoading}
-                                  className={`px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 ${connectLoading
+                                  className={`px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 cursor-pointer ${connectLoading
                                     ? "opacity-50 cursor-not-allowed"
                                     : ""
                                     }`}
@@ -552,7 +552,7 @@ export default function ProfileView({
                                 <button
                                   onClick={handleDeclineIncoming}
                                   disabled={connectLoading}
-                                  className={`px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 ${connectLoading
+                                  className={`px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 cursor-pointer ${connectLoading
                                     ? "opacity-50 cursor-not-allowed"
                                     : ""
                                     }`}
@@ -570,7 +570,7 @@ export default function ProfileView({
                                 <button
                                   onClick={handleCancelRequest}
                                   disabled={connectLoading}
-                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${connectLoading
+                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer ${connectLoading
                                     ? "opacity-50 cursor-not-allowed"
                                     : ""
                                     }`}
@@ -583,7 +583,7 @@ export default function ProfileView({
                               <button
                                 onClick={handleConnect}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${connectLoading
+                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 cursor-pointer ${connectLoading
                                   ? "opacity-50 cursor-not-allowed"
                                   : ""
                                   }`}
@@ -595,7 +595,7 @@ export default function ProfileView({
                               onClick={() =>
                                 router.push(`/messages?userId=${user.id}`)
                               }
-                              className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white"
+                              className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
                             >
                               Message
                             </button>
@@ -612,7 +612,7 @@ export default function ProfileView({
                       <button
                         type="button"
                         onClick={() => setOpenProfilePhotoModal(true)}
-                        className="relative w-32 h-32 block"
+                        className="relative w-32 h-32 block cursor-pointer"
                         aria-label="Open profile photo"
                       >
                         <Image
@@ -648,7 +648,7 @@ export default function ProfileView({
 
                     <button
                       onClick={() => setOpenConnectionsModal(true)}
-                      className="text-sm text-gray-600 hover:underline"
+                      className="text-sm text-gray-600 hover:underline cursor-pointer"
                     >
                       {user.connections} connections
                     </button>
@@ -662,7 +662,7 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenExperienceModal(true)}
-                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
                       >
                         <Pencil size={18} />
                       </button>
@@ -687,7 +687,7 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenEducationModal(true)}
-                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
                       >
                         <Pencil size={18} />
                       </button>
@@ -712,7 +712,7 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenAboutModal(true)}
-                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
                       >
                         <Pencil size={18} />
                       </button>
@@ -736,7 +736,7 @@ export default function ProfileView({
                       onClick={() => {
                         setMainSection("activity");
                       }}
-                      className={`pb-2 ${mainSection === "activity"
+                      className={`pb-2 cursor-pointer ${mainSection === "activity"
                         ? "border-b-2 border-blue-600 text-blue-600"
                         : "text-gray-600"
                         }`}
@@ -749,7 +749,7 @@ export default function ProfileView({
                         setMainSection("jobActivity");
                         setJobTab("hiring"); // nicer UX default
                       }}
-                      className={`pb-2 ${mainSection === "jobActivity"
+                      className={`pb-2 cursor-pointer ${mainSection === "jobActivity"
                         ? "border-b-2 border-blue-600 text-blue-600"
                         : "text-gray-600"
                         }`}
@@ -773,7 +773,7 @@ export default function ProfileView({
                           <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`pb-2 flex-shrink-0 ${tab === t.key
+                            className={`pb-2 flex-shrink-0 cursor-pointer ${tab === t.key
                               ? "border-b-2 border-blue-600 text-blue-600"
                               : "text-gray-600"
                               }`}
@@ -797,7 +797,7 @@ export default function ProfileView({
                           <button
                             key={t.key}
                             onClick={() => setJobTab(t.key)}
-                            className={`pb-2 flex-shrink-0 ${jobTab === t.key
+                            className={`pb-2 flex-shrink-0 cursor-pointer ${jobTab === t.key
                                 ? "border-b-2 border-blue-600 text-blue-600"
                                 : "text-gray-600"
                               }`}
@@ -914,7 +914,7 @@ export default function ProfileView({
                   <RecommendedList users={recommendedPeople} limit={4} />
                   <button
                     onClick={() => setOpenModal(true)}
-                    className="mt-4 text-sm text-blue-600 font-semibold"
+                    className="mt-4 text-sm text-blue-600 font-semibold cursor-pointer"
                   >
                     Show more
                   </button>

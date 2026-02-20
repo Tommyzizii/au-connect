@@ -144,7 +144,7 @@ export default function NotificationsPage() {
                     prev.map((n) => ({ ...n, isRead: true })),
                   );
                 }}
-                className="ml-auto text-sm text-blue-600 hover:underline font-semibold"
+                className="cursor-pointer ml-auto text-sm text-blue-600 hover:underline font-semibold"
               >
                 Mark all as read
               </button>

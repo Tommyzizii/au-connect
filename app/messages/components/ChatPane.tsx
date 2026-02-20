@@ -12,10 +12,12 @@ import {
 } from "lucide-react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
+import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 import MessageBubble from "./MessageBubble";
 import type { ChatMessage } from "@/types/ChatMessage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDayLabel } from "../util/messagingUtils";
+import { useRouter } from "next/navigation";
 
 type TimelineItem =
   | { kind: "sep"; key: string; label: string }
@@ -67,6 +69,7 @@ export default function ChatPane({
   onDeleteForEveryone: (messageId: string) => void;
   onClearConversation: () => void;
 }) {
+  const router = useRouter();
   const hasSelection = !!selectedUserId;
   const selectedAvatarUrl = useResolvedMediaUrl(
     selectedProfilePic,
@@ -179,18 +182,29 @@ export default function ChatPane({
                 className="w-5 h-5 text-gray-700 cursor-pointer hover:text-gray-900 mr-3 flex-shrink-0 md:hidden"
               />
 
-              <div className="relative w-11 h-11 shrink-0">
-                <Image
-                  src={selectedAvatarUrl}
-                  alt={selectedName}
-                  fill
-                  className="rounded-full object-cover"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedUserId) return;
+                  const slug = buildSlug(selectedName || "", selectedUserId);
+                  router.push(`/profile/${slug}`);
+                }}
+                className="flex items-center min-w-0 cursor-pointer"
+                aria-label={`Open ${selectedName} profile`}
+              >
+                <div className="relative w-11 h-11 shrink-0">
+                  <Image
+                    src={selectedAvatarUrl}
+                    alt={selectedName}
+                    fill
+                    className="rounded-full object-cover"
+                  />
+                </div>
 
-              <h2 className="ml-3 font-semibold text-gray-900 text-base md:text-lg truncate">
-                {selectedName}
-              </h2>
+                <h2 className="ml-3 font-semibold text-gray-900 text-base md:text-lg truncate">
+                  {selectedName}
+                </h2>
+              </button>
             </div>
 
             {/* ✅ only logic changes here */}
@@ -203,7 +217,7 @@ export default function ChatPane({
               {openMenu && (
                 <div className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg z-50 overflow-hidden">
                   <button
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                     onClick={() => {
                       onClearConversation();
                       setOpenMenu(false);
@@ -299,7 +313,12 @@ export default function ChatPane({
               />
 
               <div className="flex items-center shrink-0">
-                <button type="button" onClick={onSend} aria-label="Send">
+                <button
+                  type="button"
+                  onClick={onSend}
+                  aria-label="Send"
+                  className="cursor-pointer"
+                >
                   <Send className="w-5 h-5 text-gray-700 cursor-pointer hover:text-gray-900" />
                 </button>
               </div>

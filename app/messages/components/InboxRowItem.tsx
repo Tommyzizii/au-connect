@@ -38,6 +38,7 @@ export default function InboxRowItem({
         "w-full text-left flex items-center gap-3 px-4 py-3 transition-colors",
         "hover:bg-gray-50",
         "relative",
+        "cursor-pointer",
         baseBg,
       ].join(" ")}
     >

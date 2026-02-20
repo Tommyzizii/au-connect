@@ -44,13 +44,13 @@ export default function EducationManagerModal({
                   setEditing(null);
                   setOpenForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 cursor-pointer"
               >
                 <Plus size={16} />
                 Add education
               </button>
 
-              <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 cursor-pointer">
                 <X className="text-gray-600 hover:text-gray-800" />
               </button>
             </div>
@@ -84,7 +84,7 @@ export default function EducationManagerModal({
                       setEditing(edu);
                       setOpenForm(true);
                     }}
-                    className="p-2 rounded-full hover:bg-gray-100"
+                    className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
                   >
                     <Pencil size={16} className="text-gray-600" />
                   </button>
@@ -103,7 +103,7 @@ export default function EducationManagerModal({
                         prev.filter((e) => e.id !== edu.id)
                       );
                     }}
-                    className="p-2 rounded-full hover:bg-red-50"
+                    className="p-2 rounded-full hover:bg-red-50 cursor-pointer"
                   >
                     <Trash2 size={16} className="text-red-600" />
                   </button>

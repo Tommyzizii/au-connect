@@ -227,7 +227,7 @@ export default function EditProfileModal({
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -235,7 +235,7 @@ export default function EditProfileModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300"
+            className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300 cursor-pointer"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

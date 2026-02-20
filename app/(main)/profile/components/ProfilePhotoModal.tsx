@@ -363,7 +363,7 @@ export default function ProfilePhotoModal({
                 onClose();
               }
             }}
-            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50"
+            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
             aria-label="Close"
             type="button"
             disabled={busy}
@@ -400,7 +400,7 @@ export default function ProfilePhotoModal({
                 disabled={busy || !canEditOriginal}
                 className={`w-full px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${
                   canEditOriginal
-                    ? "text-gray-900 hover:bg-gray-50"
+                    ? "text-gray-900 hover:bg-gray-50 cursor-pointer"
                     : "text-gray-400 cursor-not-allowed bg-gray-50"
                 }`}
               >
@@ -413,7 +413,7 @@ export default function ProfilePhotoModal({
               type="button"
               onClick={pickFile}
               disabled={busy}
-              className="w-full px-4 py-2 border rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+              className="w-full px-4 py-2 border rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
             >
               {busy ? "Please wait..." : "Upload new photo"}
             </button>
@@ -423,7 +423,7 @@ export default function ProfilePhotoModal({
                 type="button"
                 onClick={handleDelete}
                 disabled={busy}
-                className="w-full px-4 py-2 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full px-4 py-2 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <Trash2 size={16} />
                 Delete photo

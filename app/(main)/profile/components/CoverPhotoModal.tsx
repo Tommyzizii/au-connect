@@ -248,7 +248,7 @@ export default function CoverPhotoModal({
           <h2 className="text-lg font-semibold">Cover photo</h2>
           <button
             onClick={() => !busy && onClose()}
-            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50"
+            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
             disabled={busy}
           >
             <X size={18} />
@@ -277,7 +277,7 @@ export default function CoverPhotoModal({
               <button
                 onClick={handleEditCurrent}
                 disabled={!canEditOriginal || busy}
-                className="w-full px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <Pencil size={16} />
                 Edit current cover
@@ -287,7 +287,7 @@ export default function CoverPhotoModal({
             <button
               onClick={pickFile}
               disabled={busy}
-              className="w-full px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              className="w-full px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
             >
               Upload new cover
             </button>
@@ -296,7 +296,7 @@ export default function CoverPhotoModal({
               <button
                 onClick={handleDelete}
                 disabled={busy}
-                className="w-full px-4 py-2 border border-red-500 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full px-4 py-2 border border-red-500 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <Trash2 size={16} />
                 Remove cover

@@ -140,7 +140,7 @@ export default function AddEditExperienceModal({
           <h2 className="text-2xl font-semibold text-gray-900">
             Experience
           </h2>
-          <button onClick={onClose}>
+          <button onClick={onClose} className="cursor-pointer">
             <X className="text-gray-500 hover:text-gray-700" />
           </button>
         </div>
@@ -283,7 +283,7 @@ export default function AddEditExperienceModal({
         <button
           onClick={handleSave}
           className="w-full px-5 py-2 bg-blue-600 text-white rounded-lg font-medium
-                     hover:bg-blue-700"
+                     hover:bg-blue-700 cursor-pointer"
         >
           Save
         </button>

@@ -22,7 +22,7 @@ export default function RecommendedCard({ user }: any) {
         <p className="text-gray-500 text-xs">{user.location}</p>
       </div>
 
-      <button className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg">
+      <button className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg cursor-pointer">
         Connect
       </button>
     </div>
