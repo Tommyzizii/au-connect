@@ -5,7 +5,7 @@ import { RightEventsProfileTypes } from "@/types/FeedPagePropTypes";
 export default function RightEvents( { events, loading }: RightEventsProfileTypes ) {
 
     return (
-        <div className="hidden lg:block col-span-3 space-y-4 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2">
+        <div className="space-y-4 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2">
           {loading ? (
             <>
               <EventCard isLoading={true} />

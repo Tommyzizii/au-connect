@@ -10,9 +10,11 @@ import CreatePostModal from "./CreatePostModal";
 import { MainFeedPropTypes } from "@/types/FeedPagePropTypes";
 import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
+import LeftProfile from "./Feed_LeftProfile";
 
 export default function MainFeed({
   user,
+  userLoading,
   posts,
   loading,
   fetchNextPage,
@@ -54,53 +56,58 @@ export default function MainFeed({
     );
 
     return (
-      <div className="bg-white md:rounded-lg border border-gray-200 p-4 pt-7 mb-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="relative w-10 h-10">
-            <Image
-              src={avatarUrl}
-              alt={user.username}
-              fill
-              className="rounded-full object-cover"
-            />
+      <>
+        <div className="w-full md:hidden block">
+          <LeftProfile user={user} loading={userLoading} />
+        </div>
+        <div className="bg-white md:rounded-lg border border-gray-200 p-4 pt-7 mb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="relative w-10 h-10">
+              <Image
+                src={avatarUrl}
+                alt={user.username}
+                fill
+                className="rounded-full object-cover"
+              />
+            </div>
+            <button
+              onClick={() => setIsCreatePostModalOpen(true)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none active:bg-gray-100 hover:bg-gray-200 text-left"
+            >
+              {"Share your ideas"}
+            </button>
           </div>
-          <button
-            onClick={() => setIsCreatePostModalOpen(true)}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none active:bg-gray-100 hover:bg-gray-200 text-left"
-          >
-            {"Share your ideas"}
-          </button>
-        </div>
 
-        <div className="flex justify-evenly gap-4 pl-13">
-          <button
-            onClick={() => openModal("discussion")}
-            className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span>Discussion</span>
-          </button>
-          <button
-            onClick={() => openModal("media")}
-            className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
-          >
-            <ImageIcon className="w-5 h-5" />
-            <span>Media</span>
-          </button>
-          <button
-            onClick={() => openModal("article")}
-            className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
-          >
-            <BookOpen className="w-5 h-5" />
-            <span>Write Article</span>
-          </button>
+          <div className="flex justify-evenly gap-4 pl-13">
+            <button
+              onClick={() => openModal("discussion")}
+              className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span>Discussion</span>
+            </button>
+            <button
+              onClick={() => openModal("media")}
+              className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+            >
+              <ImageIcon className="w-5 h-5" />
+              <span>Media</span>
+            </button>
+            <button
+              onClick={() => openModal("article")}
+              className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+            >
+              <BookOpen className="w-5 h-5" />
+              <span>Write Article</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   };
 
   return (
-    <div className="lg:col-span-6 md:col-span-7">
+    <div className="">
       {isCreatePostModalOpen && (
         <CreatePostModal
           user={user}

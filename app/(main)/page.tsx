@@ -62,22 +62,30 @@ export default function Home() {
   const posts: PostType[] = data?.pages.flatMap((page) => page.posts) ?? [];
 
   return (
-    <div className="h-full overflow-hidden">
+    <div className="h-full">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="md:grid md:grid-cols-12 md:gap-6">
-          <LeftProfile user={user} loading={userLoading} />
+          <div className="border border-grey-300 lg:col-span-3 md:col-span-4 hidden md:block">
+            <LeftProfile user={user} loading={userLoading} />
+          </div>
 
-          {user && (
-            <MainFeed
-              user={user}
-              posts={posts}
-              loading={postLoading}
-              fetchNextPage={fetchNextPage}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-            />
-          )}
-          <RightEvents events={mockEvents} loading={false} />
+          <div className="lg:col-span-6 md:col-span-7">
+            {user && (
+              <MainFeed
+                user={user}
+                userLoading={userLoading}
+                posts={posts}
+                loading={postLoading}
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+              />
+            )}
+          </div>
+
+          <div className="hidden lg:block col-span-3">
+            <RightEvents events={mockEvents} loading={false} />
+          </div>
         </div>
       </div>
     </div>

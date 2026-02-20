@@ -74,7 +74,8 @@ export default function Header() {
   const [query, setQuery] = useState("");
   const [openResults, setOpenResults] = useState(false);
 
-  const pathname = usePathname();
+  const pathnameRaw = usePathname();
+  const pathname = pathnameRaw ?? "";
   const router = useRouter();
 
   const { data: user, isLoading: userLoading } = useQuery({
@@ -244,9 +245,8 @@ export default function Header() {
                     refetchUnread();
                   }
                 }}
-                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${
-                  currentPage === item.href ? "text-red-500" : "text-gray-600"
-                }`}
+                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${currentPage === item.href ? "text-red-500" : "text-gray-600"
+                  }`}
                 title={item.label}
               >
                 {item.icon}
@@ -370,11 +370,10 @@ export default function Header() {
                     setMobileMenuOpen(false);
                     if (item.href === NOTIFICATION_PAGE_PATH) refetchUnread();
                   }}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer ${
-                    currentPage === item.href
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer ${currentPage === item.href
                       ? "bg-red-50 text-red-500"
                       : "text-gray-600"
-                  } hover:bg-red-50 hover:text-red-600`}
+                    } hover:bg-red-50 hover:text-red-600`}
                 >
                   {item.icon}
                   <span className="font-medium">{item.label}</span>

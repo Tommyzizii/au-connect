@@ -16,9 +16,8 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
 
   const resolvedCoverPhotoUrl = useResolvedMediaUrl(
     user?.coverPhoto,
-    "/default_cover.jpg"
+    "/default_cover.jpg",
   );
-
 
   // Safely handle navigation
   const handleProfileClick = () => {
@@ -28,8 +27,8 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
 
   if (loading) {
     return (
-      <div className="lg:col-span-3 md:col-span-4">
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-20 w-full md:w-auto self-start">
+      <div className="w-full">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
           <div className="h-24 bg-gray-200 animate-pulse"></div>
           <div className="p-4 -mt-12">
             <div className="relative w-20 h-20 mb-3 bg-gray-300 rounded-full animate-pulse border-4 border-white"></div>
@@ -48,11 +47,11 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
   const location = user?.location || "Unknown location";
 
   return (
-    <div className="lg:col-span-3 md:col-span-4 flex justify-center md:justify-start">
+    <div className="w-full md:flex justify-center md:justify-start">
       <div
         className="
           bg-white md:rounded-lg border border-gray-200 overflow-hidden flex-1
-          static md:sticky md:top-6
+          static 
           w-full md:w-auto md:max-w-xs self-start
         "
       >

@@ -97,6 +97,28 @@ export default function PostDetailsModal({
     mutationFn: createComment,
 
     onSuccess: (newComment, variables) => {
+      const bumpPostCommentCount = (oldData: any) => {
+        if (!oldData?.pages) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((p: any) =>
+              p.id === variables.postId
+                ? { ...p, numOfComments: (p.numOfComments ?? 0) + 1 }
+                : p,
+            ),
+          })),
+        };
+      };
+
+      const bumpSinglePostCommentCount = (oldPost: any) => {
+        if (!oldPost) return oldPost;
+        return {
+          ...oldPost,
+          numOfComments: (oldPost.numOfComments ?? 0) + 1,
+        };
+      };
       // ── TOP LEVEL COMMENT ──────────────────────────────────────────────────
       if (!variables.parentCommentId) {
         queryClient.setQueryData(["comments", variables.postId], (oldData: any) => {
@@ -109,24 +131,11 @@ export default function PostDetailsModal({
           };
         });
 
-        const bumpPostCommentCount = (oldData: any) => {
-          if (!oldData?.pages) return oldData;
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page: any) => ({
-              ...page,
-              posts: page.posts.map((p: any) =>
-                p.id === variables.postId
-                  ? { ...p, numOfComments: (p.numOfComments ?? 0) + 1 }
-                  : p,
-              ),
-            })),
-          };
-        };
-
         queryClient.setQueryData(["posts"], bumpPostCommentCount);
         queryClient.setQueriesData({ queryKey: ["profilePosts"] }, bumpPostCommentCount);
         queryClient.setQueriesData({ queryKey: ["profileJobPosts"] }, bumpPostCommentCount);
+        queryClient.setQueryData(["post", variables.postId], bumpSinglePostCommentCount);
+
 
         return;
       }
@@ -174,6 +183,11 @@ export default function PostDetailsModal({
           };
         },
       );
+
+      queryClient.setQueryData(["posts"], bumpPostCommentCount);
+      queryClient.setQueriesData({ queryKey: ["profilePosts"] }, bumpPostCommentCount);
+      queryClient.setQueriesData({ queryKey: ["profileJobPosts"] }, bumpPostCommentCount);
+      queryClient.setQueryData(["post", variables.postId], bumpSinglePostCommentCount);
     },
   });
 
@@ -309,8 +323,8 @@ export default function PostDetailsModal({
                 <button
                   onClick={() => setMobileView("content")}
                   className={`flex-1 p-3 text-sm font-medium ${mobileView === "content"
-                      ? "border-b-2 border-black text-black"
-                      : "text-neutral-600"
+                    ? "border-b-2 border-black text-black"
+                    : "text-neutral-600"
                     }`}
                 >
                   Job
@@ -318,8 +332,8 @@ export default function PostDetailsModal({
                 <button
                   onClick={() => setMobileView("comments")}
                   className={`flex-1 p-3 text-sm font-medium ${mobileView === "comments"
-                      ? "border-b-2 border-black text-black"
-                      : "text-neutral-600"
+                    ? "border-b-2 border-black text-black"
+                    : "text-neutral-600"
                     }`}
                 >
                   Comments

@@ -185,7 +185,7 @@ export default function ProfileView({
     });
 
     return () => {
-      setInvalidateProfilePosts(() => {});
+      setInvalidateProfilePosts(() => { });
     };
   }, [queryClient]);
 
@@ -460,18 +460,18 @@ export default function ProfileView({
     try {
       setConnectError(null);
       setConnectLoading(true);
- 
+
       const res = await fetch(`/api/connect/v1/connect/${user.id}`, {
         method: "DELETE",
         credentials: "include",
       });
- 
+
       const json = await res.json();
- 
+
       if (!res.ok) {
         throw new Error(json?.error || "Failed to remove connection");
       }
- 
+
       setIsConnected(false);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
@@ -529,11 +529,10 @@ export default function ProfileView({
                               <button
                                 onClick={() => setOpenRemoveModal(true)}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${
-                                  connectLoading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
+                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 ${connectLoading
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                                  }`}
                               >
                                 {connectLoading ? "Removing..." : "Remove"}
                               </button>
@@ -542,11 +541,10 @@ export default function ProfileView({
                                 <button
                                   onClick={handleAcceptIncoming}
                                   disabled={connectLoading}
-                                  className={`px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 ${
-                                    connectLoading
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
+                                  className={`px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 ${connectLoading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                    }`}
                                 >
                                   {connectLoading ? "Accepting..." : "Accept"}
                                 </button>
@@ -554,11 +552,10 @@ export default function ProfileView({
                                 <button
                                   onClick={handleDeclineIncoming}
                                   disabled={connectLoading}
-                                  className={`px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 ${
-                                    connectLoading
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
+                                  className={`px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 ${connectLoading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                    }`}
                                 >
                                   Decline
                                 </button>
@@ -573,11 +570,10 @@ export default function ProfileView({
                                 <button
                                   onClick={handleCancelRequest}
                                   disabled={connectLoading}
-                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${
-                                    connectLoading
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
+                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium ${connectLoading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                    }`}
                                   title="Cancel request"
                                 >
                                   {connectLoading ? "Canceling..." : "Cancel"}
@@ -587,11 +583,10 @@ export default function ProfileView({
                               <button
                                 onClick={handleConnect}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${
-                                  connectLoading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
+                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 ${connectLoading
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                                  }`}
                               >
                                 {connectLoading ? "Sending..." : "Connect"}
                               </button>
@@ -741,11 +736,10 @@ export default function ProfileView({
                       onClick={() => {
                         setMainSection("activity");
                       }}
-                      className={`pb-2 ${
-                        mainSection === "activity"
-                          ? "border-b-2 border-blue-600 text-blue-600"
-                          : "text-gray-600"
-                      }`}
+                      className={`pb-2 ${mainSection === "activity"
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-600"
+                        }`}
                     >
                       Social Activity
                     </button>
@@ -755,11 +749,10 @@ export default function ProfileView({
                         setMainSection("jobActivity");
                         setJobTab("hiring"); // nicer UX default
                       }}
-                      className={`pb-2 ${
-                        mainSection === "jobActivity"
-                          ? "border-b-2 border-blue-600 text-blue-600"
-                          : "text-gray-600"
-                      }`}
+                      className={`pb-2 ${mainSection === "jobActivity"
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-600"
+                        }`}
                     >
                       Job Activity
                     </button>
@@ -767,33 +760,47 @@ export default function ProfileView({
 
                   {/* ✅ Tabs row changes based on mainSection */}
                   {mainSection === "activity" ? (
-                    <div className="flex gap-4 border-b pb-2 mt-2">
-                      {TABS.map((t) => (
-                        <button
-                          key={t.key}
-                          onClick={() => setTab(t.key)}
-                          className={`pb-2 ${
-                            tab === t.key
+                    <div
+                      className="
+                          mt-2 border-b
+                          overflow-x-auto whitespace-nowrap
+                          [-webkit-overflow-scrolling:touch]
+                          scrollbar-hide
+                          "
+                    >
+                      <div className="flex gap-4 pb-2 min-w-max">
+                        {TABS.map((t) => (
+                          <button
+                            key={t.key}
+                            onClick={() => setTab(t.key)}
+                            className={`pb-2 flex-shrink-0 ${tab === t.key
                               ? "border-b-2 border-blue-600 text-blue-600"
                               : "text-gray-600"
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
+                              }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex gap-4 border-b pb-2 mt-2">
-                      {JOB_TABS.filter((t) => !t.ownerOnly || isOwner).map(
-                        (t) => (
+                    <div
+                      className="
+    mt-2 border-b
+    overflow-x-auto whitespace-nowrap
+    [-webkit-overflow-scrolling:touch]
+    scrollbar-hide
+  "
+                    >
+                      <div className="flex gap-4 pb-2 min-w-max">
+                        {JOB_TABS.filter((t) => !t.ownerOnly || isOwner).map((t) => (
                           <button
                             key={t.key}
                             onClick={() => setJobTab(t.key)}
-                            className={`pb-2 ${
-                              jobTab === t.key
+                            className={`pb-2 flex-shrink-0 ${jobTab === t.key
                                 ? "border-b-2 border-blue-600 text-blue-600"
                                 : "text-gray-600"
-                            }`}
+                              }`}
                           >
                             {t.label}
                             {t.ownerOnly && (
@@ -806,8 +813,8 @@ export default function ProfileView({
                               </span>
                             )}
                           </button>
-                        ),
-                      )}
+                        ))}
+                      </div>
                     </div>
                   )}
 
