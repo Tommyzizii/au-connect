@@ -295,47 +295,49 @@ export default function Header() {
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden mt-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setOpenResults(true);
-              }}
-              onBlur={() => setTimeout(() => setOpenResults(false), 150)}
-              type="text"
-              placeholder="Search"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none focus:border-red-400"
-            />
-            {openResults && query.length >= 2 && (
-              <div className="absolute top-full mt-2 w-full bg-white border rounded-lg shadow-lg z-50">
-                {isFetching ? (
-                  <div className="p-3 text-sm text-gray-500">Searching...</div>
-                ) : searchResults.length > 0 ? (
-                  searchResults.map((u: any) => {
-                    const userSlug = u.slug || buildSlug(u.username, u.id);
-                    return (
-                      <SearchResultItem
-                        key={u.id}
-                        user={u}
-                        onClick={() => {
-                          router.push(`/profile/${userSlug}`);
-                          setQuery("");
-                          setOpenResults(false);
-                          setMobileMenuOpen(false);
-                        }}
-                      />
-                    );
-                  })
-                ) : (
-                  <div className="p-3 text-sm text-gray-500">No results</div>
-                )}
-              </div>
-            )}
+        {pathname !== MESSAGES_PAGE_PATH && (
+          <div className="md:hidden mt-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setOpenResults(true);
+                }}
+                onBlur={() => setTimeout(() => setOpenResults(false), 150)}
+                type="text"
+                placeholder="Search"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none focus:border-red-400"
+              />
+              {openResults && query.length >= 2 && (
+                <div className="absolute top-full mt-2 w-full bg-white border rounded-lg shadow-lg z-50">
+                  {isFetching ? (
+                    <div className="p-3 text-sm text-gray-500">Searching...</div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((u: any) => {
+                      const userSlug = u.slug || buildSlug(u.username, u.id);
+                      return (
+                        <SearchResultItem
+                          key={u.id}
+                          user={u}
+                          onClick={() => {
+                            router.push(`/profile/${userSlug}`);
+                            setQuery("");
+                            setOpenResults(false);
+                            setMobileMenuOpen(false);
+                          }}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="p-3 text-sm text-gray-500">No results</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (

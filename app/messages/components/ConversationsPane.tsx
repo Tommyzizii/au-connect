@@ -57,7 +57,7 @@ export default function ConversationsPane({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search Contacts..."
-              className="ml-3 text-sm text-gray-600 placeholder-gray-400 w-full border-none focus:outline-none bg-transparent"
+              className="ml-3 text-base md:text-sm text-gray-600 placeholder-gray-400 w-full border-none focus:outline-none bg-transparent"
             />
           </div>
 

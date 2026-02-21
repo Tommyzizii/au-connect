@@ -308,7 +308,7 @@ export default function ChatPane({
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
                 placeholder="Type a message..."
-                className="flex-1 text-sm text-gray-700 placeholder-gray-400 border-none focus:outline-none bg-transparent min-w-0"
+                className="flex-1 text-base md:text-sm text-gray-700 placeholder-gray-400 border-none focus:outline-none bg-transparent min-w-0"
                 onKeyDown={(e) => e.key === "Enter" && onSend()}
               />
 

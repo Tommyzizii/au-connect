@@ -511,15 +511,38 @@ export default function ProfileView({
                   </div>
 
                   <div className="relative p-4">
-                    {/* EDIT / CONNECT BUTTONS */}
-                    <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-start justify-between gap-3 md:block">
+                      <div className="relative -mt-16 w-32 h-32 z-10">
+                        <button
+                          type="button"
+                          onClick={() => setOpenProfilePhotoModal(true)}
+                          className="relative w-32 h-32 block cursor-pointer"
+                          aria-label="Open profile photo"
+                        >
+                          <Image
+                            src={resolvedProfilePicUrl}
+                            alt="avatar"
+                            fill
+                            className="rounded-full border-4 border-white object-cover"
+                          />
+
+                          {isOwner && (
+                            <span className="absolute bottom-1 right-1 bg-white/90 p-2 rounded-full shadow border">
+                              <Camera size={18} className="text-gray-700" />
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* EDIT / CONNECT BUTTONS */}
+                      <div className="z-20 flex flex-col items-end gap-2 flex-1 min-w-0 md:mb-0 md:absolute md:top-4 md:right-4 md:w-auto">
+                        <div className="flex flex-wrap justify-end items-center gap-2 md:gap-3 w-full md:w-auto">
                         {isOwner ? (
                           <button
                             onClick={() => setOpenEditModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                            className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
                           >
-                            <Pencil size={16} />
+                            <Pencil size={14} className="md:w-4 md:h-4" />
                             Edit Profile
                           </button>
                         ) : (
@@ -529,7 +552,7 @@ export default function ProfileView({
                               <button
                                 onClick={() => setOpenRemoveModal(true)}
                                 disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 cursor-pointer ${connectLoading
+                                className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 cursor-pointer ${connectLoading
                                   ? "opacity-50 cursor-not-allowed"
                                   : ""
                                   }`}
@@ -537,11 +560,11 @@ export default function ProfileView({
                                 {connectLoading ? "Removing..." : "Remove"}
                               </button>
                             ) : incomingRequestId ? (
-                              <div className="flex gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <button
                                   onClick={handleAcceptIncoming}
                                   disabled={connectLoading}
-                                  className={`px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 cursor-pointer ${connectLoading
+                                  className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-blue-600 text-white text-xs md:text-base hover:bg-blue-700 cursor-pointer ${connectLoading
                                     ? "opacity-50 cursor-not-allowed"
                                     : ""
                                     }`}
@@ -552,7 +575,7 @@ export default function ProfileView({
                                 <button
                                   onClick={handleDeclineIncoming}
                                   disabled={connectLoading}
-                                  className={`px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 cursor-pointer ${connectLoading
+                                  className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500 text-white text-xs md:text-base hover:bg-red-600 cursor-pointer ${connectLoading
                                     ? "opacity-50 cursor-not-allowed"
                                     : ""
                                     }`}
@@ -595,39 +618,18 @@ export default function ProfileView({
                               onClick={() =>
                                 router.push(`/messages?userId=${user.id}`)
                               }
-                              className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                              className="px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
                             >
                               Message
                             </button>
                           </>
                         )}
-                      </div>
+                        </div>
 
-                      {connectError && (
-                        <p className="text-sm text-red-600">{connectError}</p>
-                      )}
-                    </div>
-
-                    <div className="relative -mt-16 w-32 h-32">
-                      <button
-                        type="button"
-                        onClick={() => setOpenProfilePhotoModal(true)}
-                        className="relative w-32 h-32 block cursor-pointer"
-                        aria-label="Open profile photo"
-                      >
-                        <Image
-                          src={resolvedProfilePicUrl}
-                          alt="avatar"
-                          fill
-                          className="rounded-full border-4 border-white object-cover"
-                        />
-
-                        {isOwner && (
-                          <span className="absolute bottom-1 right-1 bg-white/90 p-2 rounded-full shadow border">
-                            <Camera size={18} className="text-gray-700" />
-                          </span>
+                        {connectError && (
+                          <p className="text-sm text-red-600">{connectError}</p>
                         )}
-                      </button>
+                      </div>
                     </div>
 
                     <h1 className="text-2xl font-bold text-gray-900 mt-2">
@@ -662,9 +664,9 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenExperienceModal(true)}
-                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                        className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
                       >
-                        <Pencil size={18} />
+                        <Pencil size={16} className="md:w-[18px] md:h-[18px]" />
                       </button>
                     )
                   }
@@ -687,9 +689,9 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenEducationModal(true)}
-                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                        className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
                       >
-                        <Pencil size={18} />
+                        <Pencil size={16} className="md:w-[18px] md:h-[18px]" />
                       </button>
                     )
                   }
