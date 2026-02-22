@@ -1,14 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pencil, Camera } from "lucide-react";
 
 import SectionCard from "./SectionCard";
 import ExperienceItem from "./ExperienceItem";
 import EducationItem from "./EducationItem";
-import RecommendedList from "./RecommendedList";
-import RecommendedModal from "./RecommendedModal";
 import EditProfileModal from "./EditProfileModal";
 import ExperienceManagerModal from "./ExperienceManagerModal";
 import EducationManagerModal from "./EducationManagerModal";
@@ -29,19 +27,55 @@ import { fetchProfileJobPosts } from "../utils/fetchProfileJobPosts";
 
 import ConnectionsModal from "./ConnectionsModal";
 import { useRouter } from "next/navigation";
+import { buildSlug } from "../utils/buildSlug";
 
 import { useInfiniteScroll } from "../[slug]/hook/useInfiniteScroll";
 import { setInvalidateProfilePosts } from "@/lib/services/uploadService";
 
+type ConnectionUser = {
+  id: string;
+  username: string;
+  title?: string;
+  profilePic?: string;
+};
+
+type ConnectionRequest = {
+  id: string;
+  toUserId?: string;
+  fromUserId?: string;
+  toUser?: { id?: string };
+  fromUser?: { id?: string };
+};
+
+function ConnectionPreviewItem({ user }: { user: ConnectionUser }) {
+  const router = useRouter();
+  const avatarUrl = useResolvedMediaUrl(user.profilePic, "/default_profile.jpg");
+  const slug = buildSlug(user.username || "", user.id);
+
+  return (
+    <button
+      type="button"
+      onClick={() => router.push(`/profile/${slug}`)}
+      className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-slate-50"
+    >
+      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200">
+        <Image src={avatarUrl} alt={user.username} fill className="object-cover" />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-slate-900">{user.username}</p>
+        {user.title && <p className="truncate text-xs text-slate-500">{user.title}</p>}
+      </div>
+    </button>
+  );
+}
+
 export default function ProfileView({
   user,
-  recommendedPeople,
   isOwner,
   sessionUserId,
   sessionUser,
 }: {
   user: User;
-  recommendedPeople: Array<number>;
   isOwner: boolean;
   sessionUserId: string | null;
   sessionUser: Pick<User, "id" | "username" | "slug" | "profilePic"> | null;
@@ -76,7 +110,6 @@ export default function ProfileView({
     { key: "applied", label: "Applied Jobs", ownerOnly: true }, // private
   ];
 
-  const [openModal, setOpenModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openExperienceModal, setOpenExperienceModal] = useState(false);
   const [openEducationModal, setOpenEducationModal] = useState(false);
@@ -128,7 +161,7 @@ export default function ProfileView({
   const router = useRouter();
 
   const [openConnectionsModal, setOpenConnectionsModal] = useState(false);
-  const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [connectionsList, setConnectionsList] = useState<ConnectionUser[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
 
   useEffect(() => {
@@ -253,7 +286,7 @@ export default function ProfileView({
         );
         if (outgoingRes.ok) {
           const outgoingJson = await outgoingRes.json();
-          const outgoing = (outgoingJson.data || []) as any[];
+          const outgoing = (outgoingJson.data || []) as ConnectionRequest[];
 
           const existingOutgoing = outgoing.find(
             (r) => r.toUserId === user.id || r.toUser?.id === user.id,
@@ -275,7 +308,7 @@ export default function ProfileView({
         );
         if (incomingRes.ok) {
           const incomingJson = await incomingRes.json();
-          const incoming = (incomingJson.data || []) as any[];
+          const incoming = (incomingJson.data || []) as ConnectionRequest[];
 
           const existingIncoming = incoming.find(
             (r) => r.fromUserId === user.id || r.fromUser?.id === user.id,
@@ -309,38 +342,34 @@ export default function ProfileView({
     };
   }, [isOwner, user.id]);
 
-  useEffect(() => {
-    if (!openConnectionsModal) return;
+  const loadConnections = useCallback(async () => {
+    try {
+      setConnectionsLoading(true);
 
-    let ignore = false;
+      const res = await fetch(
+        `/api/connect/v1/connect/connections?userId=${user.id}`,
+        { credentials: "include" },
+      );
 
-    async function loadConnections() {
-      try {
-        setConnectionsLoading(true);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to load connections");
 
-        const res = await fetch(
-          `/api/connect/v1/connect/connections?userId=${user.id}`,
-          { credentials: "include" },
-        );
-
-        const json = await res.json();
-        if (!res.ok)
-          throw new Error(json?.error || "Failed to load connections");
-
-        if (!ignore) setConnectionsList(json.data || []);
-      } catch {
-        if (!ignore) setConnectionsList([]);
-      } finally {
-        if (!ignore) setConnectionsLoading(false);
-      }
+      setConnectionsList(json.data || []);
+    } catch {
+      setConnectionsList([]);
+    } finally {
+      setConnectionsLoading(false);
     }
+  }, [user.id]);
 
+  useEffect(() => {
     loadConnections();
+  }, [loadConnections]);
 
-    return () => {
-      ignore = true;
-    };
-  }, [openConnectionsModal, user.id]);
+  const openConnectionsView = () => {
+    setOpenConnectionsModal(true);
+    void loadConnections();
+  };
 
   async function handleConnect() {
     try {
@@ -649,12 +678,36 @@ export default function ProfileView({
                     </p>
 
                     <button
-                      onClick={() => setOpenConnectionsModal(true)}
+                      onClick={openConnectionsView}
                       className="text-sm text-gray-600 hover:underline cursor-pointer"
                     >
                       {user.connections} connections
                     </button>
                   </div>
+                </div>
+
+                {/* CONNECTIONS CARD (mobile/tablet) */}
+                <div className="lg:hidden">
+                  <SectionCard title="Your connections">
+                    {connectionsLoading ? (
+                      <p className="text-sm text-slate-500">Loading connections...</p>
+                    ) : connectionsList.length > 0 ? (
+                      <div className="space-y-1">
+                        {connectionsList.slice(0, 4).map((connection) => (
+                          <ConnectionPreviewItem key={connection.id} user={connection} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">No connections yet.</p>
+                    )}
+
+                    <button
+                      onClick={openConnectionsView}
+                      className="mt-3 text-sm font-semibold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      See more
+                    </button>
+                  </SectionCard>
                 </div>
 
                 {/* EXPERIENCE */}
@@ -911,14 +964,26 @@ export default function ProfileView({
               <div className="hidden lg:block col-span-4 space-y-4 sticky top-20">
                 <div className="bg-white rounded-lg border p-4">
                   <h2 className="font-semibold text-gray-900 mb-3">
-                    People you may be interested in
+                    Your connections
                   </h2>
-                  <RecommendedList users={recommendedPeople} limit={4} />
+
+                  {connectionsLoading ? (
+                    <p className="text-sm text-slate-500">Loading connections...</p>
+                  ) : connectionsList.length > 0 ? (
+                    <div className="space-y-1">
+                      {connectionsList.slice(0, 4).map((connection) => (
+                        <ConnectionPreviewItem key={connection.id} user={connection} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">No connections yet.</p>
+                  )}
+
                   <button
-                    onClick={() => setOpenModal(true)}
+                    onClick={openConnectionsView}
                     className="mt-4 text-sm text-blue-600 font-semibold cursor-pointer"
                   >
-                    Show more
+                    See more
                   </button>
                 </div>
               </div>
@@ -934,12 +999,6 @@ export default function ProfileView({
         loading={connectionsLoading}
         users={connectionsList}
         onClose={() => setOpenConnectionsModal(false)}
-      />
-
-      <RecommendedModal
-        open={openModal}
-        onClose={() => setOpenModal(false)}
-        users={recommendedPeople}
       />
 
       <EditProfileModal
