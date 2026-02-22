@@ -188,8 +188,21 @@ export default function NotificationsPage() {
           </div>
 
           {navigationError && (
-            <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {navigationError}
+            <div className="mb-5 overflow-hidden rounded-2xl border border-amber-200/80 bg-linear-to-br from-amber-50 via-orange-50 to-amber-100/60 shadow-sm">
+              <div className="flex items-start gap-3 px-4 py-3 sm:px-5 sm:py-4">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-800">
+                  !
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-amber-900">
+                    Post unavailable
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    {navigationError}
+                  </p>
+                </div>
+              </div>
+              <div className="h-1 w-full bg-linear-to-r from-amber-300 via-orange-300 to-amber-300" />
             </div>
           )}
 
