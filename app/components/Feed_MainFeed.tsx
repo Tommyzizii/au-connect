@@ -78,27 +78,27 @@ export default function MainFeed({
             </button>
           </div>
 
-          <div className="flex justify-evenly gap-4 pl-13">
+          <div className="grid grid-cols-3 gap-1 sm:gap-2 md:flex md:justify-evenly md:gap-4">
             <button
               onClick={() => openModal("discussion")}
-              className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
             >
-              <MessageSquare className="w-5 h-5" />
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Discussion</span>
             </button>
             <button
               onClick={() => openModal("media")}
-              className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
             >
-              <ImageIcon className="w-5 h-5" />
+              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Media</span>
             </button>
             <button
               onClick={() => openModal("article")}
-              className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
             >
-              <BookOpen className="w-5 h-5" />
-              <span>Write Article</span>
+              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Write article</span>
             </button>
           </div>
         </div>

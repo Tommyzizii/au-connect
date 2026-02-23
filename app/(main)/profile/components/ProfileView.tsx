@@ -81,7 +81,6 @@ export default function ProfileView({
   const [openExperienceModal, setOpenExperienceModal] = useState(false);
   const [openEducationModal, setOpenEducationModal] = useState(false);
   const [openAboutModal, setOpenAboutModal] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   const [openProfilePhotoModal, setOpenProfilePhotoModal] = useState(false);
   const [openCoverPhotoModal, setOpenCoverPhotoModal] = useState(false);
@@ -136,10 +135,6 @@ export default function ProfileView({
     console.log("Session user ID:", sessionUserId);
   }, [user, sessionUserId]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
 
   // ✅ OLD: profile posts (unchanged)
   const {
@@ -217,8 +212,8 @@ export default function ProfileView({
     jobPostData?.pages.flatMap((page: { posts: PostType[] }) => page.posts) ??
     [];
 
-  const isPostsLoading = loading || profilePostLoading;
-  const isHiringLoading = loading || jobPostLoading;
+  const isPostsLoading = profilePostLoading;
+  const isHiringLoading = jobPostLoading;
 
   // ✅ UPDATED: On profile load: check connection status (connected / outgoing / incoming)
   useEffect(() => {
@@ -537,93 +532,93 @@ export default function ProfileView({
                       {/* EDIT / CONNECT BUTTONS */}
                       <div className="z-20 flex flex-col items-end gap-2 flex-1 min-w-0 md:mb-0 md:absolute md:top-4 md:right-4 md:w-auto">
                         <div className="flex flex-wrap justify-end items-center gap-2 md:gap-3 w-full md:w-auto">
-                        {isOwner ? (
-                          <button
-                            onClick={() => setOpenEditModal(true)}
-                            className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
-                          >
-                            <Pencil size={14} className="md:w-4 md:h-4" />
-                            Edit Profile
-                          </button>
-                        ) : (
-                          <>
-                            {/* ✅ UPDATED: Show different UI based on connection state */}
-                            {isConnected ? (
-                              <button
-                                onClick={() => setOpenRemoveModal(true)}
-                                disabled={connectLoading}
-                                className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 cursor-pointer ${connectLoading
-                                  ? "opacity-50 cursor-not-allowed"
-                                  : ""
-                                  }`}
-                              >
-                                {connectLoading ? "Removing..." : "Remove"}
-                              </button>
-                            ) : incomingRequestId ? (
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  onClick={handleAcceptIncoming}
-                                  disabled={connectLoading}
-                                  className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-blue-600 text-white text-xs md:text-base hover:bg-blue-700 cursor-pointer ${connectLoading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                    }`}
-                                >
-                                  {connectLoading ? "Accepting..." : "Accept"}
-                                </button>
-
-                                <button
-                                  onClick={handleDeclineIncoming}
-                                  disabled={connectLoading}
-                                  className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500 text-white text-xs md:text-base hover:bg-red-600 cursor-pointer ${connectLoading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                    }`}
-                                >
-                                  Decline
-                                </button>
-                              </div>
-                            ) : connectSuccess ? (
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 border border-gray-300">
-                                  <span className="text-sm font-medium text-gray-700">
-                                    Requested
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={handleCancelRequest}
-                                  disabled={connectLoading}
-                                  className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer ${connectLoading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                    }`}
-                                  title="Cancel request"
-                                >
-                                  {connectLoading ? "Canceling..." : "Cancel"}
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={handleConnect}
-                                disabled={connectLoading}
-                                className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 cursor-pointer ${connectLoading
-                                  ? "opacity-50 cursor-not-allowed"
-                                  : ""
-                                  }`}
-                              >
-                                {connectLoading ? "Sending..." : "Connect"}
-                              </button>
-                            )}
+                          {isOwner ? (
                             <button
-                              onClick={() =>
-                                router.push(`/messages?userId=${user.id}`)
-                              }
-                              className="px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                              onClick={() => setOpenEditModal(true)}
+                              className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
                             >
-                              Message
+                              <Pencil size={14} className="md:w-4 md:h-4" />
+                              Edit Profile
                             </button>
-                          </>
-                        )}
+                          ) : (
+                            <>
+                              {/* ✅ UPDATED: Show different UI based on connection state */}
+                              {isConnected ? (
+                                <button
+                                  onClick={() => setOpenRemoveModal(true)}
+                                  disabled={connectLoading}
+                                  className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 cursor-pointer ${connectLoading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                    }`}
+                                >
+                                  {connectLoading ? "Removing..." : "Remove"}
+                                </button>
+                              ) : incomingRequestId ? (
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    onClick={handleAcceptIncoming}
+                                    disabled={connectLoading}
+                                    className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-blue-600 text-white text-xs md:text-base hover:bg-blue-700 cursor-pointer ${connectLoading
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                      }`}
+                                  >
+                                    {connectLoading ? "Accepting..." : "Accept"}
+                                  </button>
+
+                                  <button
+                                    onClick={handleDeclineIncoming}
+                                    disabled={connectLoading}
+                                    className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500 text-white text-xs md:text-base hover:bg-red-600 cursor-pointer ${connectLoading
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                      }`}
+                                  >
+                                    Decline
+                                  </button>
+                                </div>
+                              ) : connectSuccess ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 border border-gray-300">
+                                    <span className="text-sm font-medium text-gray-700">
+                                      Requested
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={handleCancelRequest}
+                                    disabled={connectLoading}
+                                    className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer ${connectLoading
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                      }`}
+                                    title="Cancel request"
+                                  >
+                                    {connectLoading ? "Canceling..." : "Cancel"}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={handleConnect}
+                                  disabled={connectLoading}
+                                  className={`px-4 py-2 rounded-lg shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 cursor-pointer ${connectLoading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                    }`}
+                                >
+                                  {connectLoading ? "Sending..." : "Connect"}
+                                </button>
+                              )}
+                              <button
+                                onClick={() =>
+                                  router.push(`/messages?userId=${user.id}`)
+                                }
+                                className="px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                              >
+                                Message
+                              </button>
+                            </>
+                          )}
                         </div>
 
                         {connectError && (
@@ -800,8 +795,8 @@ export default function ProfileView({
                             key={t.key}
                             onClick={() => setJobTab(t.key)}
                             className={`pb-2 flex-shrink-0 cursor-pointer ${jobTab === t.key
-                                ? "border-b-2 border-blue-600 text-blue-600"
-                                : "text-gray-600"
+                              ? "border-b-2 border-blue-600 text-blue-600"
+                              : "text-gray-600"
                               }`}
                           >
                             {t.label}

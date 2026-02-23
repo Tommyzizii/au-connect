@@ -46,6 +46,7 @@ export default function AddEditExperienceModal({
   });
 
   const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -87,6 +88,8 @@ export default function AddEditExperienceModal({
   );
 
   const handleSave = async () => {
+    if (isSaving) return;
+
     setError("");
 
     if (!form.title.trim()) return setError("Title is required");
@@ -112,18 +115,25 @@ export default function AddEditExperienceModal({
         return setError("End date cannot be in the future");
     }
 
-    await onSave({
-      title: form.title.trim(),
-      employmentType: form.employmentType,
-      company: form.company.trim(),
-      isCurrent: form.isCurrent,
-      startMonth: Number(form.startMonth),
-      startYear: Number(form.startYear),
-      endMonth: form.isCurrent ? undefined : Number(form.endMonth),
-      endYear: form.isCurrent ? undefined : Number(form.endYear),
-    });
+    try {
+      setIsSaving(true);
+      await onSave({
+        title: form.title.trim(),
+        employmentType: form.employmentType,
+        company: form.company.trim(),
+        isCurrent: form.isCurrent,
+        startMonth: Number(form.startMonth),
+        startYear: Number(form.startYear),
+        endMonth: form.isCurrent ? undefined : Number(form.endMonth),
+        endYear: form.isCurrent ? undefined : Number(form.endYear),
+      });
 
-    onClose();
+      onClose();
+    } catch {
+      setError("Failed to save experience. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!open) return null;
@@ -282,10 +292,11 @@ export default function AddEditExperienceModal({
         {/* SAVE */}
         <button
           onClick={handleSave}
+          disabled={isSaving}
           className="w-full px-5 py-2 bg-blue-600 text-white rounded-lg font-medium
-                     hover:bg-blue-700 cursor-pointer"
+                     hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </button>
       </div>
     </div>
