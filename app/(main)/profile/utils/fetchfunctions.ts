@@ -423,12 +423,12 @@ export function useToggleLike() {
       }
       if (context?.previousProfilePosts) {
         context.previousProfilePosts.forEach(([key, data]) => {
-          queryClient.setQueryData(key, data);
+          queryClient.setQueryData(key as readonly unknown[], data);
         });
       }
       if (context?.previousProfileJobPosts) {
         context.previousProfileJobPosts.forEach(([key, data]) => {
-          queryClient.setQueryData(key, data);
+          queryClient.setQueryData(key as readonly unknown[], data);
         });
       }
     },
