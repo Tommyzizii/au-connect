@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Image as ImageIcon, MessageSquare } from "lucide-react";
+import { BookOpen, BriefcaseBusiness, Image as ImageIcon } from "lucide-react";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
@@ -80,13 +80,6 @@ export default function MainFeed({
 
           <div className="grid grid-cols-3 gap-1 sm:gap-2 md:flex md:justify-evenly md:gap-4">
             <button
-              onClick={() => openModal("discussion")}
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
-            >
-              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Discussion</span>
-            </button>
-            <button
               onClick={() => openModal("media")}
               className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
             >
@@ -99,6 +92,13 @@ export default function MainFeed({
             >
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Write article</span>
+            </button>
+            <button
+              onClick={() => openModal("job_post")}
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
+            >
+              <BriefcaseBusiness className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Job Post</span>
             </button>
           </div>
         </div>
@@ -120,8 +120,9 @@ export default function MainFeed({
       {/* EVERYTHING IN ONE SCROLLABLE LIST */}
       {loading ? (
         <div className="space-y-4">
+          <Post isLoading={true} skeletonVariant="job" />
           <Post isLoading={true} />
-          <Post isLoading={true} />
+          <Post isLoading={true} skeletonVariant="job" />
         </div>
       ) : (
         <div style={{ height: "calc(100vh - 97px)" }}>

@@ -32,10 +32,12 @@ export default function Post({
   user,
   post,
   isLoading,
+  skeletonVariant = "default",
 }: {
   user?: User;
   post?: PostType;
   isLoading: boolean;
+  skeletonVariant?: "default" | "job";
 }) {
   const router = useRouter();
   const openPostModal = (postId: string, index: number) => {
@@ -55,6 +57,36 @@ export default function Post({
 
   // Skeleton UI
   if (isLoading) {
+    if (skeletonVariant === "job") {
+      return (
+        <div className="bg-white rounded-lg border border-gray-200 animate-pulse">
+          <div className="p-5 border-b border-gray-100">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-11 h-11 rounded-full bg-gray-200" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-36 rounded bg-gray-200" />
+                <div className="h-3 w-28 rounded bg-gray-200" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-5 w-2/3 rounded bg-gray-200" />
+              <div className="h-4 w-1/2 rounded bg-gray-200" />
+              <div className="h-4 w-1/3 rounded bg-gray-200" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="h-9 rounded bg-gray-200" />
+              <div className="h-9 rounded bg-gray-200" />
+            </div>
+          </div>
+          <div className="px-5 py-3 flex items-center justify-between">
+            <div className="h-4 w-16 rounded bg-gray-200" />
+            <div className="h-4 w-24 rounded bg-gray-200" />
+            <div className="h-4 w-16 rounded bg-gray-200" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
         <div className="flex items-start gap-3 mb-4">
