@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PostPageClient from "@/app/components/PostPageClient";
 import { getPostWithMedia } from "@/lib/postHelpers";
 import getCurrentUser from "@/lib/getCurrentUser";
@@ -17,11 +17,12 @@ export default async function PostPage({
   if (!auth) {
     redirect("/");
   }
+
   const { userId } = auth;
   const post = await getPostWithMedia(postId, userId);
 
   if (!post) {
-    redirect("/");
+    notFound();
   }
 
   return (

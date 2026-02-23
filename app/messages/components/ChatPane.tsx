@@ -3,9 +3,6 @@
 import Image from "next/image";
 import {
   Send,
-  ImagePlus,
-  Paperclip,
-  Smile,
   MoreVertical,
   ArrowLeft,
   MailPlus,

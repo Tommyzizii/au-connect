@@ -116,7 +116,6 @@ export default async function ProfilePage(props: {
     <div className="h-full min-h-0 flex flex-col">
       <ProfileView
         user={userData}
-        recommendedPeople={new Array<number>()}
         isOwner={isOwner}
         sessionUserId={sessionUserId}
         sessionUser={sessionUser} 

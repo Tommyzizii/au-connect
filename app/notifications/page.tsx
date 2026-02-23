@@ -13,6 +13,7 @@ import {
 import { timeAgo } from "@/lib/timeAgo";
 import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
+import { SINGLE_POST_API_PATH } from "@/lib/constants";
 
 type NotificationType =
   | "CONNECTION_REQUEST"
@@ -47,6 +48,7 @@ const notificationMessages: Record<NotificationType, string> = {
   POST_VOTED: "voted on your poll",
   JOB_APPLICATION: "applied to your job post",
 };
+const NAVIGATION_ERROR_TIMEOUT_MS = 5000;
 
 function NotificationAvatar({
   profilePic,
@@ -70,6 +72,7 @@ function NotificationAvatar({
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [navigationError, setNavigationError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -87,9 +90,21 @@ export default function NotificationsPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!navigationError) return;
+
+    const timer = window.setTimeout(() => {
+      setNavigationError(null);
+    }, NAVIGATION_ERROR_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [navigationError]);
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const handleClick = async (notification: Notification) => {
+    setNavigationError(null);
+
     if (!notification.isRead) {
       await markNotificationRead(notification.id);
       setNotifications((prev) =>
@@ -114,7 +129,28 @@ export default function NotificationsPage() {
     }
 
     if (notification.entityId) {
-      router.push(`/posts/${notification.entityId}?media=0`);
+      try {
+        const res = await fetch(SINGLE_POST_API_PATH(notification.entityId), {
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        if (res.status === 404) {
+          setNavigationError(
+            "This post was deleted, so this notification can no longer be opened.",
+          );
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error("Failed to open notification target");
+        }
+
+        router.push(`/posts/${notification.entityId}?media=0`);
+      } catch (error) {
+        console.error("Failed to open notification target:", error);
+        setNavigationError("Unable to open this notification right now.");
+      }
     }
 
   };
@@ -150,6 +186,25 @@ export default function NotificationsPage() {
               </button>
             )}
           </div>
+
+          {navigationError && (
+            <div className="mb-5 overflow-hidden rounded-2xl border border-amber-200/80 bg-linear-to-br from-amber-50 via-orange-50 to-amber-100/60 shadow-sm">
+              <div className="flex items-start gap-3 px-4 py-3 sm:px-5 sm:py-4">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-800">
+                  !
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-amber-900">
+                    Post unavailable
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    {navigationError}
+                  </p>
+                </div>
+              </div>
+              <div className="h-1 w-full bg-linear-to-r from-amber-300 via-orange-300 to-amber-300" />
+            </div>
+          )}
 
           {/* LOADING */}
           {loading && (

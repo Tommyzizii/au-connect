@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import LeftProfile from "../components/Feed_LeftProfile";
 import MainFeed from "../components/Feed_MainFeed";
-import RightEvents from "../components/Feed_RightEvents";
 import Image from "next/image";
 import { fetchPosts, fetchUser } from "./profile/utils/fetchfunctions";
 import PostType from "@/types/Post";
@@ -12,21 +11,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { setInvalidatePosts } from "@/lib/services/uploadService";
-
-const mockEvents = [
-  {
-    id: 1,
-    title: "Loi Krathong",
-    location: "Sala Thai",
-    date: "Wednesday, 05/11/2025",
-  },
-  {
-    id: 2,
-    title: "Christmas Eve",
-    location: "SM",
-    date: "Wednesday, 25/12/2025",
-  },
-];
 
 export default function Home() {
   // Get query client and pass to upload service
