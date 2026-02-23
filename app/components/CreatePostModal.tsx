@@ -77,7 +77,6 @@ export default function CreatePostModal({
   exisistingPost,
 }: CreatePostModalPropTypes) {
   const [selectedVisibility, setSelectedVisibility] = useState("everyone");
-  const [showDropdown, setShowDropdown] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [postType, setPostType] = useState(initialType);
   const [title, setTitle] = useState("");
@@ -307,7 +306,7 @@ export default function CreatePostModal({
             postType,
             title,
             content: postContent,
-            visibility: selectedVisibility,
+            visibility: "everyone",
             disableComments,
             media: newMedia,
             existingMedia: existingMedia,
@@ -331,7 +330,7 @@ export default function CreatePostModal({
             postType,
             title,
             content: postContent,
-            visibility: selectedVisibility,
+            visibility: "everyone",
             commentsDisabled: disableComments,
             media: existingMedia.map((m) => ({
               blobName: m.blobName,
@@ -365,7 +364,7 @@ export default function CreatePostModal({
           postType,
           title,
           content: postContent,
-          visibility: selectedVisibility,
+          visibility: "everyone",
           disableComments,
           media: newMedia,
           links: links,
@@ -408,53 +407,7 @@ export default function CreatePostModal({
     setCurrentMediaIndex((i) => Math.max(0, i - 1));
   };
 
-  const visibilityOptions = [
-    {
-      id: "everyone",
-      label: "Everyone",
-      icon: (
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-          <path
-            fillRule="evenodd"
-            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-      ),
-      description: "Anyone on AU Connect",
-    },
-    {
-      id: "friends",
-      label: "Friends",
-      icon: (
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-        </svg>
-      ),
-      description: "Your connections only",
-    },
-    {
-      id: "only-me",
-      label: "Only Me",
-      icon: (
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fillRule="evenodd"
-            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-      ),
-      description: "Only visible to you",
-    },
-  ];
-
   if (!isOpen) return null;
-
-  const currentVisibility = visibilityOptions.find(
-    (opt) => opt.id === selectedVisibility,
-  );
 
   const currentMedia = totalMedia[currentMediaIndex];
   const isCurrentExisting = currentMediaIndex < existingMedia.length;
@@ -493,54 +446,17 @@ export default function CreatePostModal({
 
               {/*  visibility option button */}
               <div className="relative mt-2">
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition"
-                >
-                  {currentVisibility?.icon}
-                  {currentVisibility?.label}
-                  <svg
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                      showDropdown ? "rotate-180" : ""
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
+                <div className="inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-700">
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                     <path
                       fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
                       clipRule="evenodd"
                     />
                   </svg>
-                </button>
-
-                {/*  visibility option dropdown */}
-                {showDropdown && (
-                  <div className="absolute top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200 z-10">
-                    {visibilityOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => {
-                          setSelectedVisibility(option.id);
-                          setShowDropdown(false);
-                        }}
-                        className={`cursor-pointer w-full flex items-start gap-3 px-4 py-3 hover:bg-blue-50 transition ${
-                          selectedVisibility === option.id ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        {option.icon}
-                        <div className="flex-1 text-left">
-                          <div className="text-sm font-semibold text-neutral-900">
-                            {option.label}
-                          </div>
-                          <div className="text-xs text-neutral-500">
-                            {option.description}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  Everyone
+                </div>
               </div>
             </div>
 
@@ -922,16 +838,6 @@ export default function CreatePostModal({
                   title="Add link"
                 >
                   <LinkIcon className="h-5 w-5 text-orange-600" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    window.alert("Feature not yet implemented");
-                  }}
-                  className="cursor-pointer p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
-                  title="Tag people"
-                >
-                  <UserPlus className="h-5 w-5 text-purple-600" />
                 </button>
               </div>
             )}
