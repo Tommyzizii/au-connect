@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { JWT_COOKIE } from "@/lib/constants";
+import { isSecureCookie } from "@/lib/authFunctions";
 
 export async function DELETE() {
   try {
@@ -11,7 +12,7 @@ export async function DELETE() {
     // Keep cookie attributes aligned with login cookie settings.
     response.cookies.set(JWT_COOKIE, "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookie(),
       sameSite: "lax",
       maxAge: 0,
       expires: new Date(0),

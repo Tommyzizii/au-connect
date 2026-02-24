@@ -354,10 +354,19 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
 export function createOauthStateCookie(res: NextResponse, state: string) {
   return res.cookies.set(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
-    secure: NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "lax",
     maxAge: OAUTH_STATE_COOKIE_EXPIRATION_TIME, // 10 minutes
   });
+}
+
+export function isSecureCookie() {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "";
+
+  return baseUrl.startsWith("https://");
 }
 
 function verifyOauthState(url: URL, req: NextRequest) {
@@ -408,7 +417,7 @@ export function createUserSession(
       name: JWT_COOKIE,
       value: token,
       httpOnly: true,
-      secure: NODE_ENV === "production",
+      secure: isSecureCookie(),
       maxAge: JWT_COOKIE_EXPIRATION_TIME,
     });
   }
