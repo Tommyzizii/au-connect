@@ -477,8 +477,10 @@ async function importProviderAvatarToAzure(
   imageUrl: string
 ): Promise<string | null> {
   try {
+    const normalizedImageUrl = normalizeProviderAvatarUrl(imageUrl);
+
     // fetch provider image
-    const res = await fetch(imageUrl);
+    const res = await fetch(normalizedImageUrl);
 
     if (!res.ok) {
       // console.log("Failed to fetch provider avatar:", res.status);
@@ -527,6 +529,41 @@ async function importProviderAvatarToAzure(
       err instanceof Error ? err.message : "Failed to import provider avatar"
     );
     return null;
+  }
+}
+
+/**
+ * Provider avatar URLs can default to tiny thumbnails.
+ * Normalize known providers to request higher resolution avatars.
+ */
+function normalizeProviderAvatarUrl(imageUrl: string): string {
+  try {
+    // Google avatars: request larger size.
+    if (imageUrl.includes("googleusercontent.com")) {
+      let normalized = imageUrl
+        .replace(/([?&]sz=)\d+/i, "$1512")
+        .replace(/=s\d+(-c)?$/i, "=s512-c");
+
+      if (normalized === imageUrl) {
+        normalized = imageUrl.includes("?")
+          ? `${imageUrl}&sz=512`
+          : `${imageUrl}=s512-c`;
+      }
+
+      return normalized;
+    }
+
+    // LinkedIn avatars: prefer bigger display-photo variant.
+    if (imageUrl.includes("media.licdn.com")) {
+      return imageUrl.replace(
+        /profile-displayphoto-shrink_\d+_\d+/i,
+        "profile-displayphoto-shrink_800_800"
+      );
+    }
+
+    return imageUrl;
+  } catch {
+    return imageUrl;
   }
 }
 
