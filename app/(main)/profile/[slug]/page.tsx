@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/getCurrentUser";
 import ProfileView from "../components/ProfileView";
 import { safeUserSelect } from "@/lib/safeUserCall";
 import type User from "@/types/User";
+import { applyContactVisibility } from "@/lib/contactVisibility";
 
 // Validate Mongo ObjectId
 function isValidObjectId(id: string) {
@@ -61,7 +62,7 @@ export default async function ProfilePage(props: {
               ? {
                   id: u.id,
                   username: u.username,
-                  slug: buildSlug(u.username, u.id), // ✅ computed, not selected
+                  slug: buildSlug(u.username, u.id),
                   profilePic:
                     u.profilePic && u.profilePic.trim() !== ""
                       ? u.profilePic
@@ -72,8 +73,7 @@ export default async function ProfilePage(props: {
       : null;
 
   const isOwner = sessionUserId === user.id;
-  const canSeePhone = isOwner || user.phonePublic === true;
-  const canSeeEmail = isOwner || user.emailPublic === true;
+  const visibleUser = applyContactVisibility(user, sessionUserId);
 
   // Build final typed profile user object
   const userData: User = {
@@ -95,8 +95,8 @@ export default async function ProfilePage(props: {
         ? user.profilePic
         : "/default_profile.jpg",
 
-    email: canSeeEmail ? (user.email ?? "") : "",
-    phoneNo: canSeePhone ? (user.phoneNo ?? "") : "",
+    email: visibleUser.email,
+    phoneNo: visibleUser.phoneNo,
 
     phonePublic: user.phonePublic ?? false,
     emailPublic: user.emailPublic ?? true,
@@ -118,7 +118,7 @@ export default async function ProfilePage(props: {
         user={userData}
         isOwner={isOwner}
         sessionUserId={sessionUserId}
-        sessionUser={sessionUser} 
+        sessionUser={sessionUser}
       />
     </div>
   );
