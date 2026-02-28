@@ -1,0 +1,24 @@
+services:
+  au-connect:
+    image: minn01/au-connect:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - LINKEDIN_CLIENT_ID=
+      - LINKEDIN_CLIENT_SECRET=
+      - MICROSOFT_CLIENT_ID=
+      - MICROSOFT_CLIENT_SECRET=
+      - AZURE_STORAGE_ACCOUNT_KEY=
+      - AZURE_STORAGE_ACCOUNT_NAME=
+      - AZURE_STORAGE_CONNECTION_STRING=
+      - AZURE_STORAGE_CONTAINER_NAME=
+      - NEXT_PUBLIC_BASE_URL=
+      - NEXT_PUBLIC_APP_URL=
+      - GMAIL_USER=
+      - GMAIL_APP_PASSWORD=
+      - NODE_ENV=
+      - JWT_SECRET=
+    restart: unless-stopped
