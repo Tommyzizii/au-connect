@@ -149,7 +149,11 @@ export default function PostDetailsModal({
   const [postMenuDropDownOpen, setPostMenuDropDownOpen] =
     useState<boolean>(false);
 
-  const postOwner = currentUserId === postInfo.userId;
+  const postOwner =
+    postInfo.actorType === "COMMUNITY"
+      ? selectedActor.type === "COMMUNITY" &&
+        selectedActor.communityId === postInfo.communityId
+      : currentUserId === postInfo.userId;
   const [deletePopupOpen, setDeletePopupOpen] = useState(false);
 
   const deletePost = useDeletePost();

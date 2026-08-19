@@ -109,8 +109,7 @@ export default function CommunityPage() {
   const queryClient = useQueryClient();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const selectedActor = useActorStore((state) => state.selectedActor);
-  const actingCommunityId =
-    selectedActor.type === "COMMUNITY" ? selectedActor.communityId : null;
+  const canFollowCommunities = selectedActor.type === "USER";
 
   useEffect(() => {
     setInvalidatePosts(() => {
@@ -299,7 +298,7 @@ export default function CommunityPage() {
                           onClick={() => setSelectedCommunityId(community.id)}
                         />
                       </div>
-                      {actingCommunityId !== community.id && (
+                      {canFollowCommunities && (
                         <button
                           type="button"
                           onClick={() => toggleFollow(community)}
@@ -346,7 +345,7 @@ export default function CommunityPage() {
                             </p>
                           </div>
                         </button>
-                        {actingCommunityId !== community.id && (
+                        {canFollowCommunities && (
                           <button
                             type="button"
                             onClick={() => toggleFollow(community)}

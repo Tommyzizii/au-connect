@@ -433,6 +433,9 @@ export async function editPost(req: NextRequest) {
 
     const postId = req.nextUrl.searchParams.get("postId");
     const body = await req.json();
+    const requestActorType = body?.actorType;
+    const requestCommunityId =
+      typeof body?.communityId === "string" ? body.communityId : null;
 
     console.log("EDIT POST BODY:", JSON.stringify(body, null, 2));
 
@@ -484,9 +487,15 @@ export async function editPost(req: NextRequest) {
       );
     }
 
+    const actingAsPostCommunity =
+      requestActorType === "COMMUNITY" &&
+      !!existingPost.communityId &&
+      requestCommunityId === existingPost.communityId;
+
     const canEditCommunityPost =
       existingPost.actorType === "COMMUNITY" &&
       existingPost.communityId &&
+      actingAsPostCommunity &&
       (await getManagedCommunity(userId, existingPost.communityId));
 
     if (existingPost.actorType !== "COMMUNITY" && existingPost.userId !== userId) {
@@ -498,7 +507,7 @@ export async function editPost(req: NextRequest) {
 
     if (existingPost.actorType === "COMMUNITY" && !canEditCommunityPost) {
       return NextResponse.json(
-        { error: "Unauthorized to edit this post" },
+        { error: "Switch to this community page before editing this post" },
         { status: 403 },
       );
     }
@@ -776,6 +785,8 @@ export async function deletePost(req: NextRequest) {
     }
 
     const postId = req.nextUrl.searchParams.get("postId");
+    const requestActorType = req.nextUrl.searchParams.get("actorType");
+    const requestCommunityId = req.nextUrl.searchParams.get("actorCommunityId");
 
     if (!postId) {
       return NextResponse.json(
@@ -802,9 +813,15 @@ export async function deletePost(req: NextRequest) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    const actingAsPostCommunity =
+      requestActorType === "COMMUNITY" &&
+      !!post.communityId &&
+      requestCommunityId === post.communityId;
+
     const canDeleteCommunityPost =
       post.actorType === "COMMUNITY" &&
       post.communityId &&
+      actingAsPostCommunity &&
       (await getManagedCommunity(userId, post.communityId));
 
     if (post.actorType !== "COMMUNITY" && post.userId !== userId) {
@@ -816,7 +833,7 @@ export async function deletePost(req: NextRequest) {
 
     if (post.actorType === "COMMUNITY" && !canDeleteCommunityPost) {
       return NextResponse.json(
-        { error: "Unauthorized to delete this post" },
+        { error: "Switch to this community page before deleting this post" },
         { status: 403 },
       );
     }

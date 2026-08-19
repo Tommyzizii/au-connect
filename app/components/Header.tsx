@@ -46,6 +46,7 @@ import { useActorStore } from "@/lib/stores/actorStore";
 import VerificationRequiredModal from "./VerificationRequiredModal";
 
 type SearchUser = {
+  type?: "USER";
   id: string;
   username: string;
   slug?: string;
@@ -53,16 +54,30 @@ type SearchUser = {
   profilePic?: string | null;
 };
 
+type SearchCommunity = {
+  type: "COMMUNITY";
+  id: string;
+  name: string;
+  slug: string;
+  about?: string | null;
+  profilePic?: string | null;
+};
+
+type SearchResult = SearchUser | SearchCommunity;
+
 // Search result item
 const SearchResultItem = ({
-  user,
+  result,
   onClick,
 }: {
-  user: SearchUser;
+  result: SearchResult;
   onClick: () => void;
 }) => {
+  const isCommunity = result.type === "COMMUNITY";
+  const name = isCommunity ? result.name : result.username;
+  const subtitle = isCommunity ? "Community page" : result.title;
   const resolvedProfilePic = useResolvedMediaUrl(
-    user.profilePic,
+    result.profilePic,
     "/default_profile.jpg",
   );
 
@@ -73,14 +88,14 @@ const SearchResultItem = ({
     >
       <Image
         src={resolvedProfilePic}
-        alt={user.username}
+        alt={name}
         width={36}
         height={36}
         className="rounded-full object-cover"
       />
       <div>
-        <p className="text-sm font-medium text-gray-900">{user.username}</p>
-        {user.title && <p className="text-xs text-gray-500">{user.title}</p>}
+        <p className="text-sm font-medium text-gray-900">{name}</p>
+        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
       </div>
     </button>
   );
@@ -156,8 +171,8 @@ export default function Header() {
   });
   const msgUnreadCount = msgUnreadData?.count ?? 0;
 
-  const { data: searchResults = [], isFetching } = useQuery<SearchUser[]>({
-    queryKey: ["search-users", query],
+  const { data: searchResults = [], isFetching } = useQuery<SearchResult[]>({
+    queryKey: ["search-results", query],
     queryFn: async () => {
       const res = await fetch(
         `/api/connect/v1/search/users?q=${encodeURIComponent(query)}`,
@@ -344,15 +359,18 @@ export default function Header() {
                       Searching...
                     </div>
                   ) : searchResults.length > 0 ? (
-                    searchResults.map((u) => {
-                      const userSlug = u.slug || buildSlug(u.username, u.id);
+                    searchResults.map((result) => {
+                      const href =
+                        result.type === "COMMUNITY"
+                          ? `/community/${result.slug}`
+                          : `/profile/${result.slug || buildSlug(result.username, result.id)}`;
 
                       return (
                         <SearchResultItem
-                          key={u.id}
-                          user={u}
+                          key={`${result.type ?? "USER"}-${result.id}`}
+                          result={result}
                           onClick={() => {
-                            router.push(`/profile/${userSlug}`);
+                            router.push(href);
                             setQuery("");
                             setOpenResults(false);
                           }}
@@ -532,14 +550,17 @@ export default function Header() {
                       Searching...
                     </div>
                   ) : searchResults.length > 0 ? (
-                    searchResults.map((u) => {
-                      const userSlug = u.slug || buildSlug(u.username, u.id);
+                    searchResults.map((result) => {
+                      const href =
+                        result.type === "COMMUNITY"
+                          ? `/community/${result.slug}`
+                          : `/profile/${result.slug || buildSlug(result.username, result.id)}`;
                       return (
                         <SearchResultItem
-                          key={u.id}
-                          user={u}
+                          key={`${result.type ?? "USER"}-${result.id}`}
+                          result={result}
                           onClick={() => {
-                            router.push(`/profile/${userSlug}`);
+                            router.push(href);
                             setQuery("");
                             setOpenResults(false);
                             setMobileMenuOpen(false);

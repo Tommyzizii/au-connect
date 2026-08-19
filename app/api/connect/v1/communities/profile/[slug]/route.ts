@@ -9,6 +9,20 @@ type Params = {
   params: Promise<{ slug: string }>;
 };
 
+type CommunityProfilePatchBody = {
+  actorType?: string;
+  communityId?: string;
+  name?: unknown;
+  about?: unknown;
+  location?: unknown;
+  profilePic?: unknown;
+  profilePicOriginal?: unknown;
+  profilePicCrop?: unknown;
+  coverPhoto?: unknown;
+  coverPhotoOriginal?: unknown;
+  coverPhotoCrop?: unknown;
+};
+
 function normalizeText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -133,6 +147,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     );
   }
 
+  let body: CommunityProfilePatchBody;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  if (body?.actorType !== "COMMUNITY" || body?.communityId !== existing.id) {
+    return NextResponse.json(
+      { error: "Switch to this community page before editing it" },
+      { status: 403 },
+    );
+  }
+
   const managed = await getManagedCommunity(userId, existing.id);
   if (!managed) {
     return NextResponse.json(
@@ -142,22 +170,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   try {
-      const body = await req.json();
-      const name = body?.name !== undefined
+    const name =
+      body?.name !== undefined
         ? normalizeText(body.name) ?? existing.name
         : existing.name;
-      const about =
-        body?.about !== undefined ? normalizeText(body.about) : existing.about;
-      const location =
-        body?.location !== undefined
-          ? normalizeText(body.location)
-          : existing.location;
-      const profilePic = body?.profilePic;
-      const profilePicOriginal = body?.profilePicOriginal;
-      const profilePicCrop = body?.profilePicCrop;
-      const coverPhoto = body?.coverPhoto;
-      const coverPhotoOriginal = body?.coverPhotoOriginal;
-      const coverPhotoCrop = body?.coverPhotoCrop;
+    const about =
+      body?.about !== undefined ? normalizeText(body.about) : existing.about;
+    const location =
+      body?.location !== undefined
+        ? normalizeText(body.location)
+        : existing.location;
+    const profilePic = body?.profilePic;
+    const profilePicOriginal = body?.profilePicOriginal;
+    const profilePicCrop = body?.profilePicCrop;
+    const coverPhoto = body?.coverPhoto;
+    const coverPhotoOriginal = body?.coverPhotoOriginal;
+    const coverPhotoCrop = body?.coverPhotoCrop;
 
     if (name.length < 2) {
       return NextResponse.json(

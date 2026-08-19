@@ -73,8 +73,9 @@ export default function MainFeed({
 
   // Create Post Card Component (to be rendered inside Virtuoso)
   const CreatePostCard = () => {
+    const actorName = community?.name ?? user.username;
     const avatarUrl = useResolvedMediaUrl(
-      user?.profilePic,
+      community?.profilePic ?? user?.profilePic,
       "/default_profile.jpg",
     );
 
@@ -92,7 +93,7 @@ export default function MainFeed({
             <div className="relative w-10 h-10">
               <Image
                 src={avatarUrl}
-                alt={user.username}
+                alt={actorName}
                 fill
                 className="rounded-full object-cover"
               />
@@ -105,7 +106,11 @@ export default function MainFeed({
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-1 sm:gap-2 md:flex md:justify-evenly md:gap-4">
+          <div
+            className={`grid gap-1 sm:gap-2 md:flex md:justify-evenly md:gap-4 ${
+              community ? "grid-cols-2" : "grid-cols-3"
+            }`}
+          >
             <button
               onClick={() => openModal("media")}
               className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
@@ -120,13 +125,15 @@ export default function MainFeed({
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Write article</span>
             </button>
-            <button
-              onClick={() => openModal("job_post")}
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
-            >
-              <BriefcaseBusiness className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Job Post</span>
-            </button>
+            {!community && (
+              <button
+                onClick={() => openModal("job_post")}
+                className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
+              >
+                <BriefcaseBusiness className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Job Post</span>
+              </button>
+            )}
           </div>
         </div>
       </>

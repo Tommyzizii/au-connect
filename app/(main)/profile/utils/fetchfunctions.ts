@@ -164,7 +164,14 @@ export async function fetchPosts({
 }
 
 export async function deletePost(postId: string) {
-  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
+  const selectedActor = useActorStore.getState().selectedActor;
+  const params = new URLSearchParams({ postId, actorType: selectedActor.type });
+
+  if (selectedActor.type === "COMMUNITY" && selectedActor.communityId) {
+    params.set("actorCommunityId", selectedActor.communityId);
+  }
+
+  const res = await fetch(`${POST_API_PATH}?${params.toString()}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
   });
@@ -209,10 +216,22 @@ export async function editPost({
   postId: string;
   data: any; // or use your CreatePostSchema type
 }) {
+  const selectedActor = useActorStore.getState().selectedActor;
+  const actorPayload =
+    selectedActor.type === "COMMUNITY" && selectedActor.communityId
+      ? {
+          actorType: selectedActor.type,
+          communityId: selectedActor.communityId,
+        }
+      : {
+          actorType: "USER" as const,
+          communityId: null,
+        };
+
   const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data), // Include the updated post data
+    body: JSON.stringify({ ...data, ...actorPayload }), // Include the updated post data
   });
 
   if (!res.ok) {

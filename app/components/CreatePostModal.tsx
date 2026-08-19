@@ -261,6 +261,7 @@ export default function CreatePostModal({
     pollOptions.filter((opt) => opt.trim().length > 0).length >= 2;
   const hasValidJob =
     postType === "job_post" &&
+    (!activeCommunity || editMode) &&
     jobDraft &&
     jobDraft.jobTitle.trim().length > 0 &&
     jobDraft.employmentType !== "";
@@ -381,6 +382,12 @@ export default function CreatePostModal({
       setPostType(initialType);
     }
   }, [initialType, editMode]);
+
+  useEffect(() => {
+    if (!editMode && activeCommunity && postType === "job_post") {
+      setPostType("media");
+    }
+  }, [activeCommunity, editMode, postType]);
 
   const handleClearDraft = () => {
     setSelectedVisibility("everyone");
@@ -659,7 +666,12 @@ export default function CreatePostModal({
                 { id: "article", label: "Article", icon: "📝" },
                 { id: "poll", label: "Poll", icon: "📊" },
                 { id: "job_post", label: "Job Post", icon: "💼" },
-              ].map((type) => (
+              ]
+                .filter(
+                  (type) =>
+                    editMode || !activeCommunity || type.id !== "job_post",
+                )
+                .map((type) => (
                 <button
                   disabled={editMode}
                   key={type.id}

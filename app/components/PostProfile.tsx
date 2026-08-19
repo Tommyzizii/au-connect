@@ -13,6 +13,7 @@ import PopupModal from "./PopupModal";
 import ReportModal from "./ReportModal";
 import type { ReportTargetSnapshot } from "@/types/ReportTargetSnapshot";
 import type { ReportSubmitPayload } from "@/types/ReportSubmitPayload";
+import { useActorStore } from "@/lib/stores/actorStore";
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
 
@@ -39,6 +40,7 @@ export default function PostProfile({
 }: PostProfileProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const selectedActor = useActorStore((state) => state.selectedActor);
   const slug = buildSlug(post.username || "", post.userId || "");
   const communitySlug = post.community?.slug;
   const displayProfilePic =
@@ -62,7 +64,11 @@ export default function PostProfile({
     links: post.links,
   };
 
-  const isOwnPost = currentUserId === post.userId;
+  const isOwnPost =
+    post.actorType === "COMMUNITY"
+      ? selectedActor.type === "COMMUNITY" &&
+        selectedActor.communityId === post.communityId
+      : currentUserId === post.userId;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -162,7 +168,7 @@ export default function PostProfile({
             ) : (
               <button
                 type="button"
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-gra"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setReportModalOpen(true);
                 }}
