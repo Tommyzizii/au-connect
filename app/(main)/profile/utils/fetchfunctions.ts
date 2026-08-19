@@ -251,7 +251,7 @@ export function useEditPost() {
     onSuccess: (updatedPost) => {
 
       // 1️⃣ Update FEED (["posts"])
-      queryClient.setQueryData(["posts"], (oldData: any) => {
+      queryClient.setQueriesData({ queryKey: ["posts"], exact: false }, (oldData: any) => {
         if (!oldData?.pages) return oldData;
 
         return {
@@ -270,6 +270,61 @@ export function useEditPost() {
       });
 
       // 2️⃣ Update ALL profile tabs
+      queryClient.setQueriesData(
+        { queryKey: ["community-posts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id
+                  ? {
+                      ...post,
+                      ...updatedPost,
+                    }
+                  : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["community-profile-posts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id
+                  ? {
+                      ...post,
+                      ...updatedPost,
+                    }
+                  : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["post"], exact: false },
+        (oldData: any) => {
+          if (!oldData || oldData.id !== updatedPost.id) return oldData;
+          return {
+            ...oldData,
+            ...updatedPost,
+          };
+        },
+      );
+
       queryClient.setQueriesData(
         { queryKey: ["profilePosts"], exact: false },
         (oldData: any) => {
@@ -337,6 +392,11 @@ export function useEditPost() {
         }
       );
 
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-profile-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+      queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
       queryClient.invalidateQueries({ queryKey: ["job-posts"] });
     },
   });

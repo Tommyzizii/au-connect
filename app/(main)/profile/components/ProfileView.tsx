@@ -36,6 +36,7 @@ import { ReportTargetSnapshot } from "@/types/ReportTargetSnapshot";
 import { postReport } from "../utils/reportFunctions";
 import { ReportSubmitPayload } from "@/types/ReportSubmitPayload";
 import { ACCOUNT_VERIFICATION_PAGE_PATH } from "@/lib/constants";
+import { useActorStore } from "@/lib/stores/actorStore";
 
 type ConnectionUser = {
   id: string;
@@ -105,6 +106,10 @@ export default function ProfileView({
   sessionUser: Pick<User, "id" | "username" | "slug" | "profilePic"> | null;
 }) {
   const queryClient = useQueryClient();
+  const selectedActor = useActorStore((state) => state.selectedActor);
+  const isUserActor = selectedActor.type === "USER";
+  const canUsePersonalActions = isOwner && isUserActor;
+  const canUsePersonalRelationshipActions = !isOwner && isUserActor;
   const [userState, setUserState] = useState<User>(user);
   const [openContactInfo, setOpenContactInfo] = useState(false);
   const [tab, setTab] = useState<
@@ -287,7 +292,7 @@ export default function ProfileView({
 
   // ✅ UPDATED: On profile load: check connection status (connected / outgoing / incoming)
   useEffect(() => {
-    if (isOwner) return;
+    if (isOwner || !isUserActor) return;
 
     let ignore = false;
 
@@ -372,7 +377,7 @@ export default function ProfileView({
     return () => {
       ignore = true;
     };
-  }, [isOwner, user.id]);
+  }, [isOwner, isUserActor, user.id]);
 
   const loadConnections = useCallback(async () => {
     try {
@@ -569,7 +574,7 @@ export default function ProfileView({
                       fill
                       className="object-cover"
                     />
-                    {isOwner && (
+                    {canUsePersonalActions && (
                       <button
                         onClick={() => setOpenCoverPhotoModal(true)}
                         className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow cursor-pointer"
@@ -597,7 +602,7 @@ export default function ProfileView({
                             className="rounded-full border-4 border-white object-cover"
                           />
 
-                          {isOwner && (
+                          {canUsePersonalActions && (
                             <span className="absolute bottom-1 right-1 bg-white/90 p-2 rounded-full shadow border">
                               <Camera size={18} className="text-gray-700" />
                             </span>
@@ -608,7 +613,7 @@ export default function ProfileView({
                       {/* EDIT / CONNECT / REPORT BUTTONS */}
                       <div className="z-20 flex flex-col items-end gap-2 flex-1 min-w-0 md:mb-0 md:absolute md:top-4 md:right-4 md:w-auto">
                         <div className="flex flex-wrap justify-end items-center gap-2 md:gap-3 w-full md:w-auto">
-                          {isOwner ? (
+                          {canUsePersonalActions ? (
                             <>
                               {/* Verification CTA — easy to find on your own profile */}
                               {verificationStatus === "APPROVED" ? (
@@ -652,7 +657,7 @@ export default function ProfileView({
                                 Edit Profile
                               </button>
                             </>
-                          ) : (
+                          ) : canUsePersonalRelationshipActions ? (
                             <>
                               {/* ✅ UPDATED: Show different UI based on connection state */}
                               {isConnected ? (
@@ -743,7 +748,7 @@ export default function ProfileView({
                                 Report
                               </button>
                             </>
-                          )}
+                          ) : null}
                         </div>
 
                         {connectError && (
@@ -824,7 +829,7 @@ export default function ProfileView({
                 <SectionCard
                   title="Experience"
                   icon={
-                    isOwner && (
+                    canUsePersonalActions && (
                       <button
                         onClick={() => setOpenExperienceModal(true)}
                         className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
@@ -849,7 +854,7 @@ export default function ProfileView({
                 <SectionCard
                   title="Education"
                   icon={
-                    isOwner && (
+                    canUsePersonalActions && (
                       <button
                         onClick={() => setOpenEducationModal(true)}
                         className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
@@ -874,7 +879,7 @@ export default function ProfileView({
                 <SectionCard
                   title="About"
                   icon={
-                    isOwner && (
+                    canUsePersonalActions && (
                       <button
                         onClick={() => setOpenAboutModal(true)}
                         className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
@@ -961,7 +966,9 @@ export default function ProfileView({
   "
                     >
                       <div className="flex gap-4 pb-2 min-w-max">
-                        {JOB_TABS.filter((t) => !t.ownerOnly || isOwner).map(
+                        {JOB_TABS.filter(
+                          (t) => !t.ownerOnly || canUsePersonalActions,
+                        ).map(
                           (t) => (
                             <button
                               key={t.key}
@@ -1027,7 +1034,7 @@ export default function ProfileView({
                       </>
                     ) : (
                       <>
-                        {!isOwner &&
+                        {!canUsePersonalActions &&
                         (jobTab === "saved" || jobTab === "applied") ? (
                           <div className="text-center text-sm text-gray-600 py-10">
                             This section is private.
@@ -1150,7 +1157,7 @@ export default function ProfileView({
         open={openContactInfo}
         onClose={() => setOpenContactInfo(false)}
         user={userState}
-        isOwner={isOwner}
+        isOwner={canUsePersonalActions}
       />
 
       <EditAboutModal
@@ -1163,7 +1170,7 @@ export default function ProfileView({
       <ProfilePhotoModal
         open={openProfilePhotoModal}
         onClose={() => setOpenProfilePhotoModal(false)}
-        isOwner={isOwner}
+        isOwner={canUsePersonalActions}
         user={user}
         resolvedProfilePicUrl={resolvedProfilePicUrl}
         onProfilePicChanged={(newProfilePicValue: string) =>
@@ -1175,7 +1182,7 @@ export default function ProfileView({
       <CoverPhotoModal
         open={openCoverPhotoModal}
         onClose={() => setOpenCoverPhotoModal(false)}
-        isOwner={isOwner}
+        isOwner={canUsePersonalActions}
         user={user}
         resolvedCoverPhotoUrl={resolvedCoverPhotoUrl}
         onCoverPhotoChanged={(newCover: string) => setCoverPhotoValue(newCover)}

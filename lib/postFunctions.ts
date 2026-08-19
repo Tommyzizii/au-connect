@@ -505,6 +505,13 @@ export async function editPost(req: NextRequest) {
       );
     }
 
+    if (existingPost.actorType !== "COMMUNITY" && requestActorType === "COMMUNITY") {
+      return NextResponse.json(
+        { error: "Switch to your personal profile before editing this post" },
+        { status: 403 },
+      );
+    }
+
     if (existingPost.actorType === "COMMUNITY" && !canEditCommunityPost) {
       return NextResponse.json(
         { error: "Switch to this community page before editing this post" },
@@ -827,6 +834,13 @@ export async function deletePost(req: NextRequest) {
     if (post.actorType !== "COMMUNITY" && post.userId !== userId) {
       return NextResponse.json(
         { error: "Unauthorized to delete this post" },
+        { status: 403 },
+      );
+    }
+
+    if (post.actorType !== "COMMUNITY" && requestActorType === "COMMUNITY") {
+      return NextResponse.json(
+        { error: "Switch to your personal profile before deleting this post" },
         { status: 403 },
       );
     }

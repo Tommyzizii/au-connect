@@ -153,7 +153,9 @@ export default function PostDetailsModal({
     postInfo.actorType === "COMMUNITY"
       ? selectedActor.type === "COMMUNITY" &&
         selectedActor.communityId === postInfo.communityId
-      : currentUserId === postInfo.userId;
+      : selectedActor.type === "USER" && currentUserId === postInfo.userId;
+  const canReportPost = selectedActor.type === "USER";
+  const showPostMenu = postOwner || canReportPost;
   const [deletePopupOpen, setDeletePopupOpen] = useState(false);
 
   const deletePost = useDeletePost();
@@ -593,6 +595,7 @@ export default function PostDetailsModal({
             </div>
           </div>
 
+          {showPostMenu && (
           <div className="relative">
             <button
               type="button"
@@ -631,7 +634,7 @@ export default function PostDetailsModal({
                       Delete post
                     </button>
                   </>
-                ) : (
+                ) : canReportPost ? (
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer"
@@ -642,10 +645,11 @@ export default function PostDetailsModal({
                     <Flag className="w-4 h-4" />
                     Report post
                   </button>
-                )}
+                ) : null}
               </div>
             )}
           </div>
+          )}
         </div>
 
         {(post.title || post.content) && (
