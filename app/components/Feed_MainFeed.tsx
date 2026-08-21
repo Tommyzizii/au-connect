@@ -108,21 +108,21 @@ export default function MainFeed({
           <div className="grid grid-cols-3 gap-1 sm:gap-2 md:flex md:justify-evenly md:gap-4">
             <button
               onClick={() => openModal("media")}
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600  rounded-lg hover:bg-gray-50"
             >
               <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Media</span>
             </button>
             <button
               onClick={() => openModal("article")}
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600  rounded-lg hover:bg-gray-50"
             >
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Write article</span>
             </button>
             <button
               onClick={() => openModal("job_post")}
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600 cursor-pointer rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] sm:text-xs md:flex-row md:gap-2 md:text-sm text-gray-600 hover:text-red-600  rounded-lg hover:bg-gray-50"
             >
               <BriefcaseBusiness className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Job Post</span>

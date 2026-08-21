@@ -46,7 +46,7 @@ export default function CommentInput({
         className={`text-sm font-semibold ${
           isDisabled
             ? "text-gray-400 cursor-default"
-            : "text-blue-500 hover:text-blue-600 cursor-pointer"
+            : "text-blue-500 hover:text-blue-600 "
         }`}
       >
         {isLoading ? (

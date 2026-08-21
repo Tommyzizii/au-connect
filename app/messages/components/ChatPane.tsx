@@ -186,7 +186,7 @@ export default function ChatPane({
                   const slug = buildSlug(selectedName || "", selectedUserId);
                   router.push(`/profile/${slug}`);
                 }}
-                className="flex items-center min-w-0 cursor-pointer"
+                className="flex items-center min-w-0 "
                 aria-label={`Open ${selectedName} profile`}
               >
                 <div className="relative w-11 h-11 shrink-0">
@@ -214,7 +214,7 @@ export default function ChatPane({
               {openMenu && (
                 <div className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg z-50 overflow-hidden">
                   <button
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors "
                     onClick={() => {
                       onClearConversation();
                       setOpenMenu(false);
@@ -314,9 +314,9 @@ export default function ChatPane({
                   type="button"
                   onClick={onSend}
                   aria-label="Send"
-                  className="cursor-pointer"
+                  className=""
                 >
-                  <Send className="w-5 h-5 text-gray-700 cursor-pointer hover:text-gray-900" />
+                  <Send className="w-5 h-5 text-gray-700  hover:text-gray-900" />
                 </button>
               </div>
             </div>

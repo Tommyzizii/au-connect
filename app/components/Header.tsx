@@ -406,7 +406,7 @@ export default function Header() {
                   <ActorAvatar
                     src={activeActorPic}
                     alt={activeActorName}
-                    className="border-red-400 border-2 shadow-lg hover:transition-transform hover:scale-105 active:opacity-80 cursor-pointer"
+                    className="border-red-400 border-2 shadow-lg hover:transition-transform hover:scale-105 active:opacity-80 "
                   />
                 </button>
 
@@ -488,7 +488,7 @@ export default function Header() {
 
               <button
                 title="Logout"
-                className="hover:bg-gray-100 rounded-lg p-3 ml-2 active:opacity-80 active:scale-95 transition cursor-pointer"
+                className="hover:bg-gray-100 rounded-lg p-3 ml-2 active:opacity-80 active:scale-95 transition "
                 onClick={() => setShowModal(true)}
               >
                 <LogOut className="w-5 h-5 text-gray-600" />
@@ -499,7 +499,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="cursor-pointer md:hidden text-gray-600 hover:text-red-600"
+            className="md:hidden text-gray-600 hover:text-red-600"
           >
             {mobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -584,7 +584,7 @@ export default function Header() {
                   setMobileMenuOpen(false);
                   setShowModal(true);
                 }}
-                className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 "
               >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Logout</span>

@@ -559,7 +559,7 @@ export default function CommunityProfilePage({
               <button
                 type="button"
                 onClick={() => openImageModal("coverPhoto")}
-                className="absolute bottom-4 right-4 inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                className="absolute bottom-4 right-4 inline-flex h-10  items-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
               >
                 <Camera className="h-4 w-4" />
                 Edit cover photo
@@ -581,7 +581,7 @@ export default function CommunityProfilePage({
                     <button
                       type="button"
                       onClick={() => openImageModal("profilePic")}
-                      className="absolute bottom-2 right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:bg-slate-50"
+                      className="absolute bottom-2 right-2 flex h-10 w-10  items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:bg-slate-50"
                     >
                       <Camera className="h-5 w-5" />
                     </button>

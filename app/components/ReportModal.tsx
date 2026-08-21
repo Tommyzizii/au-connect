@@ -114,7 +114,7 @@ export default function ReportModal({
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
             aria-label="Close report modal"
           >
             <X className="h-5 w-5" />
@@ -215,14 +215,14 @@ export default function ReportModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Submitting..." : "Submit report"}
           </button>

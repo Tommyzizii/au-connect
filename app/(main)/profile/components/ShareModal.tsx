@@ -63,7 +63,7 @@ export default function ShareModal({
           <h3 className="text-lg font-semibold text-gray-900">Share Post</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-gray-100 hover:rounded-full p-2"
+            className="text-gray-400 hover:text-gray-600  hover:bg-gray-100 hover:rounded-full p-2"
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,7 +73,7 @@ export default function ShareModal({
         <div className="grid grid-cols-2 gap-3 mb-5">
           <button
             onClick={shareFacebook}
-            className="flex items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-4 py-2.5 font-medium text-white transition-colors hover:bg-[#166fe0] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-4 py-2.5 font-medium text-white transition-colors hover:bg-[#166fe0] "
           >
             <svg
               className="w-5 h-5"
@@ -88,7 +88,7 @@ export default function ShareModal({
 
           <button
             onClick={shareLinkedIn}
-            className="flex items-center justify-center gap-2 rounded-lg bg-[#0A66C2] px-4 py-2.5 font-medium text-white transition-colors hover:bg-[#095196] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-lg bg-[#0A66C2] px-4 py-2.5 font-medium text-white transition-colors hover:bg-[#095196] "
           >
             <svg
               className="w-5 h-5"
@@ -112,7 +112,7 @@ export default function ShareModal({
           />
           <button
             onClick={handleCopy}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2  ${
               copied
                 ? "bg-green-500 text-white"
                 : "bg-blue-500 hover:bg-blue-600 text-white"

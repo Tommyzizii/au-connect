@@ -236,7 +236,7 @@ export default function JobPostDetailView({
           <div className="flex flex-row mt-6 mb-5">
             <button
               onClick={onSave}
-              className="mr-3 cursor-pointer hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white"
+              className="mr-3  hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white"
             >
               {isSaved ? "Saved" : "Save"}
             </button>
@@ -244,7 +244,7 @@ export default function JobPostDetailView({
             {isOwner ? (
               <button
                 onClick={onViewApplicants}
-                className="cursor-pointer rounded-lg bg-white hover:bg-neutral-100 py-2 px-4 text-neutral-800 border border-neutral-400"
+                className="rounded-lg bg-white hover:bg-neutral-100 py-2 px-4 text-neutral-800 border border-neutral-400"
               >
                 View Applicants
               </button>
@@ -252,7 +252,7 @@ export default function JobPostDetailView({
               <button
                 disabled={hasApplied || displayStatus === "CLOSED"}
                 onClick={onApply}
-                className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white disabled:bg-neutral-400"
+                className="rounded-lg bg-blue-600 py-2 px-4 text-white disabled:bg-neutral-400"
               >
                 {applicationStatus === "SHORTLISTED"
                   ? "Shortlisted"

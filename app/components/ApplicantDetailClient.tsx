@@ -57,7 +57,7 @@ export default function ApplicantDetailClient({
           </h2>
           <button
             onClick={() => router.back()}
-            className="cursor-pointer text-blue-600 hover:text-blue-700"
+            className="text-blue-600 hover:text-blue-700"
           >
             ← Go back
           </button>
@@ -88,7 +88,7 @@ export default function ApplicantDetailClient({
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="cursor-pointer inline-flex items-center gap-2 mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+          className="inline-flex items-center gap-2 mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -259,7 +259,7 @@ export default function ApplicantDetailClient({
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleMessage}
-                className="cursor-pointer px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition"
+                className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition"
               >
                 Message Applicant
               </button>
@@ -268,7 +268,7 @@ export default function ApplicantDetailClient({
                 <button
                   onClick={() => handleStatusChange("SHORTLISTED")}
                   disabled={updateStatus.isPending}
-                  className="cursor-pointer px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {updateStatus.isPending ? "Updating..." : "Shortlist"}
                 </button>
@@ -278,7 +278,7 @@ export default function ApplicantDetailClient({
                 <button
                   onClick={() => handleStatusChange("REJECTED")}
                   disabled={updateStatus.isPending}
-                  className="cursor-pointer px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {updateStatus.isPending ? "Updating..." : "Reject"}
                 </button>

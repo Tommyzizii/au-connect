@@ -26,6 +26,18 @@ body {
   padding: 0;
 }
 
+/* Interactive controls should communicate clickability without repeating a
+   Tailwind cursor utility on every button. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -64,4 +76,3 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

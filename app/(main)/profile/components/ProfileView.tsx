@@ -572,7 +572,7 @@ export default function ProfileView({
                     {isOwner && (
                       <button
                         onClick={() => setOpenCoverPhotoModal(true)}
-                        className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow cursor-pointer"
+                        className="absolute top-3 right-3 bg-white/80 p-2 rounded-full shadow "
                         type="button"
                         aria-label="Edit cover photo"
                       >
@@ -587,7 +587,7 @@ export default function ProfileView({
                         <button
                           type="button"
                           onClick={() => setOpenProfilePhotoModal(true)}
-                          className="relative w-32 h-32 block cursor-pointer"
+                          className="relative w-32 h-32 block "
                           aria-label="Open profile photo"
                         >
                           <Image
@@ -616,7 +616,7 @@ export default function ProfileView({
                                   onClick={() =>
                                     router.push(ACCOUNT_VERIFICATION_PAGE_PATH)
                                   }
-                                  className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 shadow-sm cursor-pointer"
+                                  className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 shadow-sm "
                                 >
                                   <ShieldCheck size={16} className="md:w-[18px] md:h-[18px]" />
                                   Verified
@@ -626,7 +626,7 @@ export default function ProfileView({
                                   onClick={() =>
                                     router.push(ACCOUNT_VERIFICATION_PAGE_PATH)
                                   }
-                                  className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 shadow-sm cursor-pointer"
+                                  className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 shadow-sm "
                                 >
                                   <Clock3 size={16} className="md:w-[18px] md:h-[18px]" />
                                   Verification Pending
@@ -636,7 +636,7 @@ export default function ProfileView({
                                   onClick={() =>
                                     router.push(ACCOUNT_VERIFICATION_PAGE_PATH)
                                   }
-                                  className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-white bg-blue-600 border border-blue-600 hover:bg-blue-700 shadow-sm cursor-pointer"
+                                  className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-white bg-blue-600 border border-blue-600 hover:bg-blue-700 shadow-sm "
                                 >
                                   <ShieldAlert size={16} className="md:w-[18px] md:h-[18px]" />
                                   {verificationStatus === "REJECTED"
@@ -646,7 +646,7 @@ export default function ProfileView({
                               )}
                               <button
                                 onClick={() => setOpenEditModal(true)}
-                                className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                                className="flex h-9 md:h-10 items-center gap-1.5 md:gap-2 px-3 md:px-4 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white "
                               >
                                 <Pencil size={14} className="md:w-4 md:h-4" />
                                 Edit Profile
@@ -659,7 +659,7 @@ export default function ProfileView({
                                 <button
                                   onClick={() => setOpenRemoveModal(true)}
                                   disabled={connectLoading}
-                                  className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600 cursor-pointer ${
+                                  className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg shadow text-white transition-colors bg-red-500 hover:bg-red-600  ${
                                     connectLoading
                                       ? "opacity-50 cursor-not-allowed"
                                       : ""
@@ -672,7 +672,7 @@ export default function ProfileView({
                                   <button
                                     onClick={handleAcceptIncoming}
                                     disabled={connectLoading}
-                                    className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-blue-600 text-white text-xs md:text-base hover:bg-blue-700 cursor-pointer ${
+                                    className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-blue-600 text-white text-xs md:text-base hover:bg-blue-700  ${
                                       connectLoading
                                         ? "opacity-50 cursor-not-allowed"
                                         : ""
@@ -684,7 +684,7 @@ export default function ProfileView({
                                   <button
                                     onClick={handleDeclineIncoming}
                                     disabled={connectLoading}
-                                    className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500 text-white text-xs md:text-base hover:bg-red-600 cursor-pointer ${
+                                    className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500 text-white text-xs md:text-base hover:bg-red-600  ${
                                       connectLoading
                                         ? "opacity-50 cursor-not-allowed"
                                         : ""
@@ -703,7 +703,7 @@ export default function ProfileView({
                                   <button
                                     onClick={handleCancelRequest}
                                     disabled={connectLoading}
-                                    className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer ${
+                                    className={`px-3 py-2 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 transition-colors text-sm font-medium  ${
                                       connectLoading
                                         ? "opacity-50 cursor-not-allowed"
                                         : ""
@@ -717,7 +717,7 @@ export default function ProfileView({
                                 <button
                                   onClick={handleConnect}
                                   disabled={connectLoading}
-                                  className={`h-9 md:h-10 px-3 md:px-4 rounded-lg text-xs md:text-base shadow text-white transition-colors bg-blue-600 hover:bg-blue-700 cursor-pointer ${
+                                  className={`h-9 md:h-10 px-3 md:px-4 rounded-lg text-xs md:text-base shadow text-white transition-colors bg-blue-600 hover:bg-blue-700  ${
                                     connectLoading
                                       ? "opacity-50 cursor-not-allowed"
                                       : ""
@@ -730,14 +730,14 @@ export default function ProfileView({
                                 onClick={() =>
                                   router.push(`/messages?userId=${user.id}`)
                                 }
-                                className="px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                                className="px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white "
                               >
                                 Message
                               </button>
 
                               <button
                                 onClick={() => {setReportModalOpen(true)}}
-                                className="inline-flex h-9 md:h-10 items-center gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all duration-150 cursor-pointer"
+                                className="inline-flex h-9 md:h-10 items-center gap-2 px-3 md:px-4 rounded-lg text-xs md:text-base font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all duration-150 "
                               >
                                 <Flag className="w-4 h-4" />
                                 Report
@@ -774,7 +774,7 @@ export default function ProfileView({
                       <button
                         type="button"
                         onClick={() => setOpenContactInfo(true)}
-                        className="underline cursor-pointer"
+                        className="underline "
                       >
                         Contact info
                       </button>
@@ -782,7 +782,7 @@ export default function ProfileView({
 
                     <button
                       onClick={openConnectionsView}
-                      className="text-sm text-gray-600 hover:underline cursor-pointer"
+                      className="text-sm text-gray-600 hover:underline "
                     >
                       {user.connections} connections
                     </button>
@@ -813,7 +813,7 @@ export default function ProfileView({
 
                     <button
                       onClick={openConnectionsView}
-                      className="mt-3 text-sm font-semibold text-blue-600 hover:underline cursor-pointer"
+                      className="mt-3 text-sm font-semibold text-blue-600 hover:underline "
                     >
                       See more
                     </button>
@@ -827,7 +827,7 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenExperienceModal(true)}
-                        className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                        className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 "
                       >
                         <Pencil size={16} className="md:w-[18px] md:h-[18px]" />
                       </button>
@@ -852,7 +852,7 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenEducationModal(true)}
-                        className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                        className="p-1.5 md:p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 "
                       >
                         <Pencil size={16} className="md:w-[18px] md:h-[18px]" />
                       </button>
@@ -877,7 +877,7 @@ export default function ProfileView({
                     isOwner && (
                       <button
                         onClick={() => setOpenAboutModal(true)}
-                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                        className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 "
                       >
                         <Pencil size={18} />
                       </button>
@@ -901,7 +901,7 @@ export default function ProfileView({
                       onClick={() => {
                         setMainSection("activity");
                       }}
-                      className={`pb-2 cursor-pointer ${
+                      className={`pb-2  ${
                         mainSection === "activity"
                           ? "border-b-2 border-blue-600 text-blue-600"
                           : "text-gray-600"
@@ -915,7 +915,7 @@ export default function ProfileView({
                         setMainSection("jobActivity");
                         setJobTab("hiring"); // nicer UX default
                       }}
-                      className={`pb-2 cursor-pointer ${
+                      className={`pb-2  ${
                         mainSection === "jobActivity"
                           ? "border-b-2 border-blue-600 text-blue-600"
                           : "text-gray-600"
@@ -940,7 +940,7 @@ export default function ProfileView({
                           <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`pb-2 flex-shrink-0 cursor-pointer ${
+                            className={`pb-2 flex-shrink-0  ${
                               tab === t.key
                                 ? "border-b-2 border-blue-600 text-blue-600"
                                 : "text-gray-600"
@@ -966,7 +966,7 @@ export default function ProfileView({
                             <button
                               key={t.key}
                               onClick={() => setJobTab(t.key)}
-                              className={`pb-2 flex-shrink-0 cursor-pointer ${
+                              className={`pb-2 flex-shrink-0  ${
                                 jobTab === t.key
                                   ? "border-b-2 border-blue-600 text-blue-600"
                                   : "text-gray-600"
@@ -1105,7 +1105,7 @@ export default function ProfileView({
 
                   <button
                     onClick={openConnectionsView}
-                    className="mt-4 text-sm text-blue-600 font-semibold cursor-pointer"
+                    className="mt-4 text-sm text-blue-600 font-semibold "
                   >
                     See more
                   </button>

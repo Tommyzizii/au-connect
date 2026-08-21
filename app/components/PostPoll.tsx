@@ -98,7 +98,7 @@ export default function PostPoll({
                   ? isSelected
                     ? "border-blue-500 bg-blue-50"
                     : "border-neutral-200 bg-white"
-                  : "border-neutral-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer"
+                  : "border-neutral-300 hover:border-blue-400 hover:bg-blue-50 "
               } ${(userHasVoted || pollEnded) && "cursor-default"}`}
             >
               {/* Progress bar background */}

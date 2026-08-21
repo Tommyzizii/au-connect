@@ -78,7 +78,7 @@ export default function MessageBubble({
                 "p-1.5 rounded-full",
                 "opacity-0 group-hover:opacity-100 transition-opacity",
                 "hover:bg-gray-100",
-                "cursor-pointer",
+                "",
                 openMenu ? "opacity-100 bg-gray-100" : "",
               ].join(" ")}
             >
@@ -96,7 +96,7 @@ export default function MessageBubble({
                         setOpenMenu(false);
                         onRetry?.(m.id);
                       }}
-                      className="w-full text-left px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 cursor-pointer"
+                      className="w-full text-left px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 "
                     >
                       Retry
                     </button>
@@ -106,7 +106,7 @@ export default function MessageBubble({
                         setOpenMenu(false);
                         onDeleteLocal?.(m.id);
                       }}
-                      className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                      className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 "
                     >
                       Unsend
                     </button>
@@ -118,7 +118,7 @@ export default function MessageBubble({
                       setOpenMenu(false);
                       onDeleteForEveryone?.(m.id);
                     }}
-                    className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 "
                   >
                     Delete for everyone
                   </button>

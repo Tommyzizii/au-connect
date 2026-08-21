@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useJobPosts } from "../(main)/profile/utils/jobPostFetchFunctions";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { useFeedStore } from "@/lib/stores/feedStore";
@@ -83,6 +84,7 @@ export default function JobsPage() {
   const [jobTabFilter, setJobTabFilter] = useState<JobTabFilters>(
     JobTabFilters.ALL,
   );
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const salaryMinValue = salaryMin === "" ? undefined : salaryMin;
   const salaryMaxValue = salaryMax === "" ? undefined : salaryMax;
@@ -130,7 +132,7 @@ export default function JobsPage() {
   }, [data]);
 
 
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
   });
@@ -214,29 +216,29 @@ export default function JobsPage() {
     return (
       <>
         {/* Recommendations */}
-        <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg sm:shadow-xl">
+          <div className="flex items-start sm:items-center justify-between gap-3 mb-5 sm:mb-6">
             <div>
               <p className="text-sm text-red-600 mb-1">
                 ✨ Recommended for you
               </p>
-              <h2 className="text-2xl font-semibold">Top matches</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold">Top matches</h2>
             </div>
 
-            <button className="border border-zinc-200 px-4 py-2 rounded-2xl hover:bg-zinc-100 transition cursor-pointer">
+            <button className="shrink-0 border border-zinc-200 px-3 sm:px-4 py-2 rounded-xl sm:rounded-2xl hover:bg-zinc-100 transition text-sm sm:text-base">
               See all
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 cursor-pointer">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 cursor-pointer">
             {sampleJobsRecs.map((job, i) => (
               <div
                 key={i}
-                className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 hover:border-red-400/40 transition"
+                className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 sm:p-5 hover:border-red-400/40 transition"
               >
                 <div className="mb-4">
                   <p className="text-zinc-500 text-sm">{job.company}</p>
-                  <h3 className="text-xl font-semibold leading-tight mt-1">
+                  <h3 className="text-lg sm:text-xl font-semibold leading-tight mt-1">
                     {job.title}
                   </h3>
                 </div>
@@ -257,13 +259,13 @@ export default function JobsPage() {
         <div className="h-5" />
 
         {/* Tabs */}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
             {Object.values(JobTabFilters).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setJobTabFilter(filter)}
-                className={`px-5 py-3 rounded-2xl border transition cursor-pointer ${
+                className={`shrink-0 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border transition ${
                   jobTabFilter === filter
                     ? "bg-red-100 border-red-500 text-red-500"
                     : "bg-white border-zinc-200 text-gray-600"
@@ -275,7 +277,7 @@ export default function JobsPage() {
           </div>
 
           <button
-            className={`px-5 py-3 rounded-2xl border transition bg-white border-zinc-200 text-gray-600`}
+            className="self-start sm:self-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border transition bg-white border-zinc-200 text-gray-600"
           >
             Most recent
           </button>
@@ -314,11 +316,33 @@ export default function JobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f4] text-zinc-900 p-6">
-      <div className="grid grid-cols-12 gap-6">
+    <div className="min-h-screen bg-[#f5f5f4] text-zinc-900 px-3 py-4 sm:p-5 xl:p-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 xl:gap-6">
         {/* Left Sidebar */}
-        <aside className="col-span-3 space-y-6">
-          <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-xl">
+        <aside className="space-y-4 sm:space-y-6 md:col-span-4 xl:col-span-3">
+          <button
+            type="button"
+            aria-expanded={mobileFiltersOpen}
+            aria-controls="job-filters"
+            onClick={() => setMobileFiltersOpen((open) => !open)}
+            className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-medium shadow-sm md:hidden"
+          >
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal size={18} />
+              Filter jobs
+              {hasSelectedFilters && (
+                <span className="h-2 w-2 rounded-full bg-red-500" />
+              )}
+            </span>
+            <ChevronDown
+              size={18}
+              className={`transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <div
+            id="job-filters"
+            className={`${mobileFiltersOpen ? "block" : "hidden"} bg-white border border-zinc-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg sm:shadow-xl md:block`}
+          >
             <h2 className="text-sm tracking-wide text-zinc-500 mb-5 uppercase font-semibold">
               Filter Jobs
             </h2>
@@ -499,7 +523,7 @@ export default function JobsPage() {
               {hasSelectedFilters && (
                 <button
                   onClick={clearFilters}
-                  className="w-full mt-4 border cursor-pointer border-zinc-200 rounded-2xl py-3 bg-white hover:bg-gray-100 transition"
+                  className="w-full mt-4 border border-zinc-200 rounded-2xl py-3 bg-white hover:bg-gray-100 transition"
                 >
                   Clear all filters
                 </button>
@@ -509,9 +533,9 @@ export default function JobsPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="col-span-6 space-y-6">
+        <main className="min-w-0 space-y-4 sm:space-y-6 md:col-span-8 xl:col-span-6">
           {/* Job Cards */}
-          <div style={{ height: "calc(100vh - 97px)" }}>
+          <div className="h-[calc(100dvh-5.5rem)] min-h-[34rem] md:h-[calc(100vh-97px)]">
             <Virtuoso
               ref={(ref) => {
                 if (ref) {
@@ -542,7 +566,7 @@ export default function JobsPage() {
         </main>
 
         {/* Right Sidebar */}
-        <aside className="col-span-3 space-y-6">
+        <aside className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:col-span-12 xl:col-span-3 xl:block xl:space-y-6">
           <MyApplicationSection />
 
           <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-xl">

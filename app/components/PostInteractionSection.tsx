@@ -37,7 +37,7 @@ export default function PostInteractionSection({
       </div>
       <div className="flex items-center justify-evenly py-4 border-t border-gray-200">
         <button
-          className={`flex items-center gap-2 cursor-pointer disabled:opacity-50 ${
+          className={`flex items-center gap-2  disabled:opacity-50 ${
             post.isLiked ? "text-red-600" : "text-gray-600 hover:text-red-600"
           }`}
           disabled={likePending}
@@ -50,14 +50,14 @@ export default function PostInteractionSection({
         </button>
         <button
           onClick={onCommentClicked}
-          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+          className="flex items-center gap-2 text-gray-600 hover:text-red-600 "
         >
           <MessageCircle className="w-5 h-5" />
           <span>Comment</span>
         </button>
         <button
           onClick={onShareClicked}
-          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+          className="flex items-center gap-2 text-gray-600 hover:text-red-600 "
         >
           <Send className="w-5 h-5" />
           <span>Share</span>

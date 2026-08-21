@@ -191,7 +191,7 @@ export default function JobPostCreationSection({
                       | "INTERNSHIP",
                   )
                 }
-                className={`cursor-pointer px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+                className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
                   employmentType === type.value
                     ? "bg-blue-600 text-white shadow-md"
                     : "bg-white border border-neutral-200 text-neutral-700 hover:border-blue-300 hover:bg-blue-50"

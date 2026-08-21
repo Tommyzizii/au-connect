@@ -103,7 +103,7 @@ export default function SignUpPage() {
             <button
               onClick={() => handleSignin(Provider.GOOGLE)}
               disabled={loading}
-              className="cursor-pointer group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-white border-2 border-gray-200 text-gray-700 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:border-gray-300 hover:bg-gray-50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-white border-2 border-gray-200 text-gray-700 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:border-gray-300 hover:bg-gray-50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Image
                 src="/google-icon.png"
@@ -119,7 +119,7 @@ export default function SignUpPage() {
             <button
               onClick={() => handleSignin(Provider.LINKEDIN)}
               disabled={loading}
-              className="cursor-pointer group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-[#0A66C2] text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-[#004182] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-[#0A66C2] text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-[#004182] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Image
                 src="/linkedin-icon.png"
@@ -135,7 +135,7 @@ export default function SignUpPage() {
             <button
               onClick={() => handleSignin(Provider.MICROSOFT)}
               disabled={loading}
-              className="cursor-pointer group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-linear-to-r from-gray-800 to-gray-900 text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:from-gray-900 hover:to-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-linear-to-r from-gray-800 to-gray-900 text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:from-gray-900 hover:to-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Image
                 src="/microsoft-icon.png"

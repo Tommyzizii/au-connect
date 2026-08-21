@@ -634,7 +634,7 @@ export default function CreatePostModal({
                 <button
                   title="clear draft"
                   onClick={handleClearDraft}
-                  className="cursor-pointer ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
+                  className="ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
                 >
                   <Eraser className="text-gray-400" />
                 </button>
@@ -644,7 +644,7 @@ export default function CreatePostModal({
               <button
                 title="close"
                 onClick={handleClose}
-                className="cursor-pointer ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
+                className="ml-2 p-2 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition"
               >
                 <X className="text-gray-400" />
               </button>
@@ -664,7 +664,7 @@ export default function CreatePostModal({
                   disabled={editMode}
                   key={type.id}
                   onClick={() => setPostType(type.id)}
-                  className={`cursor-pointer flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition ${
                     postType === type.id
                       ? "bg-white text-blue-600 shadow-sm"
                       : "text-neutral-600 hover:text-neutral-900"
@@ -764,7 +764,7 @@ export default function CreatePostModal({
                             p.filter((_, idx) => idx !== i),
                           );
                         }}
-                        className="cursor-pointer p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                        className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition"
                         title="Remove option"
                       >
                         <X className="h-5 w-5" />
@@ -776,7 +776,7 @@ export default function CreatePostModal({
                 {pollOptions.length < 10 && (
                   <button
                     onClick={() => setPollOptions((p) => [...p, ""])}
-                    className="cursor-pointer w-full py-2.5 border-2 border-dashed border-neutral-300 rounded-xl text-sm text-blue-600 font-semibold hover:border-blue-400 hover:bg-blue-50 transition"
+                    className="w-full py-2.5 border-2 border-dashed border-neutral-300 rounded-xl text-sm text-blue-600 font-semibold hover:border-blue-400 hover:bg-blue-50 transition"
                   >
                     + Add Option
                   </button>
@@ -913,7 +913,7 @@ export default function CreatePostModal({
               {currentMediaIndex > 0 && (
                 <button
                   onClick={() => setCurrentMediaIndex((i) => i - 1)}
-                  className="cursor-pointer absolute left-8 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
+                  className="absolute left-8 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
                 >
                   <ArrowBigLeft />
                 </button>
@@ -922,7 +922,7 @@ export default function CreatePostModal({
               {currentMediaIndex < totalMedia.length - 1 && (
                 <button
                   onClick={() => setCurrentMediaIndex((i) => i + 1)}
-                  className="cursor-pointer absolute right-8 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
                 >
                   <ArrowBigRight />
                 </button>
@@ -978,7 +978,7 @@ export default function CreatePostModal({
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+                  className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
                   title="Add image"
                 >
                   <ImageIcon className="h-5 w-5 text-green-600" />
@@ -986,7 +986,7 @@ export default function CreatePostModal({
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+                  className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
                   title="Add video"
                 >
                   <Video className="h-5 w-5 text-red-600" />
@@ -994,7 +994,7 @@ export default function CreatePostModal({
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+                  className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
                   title="Add file"
                 >
                   <Paperclip className="h-5 w-5 text-blue-600" />
@@ -1002,7 +1002,7 @@ export default function CreatePostModal({
 
                 <button
                   onClick={() => setShowAddLinkModal(true)}
-                  className="cursor-pointer p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+                  className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
                   title="Add link"
                 >
                   <LinkIcon className="h-5 w-5 text-orange-600" />
@@ -1050,7 +1050,7 @@ export default function CreatePostModal({
             <div className="flex items-center gap-3">
               <button
                 onClick={handleClose}
-                className="cursor-pointer px-5 py-2.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-200 transition"
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-200 transition"
               >
                 Cancel
               </button>
@@ -1058,7 +1058,7 @@ export default function CreatePostModal({
               <button
                 onClick={handleSubmitPost}
                 disabled={!canPost || isSubmitting}
-                className={`cursor-pointer px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
                   !canPost || isSubmitting
                     ? "bg-neutral-300 cursor-not-allowed"
                     : "bg-linear-to-r from-blue-600 via-blue-700 to-blue-600 hover:shadow-xl"

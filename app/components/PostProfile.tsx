@@ -132,7 +132,7 @@ export default function PostProfile({
           type="button"
           aria-label="More post options"
           onClick={() => setPostMenuDropDownOpen(!postMenuDropDownOpen)}
-          className="cursor-pointer p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
         >
           <Ellipsis className="text-gray-400" />
         </button>
@@ -145,7 +145,7 @@ export default function PostProfile({
                 <button
                   type="button"
                   onClick={handleEdit}
-                  className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Pencil className="w-4 h-4" />
                   Edit post
@@ -153,7 +153,7 @@ export default function PostProfile({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete post
@@ -162,7 +162,7 @@ export default function PostProfile({
             ) : (
               <button
                 type="button"
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-gra"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700  hover:bg-gra"
                 onClick={() => {
                   setReportModalOpen(true);
                 }}

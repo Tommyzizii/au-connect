@@ -329,7 +329,7 @@ export default function PostDetailsModal({
           onClose();
         }}
         aria-label="Close post details"
-        className="absolute right-4 top-4 z-[60] flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:right-8 md:top-8 cursor-pointer"
+        className="absolute right-4 top-4 z-[60] flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:right-8 md:top-8 "
       >
         <X className="h-7 w-7" />
       </button>
@@ -594,7 +594,7 @@ export default function PostDetailsModal({
               type="button"
               aria-label="More post options"
               onClick={() => setPostMenuDropDownOpen(!postMenuDropDownOpen)}
-              className="cursor-pointer p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+              className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
             >
               <Ellipsis className="text-gray-400" />
             </button>
@@ -606,7 +606,7 @@ export default function PostDetailsModal({
                   <>
                     <button
                       type="button"
-                      className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       onClick={() => {
                         setPostMenuDropDownOpen(false);
                         onEdit?.(post);
@@ -617,7 +617,7 @@ export default function PostDetailsModal({
                     </button>
                     <button
                       type="button"
-                      className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       onClick={() => {
                         setPostMenuDropDownOpen(false);
                         setDeletePopupOpen(true);
@@ -630,7 +630,7 @@ export default function PostDetailsModal({
                 ) : (
                   <button
                     type="button"
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 "
                     onClick={() => {
                       setReportModalOpen(true);
                     }}

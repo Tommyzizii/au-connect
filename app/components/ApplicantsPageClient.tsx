@@ -51,7 +51,7 @@ export default function ApplicantsPageClient({ postId }: { postId: string }) {
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="cursor-pointer inline-flex items-center gap-2 mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+          className="inline-flex items-center gap-2 mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Job
@@ -89,7 +89,7 @@ export default function ApplicantsPageClient({ postId }: { postId: string }) {
               {jobPost.status === "OPEN" && (
                 <button
                   onClick={handleCloseJob}
-                  className="cursor-pointer px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
                 >
                   Close Job
                 </button>
@@ -99,7 +99,7 @@ export default function ApplicantsPageClient({ postId }: { postId: string }) {
                 <button
                   onClick={handleReopenJob}
                   disabled={reopenJobMutation.isPending}
-                  className="cursor-pointer px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {reopenJobMutation.isPending ? "Reopening..." : "Reopen Job"}
                 </button>

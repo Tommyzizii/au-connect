@@ -200,7 +200,7 @@ export default function ApplyJobPostModal({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="cursor-pointer px-4 py-2 rounded-lg border border-blue-500 text-blue-600 text-sm hover:bg-blue-50 transition"
+            className="px-4 py-2 rounded-lg border border-blue-500 text-blue-600 text-sm hover:bg-blue-50 transition"
           >
             Cancel
           </button>
@@ -208,7 +208,7 @@ export default function ApplyJobPostModal({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="cursor-pointer px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition disabled:opacity-50"
           >
             {isSubmitting ? "Submitting..." : "Submit Application"}
           </button>

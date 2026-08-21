@@ -45,13 +45,13 @@ export default function EducationManagerModal({
                   setEditing(null);
                   setOpenForm(true);
                 }}
-                className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white text-xs md:text-sm rounded-lg font-medium hover:bg-blue-700 cursor-pointer"
+                className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white text-xs md:text-sm rounded-lg font-medium hover:bg-blue-700 "
               >
                 <Plus size={14} className="md:w-4 md:h-4" />
                 Add education
               </button>
 
-              <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 cursor-pointer">
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 ">
                 <X className="text-gray-600 hover:text-gray-800" />
               </button>
             </div>
@@ -89,7 +89,7 @@ export default function EducationManagerModal({
                       setOpenForm(true);
                     }}
                     disabled={deletingId === edu.id}
-                    className="p-2 rounded-full hover:bg-gray-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-full hover:bg-gray-100  disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Pencil size={16} className="text-gray-600" />
                   </button>
@@ -117,7 +117,7 @@ export default function EducationManagerModal({
                       }
                     }}
                     disabled={deletingId === edu.id}
-                    className="p-2 rounded-full hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-full hover:bg-red-50  disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={16} className="text-red-600" />
                   </button>
