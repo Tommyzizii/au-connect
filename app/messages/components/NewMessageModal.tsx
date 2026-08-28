@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { X, Search } from "lucide-react";
 import { useResolvedMediaUrl } from "@/app/(main)/profile/utils/useResolvedMediaUrl";
+import { MY_CONNECTIONS_API_PATH } from "@/lib/constants";
 
 type ConnectionUser = {
   id: string;
@@ -56,7 +57,7 @@ export default function NewMessageModal({
         setLoading(true);
         setError("");
 
-        const res = await fetch("/api/connect/v1/connect/my-connections", {
+        const res = await fetch(MY_CONNECTIONS_API_PATH, {
           method: "GET",
           credentials: "include",
           cache: "no-store",

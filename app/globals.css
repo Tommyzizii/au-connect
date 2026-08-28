@@ -44,6 +44,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Unknown URLs sit outside the authenticated app flow. */
+body:has([data-page-kind="not-found"]) header {
+  display: none;
+}
+
 /* Chrome, Edge, Safari */
 ::-webkit-scrollbar {
   width: 8px;

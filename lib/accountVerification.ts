@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { ACCOUNT_VERIFICATION_PAGE_PATH } from "@/lib/constants";
 
 export { VerificationRequiredError, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verificationError";
 import { VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verificationError";
@@ -30,7 +31,7 @@ export async function requireAccountVerification(userId: string) {
     {
       error: VERIFICATION_REQUIRED_MESSAGE,
       requiresVerification: true,
-      redirectTo: "/verification",
+      redirectTo: ACCOUNT_VERIFICATION_PAGE_PATH,
     },
     { status: 403 },
   );

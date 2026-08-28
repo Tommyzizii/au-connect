@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { InboxRow } from "@/types/InboxRow";
 import type { ChatMessage } from "@/types/ChatMessage";
 import { useRouter, useSearchParams } from "next/navigation";
+import { MESSAGES_INBOX_API_PATH } from "@/lib/constants";
 
 const LS_LAST_CONV = "auconnect:lastConversationId";
 const LS_LAST_USER = "auconnect:lastUserId";
@@ -187,7 +188,7 @@ export function useMessaging() {
     setInboxLoaded(false);
 
     try {
-      const res = await fetch("/api/connect/v1/messages/inbox", { credentials: "include" });
+      const res = await fetch(MESSAGES_INBOX_API_PATH, { credentials: "include" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) return;
 

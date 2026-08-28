@@ -71,6 +71,21 @@ export async function getPostWithMedia(postId: string, currentUserId: string) {
     return null;
   }
 
+  if (post.userId !== currentUserId && post.visibility === "only-me") {
+    return null;
+  }
+  if (post.userId !== currentUserId && post.visibility === "friends") {
+    const pair =
+      post.userId < currentUserId
+        ? { userAId: post.userId, userBId: currentUserId }
+        : { userAId: currentUserId, userBId: post.userId };
+    const connection = await prisma.connection.findUnique({
+      where: { userAId_userBId: pair },
+      select: { id: true },
+    });
+    if (!connection) return null;
+  }
+
   const sharedKeyCredential = new StorageSharedKeyCredential(
     AZURE_STORAGE_ACCOUNT_NAME,
     AZURE_STORAGE_ACCOUNT_KEY,
@@ -158,14 +173,18 @@ export function firstImageBlobName(media: unknown): string | null {
   return first.thumbnailBlobName ?? first.blobName ?? null;
 }
 
-/**
+/*
  * Minimal, public-safe post data for the social share preview. Only ever
  * returns VISIBLE posts and exposes just what the OG card needs — no
  * comments, interactions, or viewer-specific fields.
  */
 export async function getPublicPostPreview(postId: string) {
   return prisma.post.findFirst({
-    where: { id: postId, moderationStatus: "VISIBLE" },
+    where: {
+      id: postId,
+      moderationStatus: "VISIBLE",
+      OR: [{ visibility: "everyone" }, { visibility: null }],
+    },
     select: {
       id: true,
       username: true,

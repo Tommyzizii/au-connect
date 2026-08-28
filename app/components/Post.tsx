@@ -338,10 +338,8 @@ export default function Post({
       <ShareModal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        shareUrl={`${window.location.origin}${SHARE_POST_PAGE_PATH(
-          post.id,
-          user?.id,
-        )}`}
+        postId={post.id}
+        shareUrl={`${window.location.origin}${SHARE_POST_PAGE_PATH(post.id)}`}
       />
 
       <VerificationRequiredModal

@@ -18,8 +18,6 @@ function snippet(text: string, max = 150): string {
 }
 
 type Params = { postId: string };
-type SearchParams = { by?: string };
-
 export async function generateMetadata({
   params,
 }: {
@@ -63,13 +61,10 @@ export async function generateMetadata({
 
 export default async function SharePostPage({
   params,
-  searchParams,
 }: {
   params: Promise<Params>;
-  searchParams: Promise<SearchParams>;
 }) {
   const { postId } = await params;
-  const { by } = await searchParams;
   const post = await getPublicPostPreview(postId);
 
   if (!post) {
@@ -77,7 +72,7 @@ export default async function SharePostPage({
   }
 
   // Humans land here from a shared link; funnel them into the real (authed) post.
-  const openInAppHref = POST_DETAIL_PAGE_PATH(postId, 0, "share", by);
+  const openInAppHref = POST_DETAIL_PAGE_PATH(postId, 0);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

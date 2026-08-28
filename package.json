@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "db:backfill-user-defaults": "tsx migration_scripts/backfill-user-defaults.ts",
     "db:backfill-post-moderation": "tsx migration_scripts/backfill-post-moderation-status.ts",
     "postinstall": "prisma generate",
     "start": "next start",

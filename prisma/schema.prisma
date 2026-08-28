@@ -291,6 +291,7 @@ model Post {
   comments          Comment[]
   interactions      PostInteraction[]
   moderationNotices ModerationNotice[]
+  sharedMessages    Message[]          @relation("SharedPostMessages")
 
   moderationStatus PostModerationStatus @default(VISIBLE)
   removedAt        DateTime?
@@ -473,12 +474,36 @@ model Message {
 
   text  String?
   media Json?
+  kind  MessageKind @default(TEXT)
+
+  sharedPostId String? @db.ObjectId
+  sharedPost   Post?   @relation("SharedPostMessages", fields: [sharedPostId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@index([conversationId, createdAt])
   @@index([senderId])
   @@index([receiverId, createdAt])
+  @@index([sharedPostId])
+}
+
+enum MessageKind {
+  TEXT
+  SHARED_POST
+}
+
+// One client-generated key represents one intentional multi-recipient share.
+// The unique key makes retries safe while still allowing later shares.
+model InternalShareAction {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  idempotencyKey String   @unique
+  senderId       String   @db.ObjectId
+  postId         String   @db.ObjectId
+  recipientIds   String[] @db.ObjectId
+  createdAt      DateTime @default(now())
+
+  @@index([senderId, createdAt])
+  @@index([postId, createdAt])
 }
 
 enum JobStatus {

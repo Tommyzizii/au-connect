@@ -64,6 +64,9 @@ export const LOGOUT_API_PATH = BASE_API_PATH + "/auth/logout";
 export const ME_API_PATH = BASE_API_PATH + "/profile/me";
 export const ACCOUNT_VERIFICATION_API_PATH =
   BASE_API_PATH + "/account-verification";
+export const MY_CONNECTIONS_API_PATH =
+  BASE_API_PATH + "/connect/my-connections";
+export const MESSAGES_INBOX_API_PATH = BASE_API_PATH + "/messages/inbox";
 
 // POST create comments/replies
 export const COMMENT_API_PATH = (postId: string) =>
@@ -118,8 +121,7 @@ export const SHARE_POST_API_PATH = (postId: string) =>
 
 // Public, crawler-accessible pages used to render social link previews
 // (Facebook / LinkedIn thumbnail cards). Not behind auth.
-export const SHARE_POST_PAGE_PATH = (postId: string, by?: string) =>
-  `/share/posts/${postId}${by ? `?by=${by}` : ""}`;
+export const SHARE_POST_PAGE_PATH = (postId: string) => `/share/posts/${postId}`;
 export const SHARE_POST_OG_IMAGE_PATH = (postId: string) =>
   `/share/posts/${postId}/image`;
 export const LINK_PREVIEW_API_PATH = BASE_API_PATH + `/link-preview`;

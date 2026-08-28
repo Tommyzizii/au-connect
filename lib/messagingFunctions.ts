@@ -2,6 +2,75 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
 import { requireAccountVerification } from "@/lib/accountVerification";
+import { Prisma } from "@/lib/generated/prisma";
+
+const messageSelect = {
+  id: true,
+  senderId: true,
+  receiverId: true,
+  text: true,
+  kind: true,
+  sharedPostId: true,
+  sharedPost: {
+    select: {
+      id: true,
+      userId: true,
+      username: true,
+      profilePic: true,
+      actorType: true,
+      communityId: true,
+      community: { select: { name: true, profilePic: true } },
+      postType: true,
+      visibility: true,
+      title: true,
+      content: true,
+      mediaTypes: true,
+      moderationStatus: true,
+    },
+  },
+  createdAt: true,
+} satisfies Prisma.MessageSelect;
+
+type SelectedMessage = Prisma.MessageGetPayload<{ select: typeof messageSelect }>;
+
+async function hideUnavailableSharedPosts(messages: SelectedMessage[], viewerId: string) {
+  const friendAuthorIds = Array.from(
+    new Set(
+      messages
+        .map((message) => message.sharedPost)
+        .filter((post) => post?.visibility === "friends" && post.userId !== viewerId)
+        .map((post) => post!.userId),
+    ),
+  );
+  const connections = friendAuthorIds.length
+    ? await prisma.connection.findMany({
+        where: {
+          OR: [
+            { userAId: viewerId, userBId: { in: friendAuthorIds } },
+            { userBId: viewerId, userAId: { in: friendAuthorIds } },
+          ],
+        },
+        select: { userAId: true, userBId: true },
+      })
+    : [];
+  const connectedAuthorIds = new Set(
+    connections.map((connection) =>
+      connection.userAId === viewerId ? connection.userBId : connection.userAId,
+    ),
+  );
+
+  return messages.map((message) => {
+    const post = message.sharedPost;
+    const unavailable =
+      !post ||
+      post.moderationStatus !== "VISIBLE" ||
+      (post.visibility === "only-me" && post.userId !== viewerId) ||
+      (post.visibility === "friends" &&
+        post.userId !== viewerId &&
+        !connectedAuthorIds.has(post.userId));
+    return { ...message, sharedPost: unavailable ? null : post };
+  });
+}
 
 function normalizePair(a: string, b: string) {
   return a < b ? { userAId: a, userBId: b } : { userAId: b, userBId: a };
@@ -243,16 +312,10 @@ export async function getMessages(req: NextRequest, conversationId: string) {
         where: { conversationId, createdAt: { gt: cursorDate } },
         orderBy: { createdAt: "asc" },
         take: PAGE_SIZE,
-        select: {
-          id: true,
-          senderId: true,
-          receiverId: true,
-          text: true,
-          createdAt: true,
-        },
+        select: messageSelect,
       });
 
-      return NextResponse.json({ data: messages });
+      return NextResponse.json({ data: await hideUnavailableSharedPosts(messages, authUserId) });
     }
 
     // CASE B) load older (reverse infinite scroll)
@@ -262,17 +325,11 @@ export async function getMessages(req: NextRequest, conversationId: string) {
         where: { conversationId, createdAt: { lt: beforeDate } },
         orderBy: { createdAt: "desc" },
         take: PAGE_SIZE,
-        select: {
-          id: true,
-          senderId: true,
-          receiverId: true,
-          text: true,
-          createdAt: true,
-        },
+        select: messageSelect,
       });
 
       const messages = olderDesc.reverse(); // back to ASC
-      return NextResponse.json({ data: messages });
+      return NextResponse.json({ data: await hideUnavailableSharedPosts(messages, authUserId) });
     }
 
     // CASE C) initial load => latest 50 (ASC)
@@ -281,17 +338,11 @@ export async function getMessages(req: NextRequest, conversationId: string) {
       where: { conversationId },
       orderBy: { createdAt: "desc" },
       take: PAGE_SIZE,
-      select: {
-        id: true,
-        senderId: true,
-        receiverId: true,
-        text: true,
-        createdAt: true,
-      },
+      select: messageSelect,
     });
 
     const messages = latestDesc.reverse(); // ASC for rendering
-    return NextResponse.json({ data: messages });
+    return NextResponse.json({ data: await hideUnavailableSharedPosts(messages, authUserId) });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Server error";
     return NextResponse.json({ error: msg }, { status: 500 });

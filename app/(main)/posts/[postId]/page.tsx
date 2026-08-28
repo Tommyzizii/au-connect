@@ -10,13 +10,10 @@ export default async function PostPage({
   params: Promise<{ postId: string }>;
 	  searchParams: Promise<{
 	    media?: string;
-	    ref?: string;
-	    by?: string;
-	    community?: string;
 	  }>;
 }) {
   const { postId } = await params;
-  const { media, ref, by, community } = await searchParams;
+  const { media } = await searchParams;
 
   const auth = await getCurrentUser();
   if (!auth) {
@@ -44,11 +41,7 @@ export default async function PostPage({
   return (
     <PostPageClient
       post={post}
-      postId={postId}
       initialIndex={media ? parseInt(media, 10) : 0}
-	      hasRefShare={ref === "share"}
-	      sharedByUserId={by ?? null}
-	      sharedByCommunityId={community ?? null}
 	    />
   );
 }

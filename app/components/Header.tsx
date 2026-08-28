@@ -31,6 +31,8 @@ import {
   JOBS_PAGE_PATH,
   MY_MANAGED_COMMUNITIES_API_PATH,
   COMMUNITY_PAGE_PATH,
+  ACCOUNT_VERIFICATION_PAGE_PATH,
+  ACCOUNT_RESTRICTED_PAGE_PATH,
 } from "@/lib/constants";
 import {
   fetchUser,
@@ -216,6 +218,31 @@ export default function Header() {
     ? pathname
     : "not-valid-path";
 
+  const knownStaticPages = [
+    MAIN_PAGE_PATH,
+    CONNECT_PAGE_PATH,
+    JOBS_PAGE_PATH,
+    COMMUNITY_PAGE_PATH,
+    MESSAGES_PAGE_PATH,
+    NOTIFICATION_PAGE_PATH,
+    PROFILE_PAGE_PATH,
+    SIGNIN_PAGE_PATH,
+    ONBOARD_PAGE_PATH,
+    ACCOUNT_VERIFICATION_PAGE_PATH,
+    ACCOUNT_RESTRICTED_PAGE_PATH,
+  ];
+  const knownDynamicPagePatterns = [
+    /^\/community\/[^/]+$/,
+    /^\/posts\/[^/]+$/,
+    /^\/profile\/[^/]+$/,
+    /^\/applicants\/[^/]+$/,
+    /^\/applications\/[^/]+\/[^/]+$/,
+    /^\/share\/posts\/[^/]+$/,
+  ];
+  const isKnownPage =
+    knownStaticPages.includes(pathname) ||
+    knownDynamicPagePatterns.some((pattern) => pattern.test(pathname));
+
   const desktopNavItems = [
     { href: MAIN_PAGE_PATH, icon: <Home />, label: "Home" },
     {
@@ -292,7 +319,8 @@ export default function Header() {
 
   const hidden =
     [SIGNIN_PAGE_PATH, ONBOARD_PAGE_PATH].includes(pathname) ||
-    pathname.startsWith("/share");
+    pathname.startsWith("/share") ||
+    !isKnownPage;
   const scrollFeedToTop = useFeedStore((s) => s.scrollToTop);
 
   if (hidden) return null;

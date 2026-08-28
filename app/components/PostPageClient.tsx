@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { SHARE_POST_API_PATH, POST_DETAIL_PAGE_PATH } from "@/lib/constants";
 import { fetchUser } from "../(main)/profile/utils/fetchfunctions";
 import PostArg from "@/types/PostArg";
 import PostType from "@/types/Post";
@@ -14,18 +13,10 @@ import CreatePostModal from "./CreatePostModal";
 
 export default function PostPageClient({
   post,
-  postId,
   initialIndex,
-  hasRefShare,
-  sharedByUserId,
-  sharedByCommunityId,
 }: {
   post: PostArg;
-  postId: string;
   initialIndex: number;
-  hasRefShare: boolean;
-  sharedByUserId?: string | null;
-  sharedByCommunityId?: string | null;
 }) {
   const router = useRouter();
 
@@ -59,33 +50,6 @@ export default function PostPageClient({
       router.push("/");
     }
   };
-
-  // Track share when someone visits via shared link
-  useEffect(() => {
-    if (hasRefShare) {
-      // Call API to increment share count
-      fetch(SHARE_POST_API_PATH(postId), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-	        body: JSON.stringify({
-	          sharedByUserId: sharedByUserId ?? undefined,
-	          sharedByCommunityId: sharedByCommunityId ?? undefined,
-	        }),
-      }).catch((err) => console.error("Failed to track share:", err));
-
-      // Clean up URL
-      router.replace(POST_DETAIL_PAGE_PATH(postId, initialIndex), {
-        scroll: false,
-      });
-    }
-  }, [
-    hasRefShare,
-    postId,
-    initialIndex,
-    router,
-    sharedByUserId,
-    sharedByCommunityId,
-  ]);
 
   if (userLoading || !user) {
     return (

@@ -47,14 +47,15 @@ export async function DELETE(
     const latest = await prisma.message.findFirst({
       where: { conversationId },
       orderBy: { createdAt: "desc" },
-      select: { createdAt: true, text: true, senderId: true },
+      select: { createdAt: true, text: true, kind: true, senderId: true },
     });
 
     // Optional: adjust unread count if this deleted message was unread for receiver
     // (only if you are using userAUnreadCount/userBUnreadCount)
     let data: any = {
       lastMessageAt: latest?.createdAt ?? null,
-      lastMessageText: latest?.text ?? null,
+      lastMessageText:
+        latest?.kind === "SHARED_POST" ? "Shared a post" : (latest?.text ?? null),
       lastMessageSenderId: latest?.senderId ?? null,
     };
 
