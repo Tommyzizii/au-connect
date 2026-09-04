@@ -22,6 +22,7 @@ export default function PostMediaGrid({
     | {
         blobName: string;
         thumbnailBlobName?: string | undefined;
+        thumbnailUrl?: string | undefined;
         url: string;
         type: string | undefined;
         mimetype?: string | undefined;
@@ -101,10 +102,9 @@ export default function PostMediaGrid({
               <div className="w-full max-h-[70vh] aspect-video bg-black overflow-hidden">
                 <VideoPlayer
                   src={item.url}
+                  poster={item.thumbnailUrl}
+                  loadOnPlay
                   showControls
-                  autoPlay
-                  muted
-                  loop
                   className="w-full h-full"
                 />
               </div>

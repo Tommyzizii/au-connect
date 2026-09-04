@@ -7,6 +7,7 @@ export type MediaItem = {
   type: MediaType | string;
   blobName?: string;
   thumbnailBlobName?: string;
+  thumbnailUrl?: string;
   fileName?: string;
   isExisting?: boolean;
   name?: string;

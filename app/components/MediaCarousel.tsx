@@ -19,7 +19,7 @@ export default function MediaCarousel({
   pollVotes?: Record<string, string[]>;
   pollEndsAt?: Date;
   clickedIndex: number;
-  mediaList: { url: string; type: string }[];
+  mediaList: { url: string; type: string; thumbnailUrl?: string }[];
   onClose: () => void;
 }) {
   /**
@@ -103,6 +103,7 @@ export default function MediaCarousel({
   useEffect(() => {
     const preload = (index: number) => {
       if (!mediaList[index]) return;
+      if (mediaList[index].type !== "image") return;
       const img = new Image();
       img.src = mediaList[index].url;
     };
@@ -150,10 +151,9 @@ export default function MediaCarousel({
         {!isPollSlide && mediaList[mediaIndex]?.type === "video" && (
           <VideoPlayer
             src={mediaList[mediaIndex]?.url}
+            poster={mediaList[mediaIndex]?.thumbnailUrl}
+            loadOnPlay
             showControls
-            autoPlay
-            muted
-            loop
             className="w-full h-full"
           />
         )}

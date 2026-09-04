@@ -397,6 +397,17 @@ export async function getPosts(req: NextRequest) {
         return {
           ...mediaItem,
           url: `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.blobName}?${sasToken}`,
+          thumbnailUrl: mediaItem.thumbnailBlobName
+            ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
+                {
+                  containerName: AZURE_STORAGE_CONTAINER_NAME,
+                  blobName: mediaItem.thumbnailBlobName,
+                  permissions: BlobSASPermissions.parse("r"),
+                  expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+                },
+                sharedKeyCredential,
+              ).toString()}`
+            : undefined,
         };
       });
 

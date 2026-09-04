@@ -9,7 +9,7 @@ export async function uploadFile(file: File) {
     }),
   });
 
-  const { uploadUrl, blobName } = await res.json();
+  const { uploadUrl, blobName, thumbnailBlobName } = await res.json();
 
   if (!uploadUrl) {
     throw new Error("No upload URL returned");
@@ -37,10 +37,6 @@ export async function uploadFile(file: File) {
   // Return the blob name or file name
   return {
     blobName,
-    thumbnailBlobName: file.type.startsWith("video/")
-      ? `thumbnails/${blobName
-          .replace("videos/", "")
-          .replace(/\.[^/.]+$/, "")}.jpg`
-      : undefined,
+    thumbnailBlobName,
   };
 }

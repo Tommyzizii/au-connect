@@ -11,4 +11,5 @@ export type PostMedia = {
 
 export type PostMediaWithUrl = PostMedia & {
   url: string;
+  thumbnailUrl?: string;
 };

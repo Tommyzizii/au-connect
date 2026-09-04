@@ -4,6 +4,7 @@ import {
   useQueryClient,
   useMutation,
   InfiniteData,
+  type QueryClient,
 } from "@tanstack/react-query";
 
 import {
@@ -177,26 +178,77 @@ export async function deletePost(postId: string) {
   return res.json();
 }
 
+type CachedPostCollection = InfiniteData<
+  ({ posts: PostType[] } | { jobs: PostType[] }) & Record<string, unknown>
+>;
+
+const postCollectionQueryKeys = [
+  "posts",
+  "profilePosts",
+  "profileJobPosts",
+  "community-posts",
+  "community-profile-posts",
+  "job-posts",
+] as const;
+
+function removePostFromCachedCollections(
+  queryClient: QueryClient,
+  postId: string,
+) {
+  const removePost = (oldData: CachedPostCollection | undefined) => {
+    if (!oldData?.pages) return oldData;
+
+    let changed = false;
+    const pages = oldData.pages.map((page) => {
+      if ("posts" in page && Array.isArray(page.posts)) {
+        const posts = page.posts.filter((post) => post.id !== postId);
+        if (posts.length !== page.posts.length) {
+          changed = true;
+          return { ...page, posts };
+        }
+      }
+
+      if ("jobs" in page && Array.isArray(page.jobs)) {
+        const jobs = page.jobs.filter((post) => post.id !== postId);
+        if (jobs.length !== page.jobs.length) {
+          changed = true;
+          return { ...page, jobs };
+        }
+      }
+
+      return page;
+    });
+
+    return changed ? { ...oldData, pages } : oldData;
+  };
+
+  for (const queryKey of postCollectionQueryKeys) {
+    queryClient.setQueriesData<CachedPostCollection>(
+      { queryKey: [queryKey] },
+      removePost,
+    );
+  }
+}
+
 export function useDeletePost() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deletePost,
-    onSuccess: (_, postId) => {
-      // Update the infinite query structure
-      queryClient.setQueryData<InfiniteData<PostsPage>>(["posts"], (oldData) => {
-        if (!oldData?.pages) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            posts: page.posts.filter((post) => post.id !== postId),
-          })),
-        };
-      });
+    onSuccess: async (_, postId) => {
+      // Prevent an already-running fetch from restoring the just-deleted post.
+      await Promise.all(
+        postCollectionQueryKeys.map((queryKey) =>
+          queryClient.cancelQueries({ queryKey: [queryKey] }),
+        ),
+      );
+
+      removePostFromCachedCollections(queryClient, postId);
+
       queryClient.removeQueries({ queryKey: ["post", postId] });
+      queryClient.removeQueries({ queryKey: ["posts", postId] });
+      queryClient.removeQueries({ queryKey: ["jobPostDetail", postId] });
       queryClient.removeQueries({ queryKey: ["comments", postId] });
-      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
-      queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
+      queryClient.removeQueries({ queryKey: ["replies", postId] });
     },
   });
 }

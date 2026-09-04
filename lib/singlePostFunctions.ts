@@ -13,7 +13,7 @@ import {
   AZURE_STORAGE_CONTAINER_NAME,
 } from "./env";
 import { SAS_TOKEN_EXPIRE_DURATION } from "./constants";
-import { PostMedia } from "@/types/PostMedia";
+import { PostMedia, PostMediaWithUrl } from "@/types/PostMedia";
 import { getSkillNamesFromJobSkills } from "@/lib/jobSkillFunctions";
 import { getManagedCommunity } from "@/lib/communityAuth";
 import type { Prisma } from "@/lib/generated/prisma";
@@ -151,7 +151,7 @@ export async function getSinglePost(
       AZURE_STORAGE_ACCOUNT_KEY,
     );
 
-    let mediaWithUrls: PostMedia[] | null = post.media as PostMedia[] | null;
+    let mediaWithUrls: PostMediaWithUrl[] | null = post.media as PostMediaWithUrl[] | null;
     if (post.media && Array.isArray(post.media)) {
       mediaWithUrls = (post.media as PostMedia[]).map((mediaItem) => {
         const sasToken = generateBlobSASQueryParameters(
@@ -167,6 +167,17 @@ export async function getSinglePost(
         return {
           ...mediaItem,
           url: `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.blobName}?${sasToken}`,
+          thumbnailUrl: mediaItem.thumbnailBlobName
+            ? `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${mediaItem.thumbnailBlobName}?${generateBlobSASQueryParameters(
+                {
+                  containerName: AZURE_STORAGE_CONTAINER_NAME,
+                  blobName: mediaItem.thumbnailBlobName,
+                  permissions: BlobSASPermissions.parse("r"),
+                  expiresOn: new Date(Date.now() + SAS_TOKEN_EXPIRE_DURATION),
+                },
+                sharedKeyCredential,
+              ).toString()}`
+            : undefined,
         };
       });
     }

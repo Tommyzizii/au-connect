@@ -8,6 +8,7 @@ import {
 import { getHeaderUserInfo } from "@/lib/authFunctions";
 import { AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER_NAME } from "@/lib/env";
 import { EXTENSIONS } from "@/lib/constants";
+import { getVideoThumbnailBlobName } from "@/lib/mediaBlobNames";
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,7 +54,12 @@ export async function POST(req: NextRequest) {
 
     const uploadUrl = `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${blobName}?${sasToken}`;
 
-    return NextResponse.json({ uploadUrl, blobName });
+    return NextResponse.json({
+      uploadUrl,
+      blobName,
+      thumbnailBlobName:
+        folder === "videos" ? getVideoThumbnailBlobName(blobName) : undefined,
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Upload URL failed" }, { status: 500 });

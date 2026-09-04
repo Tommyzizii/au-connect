@@ -832,6 +832,8 @@ export default function CreatePostModal({
                     <div className="w-full">
                       <VideoPlayer
                         src={currentMedia.url ? currentMedia.url : ""}
+                        poster={currentMedia.thumbnailUrl}
+                        loadOnPlay
                         controls
                         className="w-full rounded-t-xl"
                       />
