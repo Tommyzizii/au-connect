@@ -439,12 +439,23 @@ model Notification {
 model Conversation {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userAId String @db.ObjectId
-  userBId String @db.ObjectId
+  // Legacy user-to-user pair fields. Kept for existing conversations.
+  userAId String? @db.ObjectId
+  userBId String? @db.ObjectId
+
+  participantAActorType   ActorType @default(USER)
+  participantAUserId      String?   @db.ObjectId
+  participantACommunityId String?   @db.ObjectId
+
+  participantBActorType   ActorType @default(USER)
+  participantBUserId      String?   @db.ObjectId
+  participantBCommunityId String?   @db.ObjectId
 
   lastMessageAt       DateTime?
   lastMessageText     String?
   lastMessageSenderId String?   @db.ObjectId
+  lastMessageSenderActorType   ActorType @default(USER)
+  lastMessageSenderCommunityId String?   @db.ObjectId
 
   userALastReadAt DateTime?
   userBLastReadAt DateTime?
@@ -457,9 +468,12 @@ model Conversation {
 
   messages Message[]
 
-  @@unique([userAId, userBId])
   @@index([userAId, lastMessageAt])
   @@index([userBId, lastMessageAt])
+  @@index([participantAActorType, participantAUserId, lastMessageAt])
+  @@index([participantBActorType, participantBUserId, lastMessageAt])
+  @@index([participantAActorType, participantACommunityId, lastMessageAt])
+  @@index([participantBActorType, participantBCommunityId, lastMessageAt])
 }
 
 model Message {
@@ -468,8 +482,15 @@ model Message {
   conversationId String       @db.ObjectId
   conversation   Conversation @relation(fields: [conversationId], references: [id])
 
-  senderId   String @db.ObjectId
-  receiverId String @db.ObjectId
+  // senderId/receiverId are legacy user ids and audit ids for page messages.
+  senderId   String? @db.ObjectId
+  receiverId String? @db.ObjectId
+
+  senderActorType   ActorType @default(USER)
+  senderCommunityId String?   @db.ObjectId
+
+  receiverActorType   ActorType @default(USER)
+  receiverCommunityId String?   @db.ObjectId
 
   text  String?
   media Json?
@@ -479,6 +500,22 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([senderId])
   @@index([receiverId, createdAt])
+}
+
+model RateLimitBucket {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  actorKey    String
+  action      String
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([actorKey, action, windowStart])
+  @@index([expiresAt])
 }
 
 enum JobStatus {
