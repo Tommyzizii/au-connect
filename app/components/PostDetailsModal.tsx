@@ -31,6 +31,8 @@ import { ReportTargetSnapshot } from "@/types/ReportTargetSnapshot";
 import { ReportSubmitPayload } from "@/types/ReportSubmitPayload";
 import { postReport } from "../(main)/profile/utils/reportFunctions";
 import { useActorStore } from "@/lib/stores/actorStore";
+import VerificationRequiredModal from "./VerificationRequiredModal";
+import { VerificationRequiredError } from "@/lib/verificationError";
 
 type CreateCommentVariables = {
   postId: string;
@@ -157,6 +159,7 @@ export default function PostDetailsModal({
   const canReportPost = selectedActor.type === "USER";
   const showPostMenu = postOwner || canReportPost;
   const [deletePopupOpen, setDeletePopupOpen] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
 
   const deletePost = useDeletePost();
   const handleDelete = (postId: string) => {
@@ -310,6 +313,11 @@ export default function PostDetailsModal({
         ["post", variables.postId],
         bumpSinglePostCommentCount,
       );
+    },
+    onError: (err) => {
+      if (err instanceof VerificationRequiredError) {
+        setVerificationModalOpen(true);
+      }
     },
   });
 
@@ -568,6 +576,13 @@ export default function PostDetailsModal({
               ...data,
             });
           }}
+        />
+      </div>
+      <div onClick={(event) => event.stopPropagation()}>
+        <VerificationRequiredModal
+          open={verificationModalOpen}
+          onClose={() => setVerificationModalOpen(false)}
+          action="comment on posts"
         />
       </div>
     </div>
