@@ -25,6 +25,7 @@ import LinkEmbed from "@/types/LinkEmbeds";
 import JobDraft from "@/types/JobDraft";
 import CommentType from "@/types/CommentType";
 import { useActorStore } from "@/lib/stores/actorStore";
+import { clearClientSessionStorage } from "@/lib/client/logoutCleanup";
 
 type CreatePostActorPayload = {
   actorType?: "USER" | "COMMUNITY";
@@ -60,6 +61,7 @@ export async function handleLogout(redirect: () => void) {
       throw new Error(body.error || "Logout failed");
     }
 
+    clearClientSessionStorage();
     redirect();
   } catch (e) {
     console.error("Logout error:", e instanceof Error ? e.message : e);
