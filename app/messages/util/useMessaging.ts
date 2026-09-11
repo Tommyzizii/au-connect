@@ -4,16 +4,25 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { InboxRow } from "@/types/InboxRow";
 import type { ChatMessage } from "@/types/ChatMessage";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useActorStore } from "@/lib/stores/actorStore";
 
 const LS_LAST_CONV = "auconnect:lastConversationId";
 const LS_LAST_USER = "auconnect:lastUserId";
 const PAGE_SIZE = 50;
 
+function scopedStorageKey(base: string, actorKeyValue: string) {
+  return `${base}:${actorKeyValue}`;
+}
+
 function isDraftConvId(id: string | null) {
   return !!id && id.startsWith("draft:");
 }
-function makeDraftConvId(userId: string) {
-  return `draft:${userId}`;
+function makeDraftConvId(type: "USER" | "COMMUNITY", id: string) {
+  return `draft:${type}:${id}`;
+}
+
+function actorKey(type: "USER" | "COMMUNITY", id: string | null) {
+  return `${type}:${id ?? ""}`;
 }
 
 function dedupeById(list: ChatMessage[]) {
@@ -87,8 +96,24 @@ export function useMessaging() {
   const [inboxLoaded, setInboxLoaded] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const selectedActor = useActorStore((state) => state.selectedActor);
 
   const targetUserId = searchParams?.get("userId") ?? null;
+  const targetCommunityId = searchParams?.get("communityId") ?? null;
+  const activeActorQuery = useMemo(() => {
+    const params = new URLSearchParams({ actorType: selectedActor.type });
+    if (selectedActor.type === "COMMUNITY" && selectedActor.communityId) {
+      params.set("communityId", selectedActor.communityId);
+    }
+    return params.toString();
+  }, [selectedActor]);
+  const activeActorKey = useMemo(
+    () =>
+      selectedActor.type === "COMMUNITY"
+        ? `COMMUNITY:${selectedActor.communityId ?? ""}`
+        : "USER",
+    [selectedActor],
+  );
 
   const [inbox, setInbox] = useState<InboxRow[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -98,9 +123,11 @@ export function useMessaging() {
   const [messageInput, setMessageInput] = useState("");
   const [showChatMobile, setShowChatMobile] = useState(false);
   const [initialUnreadByConv, setInitialUnreadByConv] = useState<Record<string, number>>({});
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
 
   // Draft header fallback (when user not in inbox yet)
   const [draftPeer, setDraftPeer] = useState<{
+    type: "USER" | "COMMUNITY";
     id: string;
     username: string;
     profilePic: string | null;
@@ -117,6 +144,8 @@ export function useMessaging() {
   const selectedConvRef = useRef<string | null>(null);
   const selectedUserRef = useRef<string | null>(null);
   const messagesByConvRef = useRef<Record<string, ChatMessage[]>>({});
+  const activeActorQueryRef = useRef(activeActorQuery);
+  const lastHandledTargetRef = useRef<string | null>(null);
 
   // ✅ NEW: track server conversation "version" (updatedAt)
   const convVersionRef = useRef<Record<string, string>>({});
@@ -134,6 +163,29 @@ export function useMessaging() {
     messagesByConvRef.current = messagesByConv;
   }, [messagesByConv]);
 
+  useEffect(() => {
+    activeActorQueryRef.current = activeActorQuery;
+    inboxRef.current = [];
+    selectedConvRef.current = null;
+    selectedUserRef.current = null;
+    messagesByConvRef.current = {};
+    convVersionRef.current = {};
+    lastReadPostAtRef.current = {};
+    lastHandledTargetRef.current = null;
+    isAtBottomRef.current = true;
+
+    setInbox([]);
+    setInboxLoaded(false);
+    setSelectedUserId(null);
+    setSelectedConversationId(null);
+    setDraftPeer(null);
+    setMessagesByConv({});
+    setMessageInput("");
+    setShowChatMobile(false);
+    setInitialUnreadByConv({});
+    setHasMoreOlderByConv({});
+  }, [activeActorQuery]);
+
   // lock body scroll (so only panes scroll)
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -141,7 +193,7 @@ export function useMessaging() {
     return () => {
       document.body.style.overflow = prev;
     };
-  }, []);
+  }, [activeActorQuery]);
 
   const activeMessages = useMemo(() => {
     if (!selectedConversationId) return [];
@@ -153,6 +205,31 @@ export function useMessaging() {
     if (isDraftConvId(selectedConversationId)) return false;
     return hasMoreOlderByConv[selectedConversationId] ?? true;
   }, [hasMoreOlderByConv, selectedConversationId]);
+
+  const messageApi = useCallback(
+    (path: string) => {
+      const separator = path.includes("?") ? "&" : "?";
+      return `${path}${separator}${activeActorQuery}`;
+    },
+    [activeActorQuery],
+  );
+
+  const selectedPeer = useMemo(() => {
+    if (!selectedUserId) return null;
+    return (
+      inbox.find((row) => row.conversationId === selectedConversationId)?.peer ??
+      inbox.find((row) => row.peer.id === selectedUserId)?.peer ??
+      (draftPeer && draftPeer.id === selectedUserId
+        ? {
+            type: draftPeer.type,
+            id: draftPeer.id,
+            name: draftPeer.username,
+            subtitle: null,
+            profilePic: draftPeer.profilePic,
+          }
+        : null)
+    );
+  }, [draftPeer, inbox, selectedConversationId, selectedUserId]);
 
   // ---------- read helpers ----------
   const markReadLocal = (conversationId: string) => {
@@ -172,7 +249,7 @@ export function useMessaging() {
 
     lastReadPostAtRef.current[conversationId] = now;
 
-    await fetch(`/api/connect/v1/messages/${conversationId}/read`, {
+    await fetch(messageApi(`/api/connect/v1/messages/${conversationId}/read`), {
       method: "POST",
       credentials: "include",
     }).catch(() => {});
@@ -184,11 +261,15 @@ export function useMessaging() {
   };
 
   const fetchInbox = async () => {
+    const requestActorQuery = activeActorQuery;
     setInboxLoaded(false);
 
     try {
-      const res = await fetch("/api/connect/v1/messages/inbox", { credentials: "include" });
+      const res = await fetch(`/api/connect/v1/messages/inbox?${requestActorQuery}`, {
+        credentials: "include",
+      });
       const json = await res.json().catch(() => ({}));
+      if (activeActorQueryRef.current !== requestActorQuery) return;
       if (!res.ok) return;
 
       const rows: InboxRow[] = json?.data || [];
@@ -225,38 +306,57 @@ export function useMessaging() {
         }
       }
 
-      // keep your existing auto-select logic
-      setSelectedUserId((prev) => {
-        if (prev) return prev;
+      const currentConv = selectedConvRef.current;
+      const currentPeer = selectedUserRef.current;
+      const currentRow =
+        (currentConv && rows.find((r) => r.conversationId === currentConv)) ||
+        (currentPeer && rows.find((r) => r.peer.id === currentPeer)) ||
+        null;
 
-        const lastUser =
-          typeof window !== "undefined" ? localStorage.getItem(LS_LAST_USER) : null;
-        if (lastUser && rows.some((r) => r.user.id === lastUser)) return lastUser;
+      if (currentRow) {
+        if (currentRow.peer.id !== currentPeer) setSelectedUserId(currentRow.peer.id);
+        if (currentRow.conversationId !== currentConv) {
+          setSelectedConversationId(currentRow.conversationId);
+        }
+        return;
+      }
 
-        return rows[0]?.user.id ?? null;
-      });
+      const lastConv =
+        typeof window !== "undefined"
+          ? localStorage.getItem(scopedStorageKey(LS_LAST_CONV, activeActorKey))
+          : null;
+      const lastPeer =
+        typeof window !== "undefined"
+          ? localStorage.getItem(scopedStorageKey(LS_LAST_USER, activeActorKey))
+          : null;
+      const restoredRow =
+        (lastConv && rows.find((r) => r.conversationId === lastConv)) ||
+        (lastPeer && rows.find((r) => r.peer.id === lastPeer)) ||
+        rows[0] ||
+        null;
 
-      setSelectedConversationId((prev) => {
-        if (prev) return prev;
-
-        const lastConv =
-          typeof window !== "undefined" ? localStorage.getItem(LS_LAST_CONV) : null;
-        if (lastConv && rows.some((r) => r.conversationId === lastConv)) return lastConv;
-
-        return rows[0]?.conversationId ?? null;
-      });
+      setSelectedUserId(restoredRow?.peer.id ?? null);
+      setSelectedConversationId(restoredRow?.conversationId ?? null);
     } finally {
       setInboxLoaded(true);
     }
   };
 
-  const ensureConversation = async (otherUserId: string) => {
-    const res = await fetch(`/api/connect/v1/messages/conversation/with/${otherUserId}`, {
+  const ensureConversation = async (peerType: "USER" | "COMMUNITY", peerId: string) => {
+    const endpoint =
+      peerType === "COMMUNITY"
+        ? `/api/connect/v1/messages/conversation/with-community/${peerId}`
+        : `/api/connect/v1/messages/conversation/with/${peerId}`;
+    const separator = endpoint.includes("?") ? "&" : "?";
+    const res = await fetch(`${endpoint}${separator}${activeActorQuery}`, {
       method: "POST",
       credentials: "include",
     });
-    if (!res.ok) return null;
     const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (json?.requiresVerification) setVerificationModalOpen(true);
+      return null;
+    }
     return (json?.data?.conversationId as string) || null;
   };
 
@@ -274,7 +374,7 @@ export function useMessaging() {
   const fetchMessagesReplace = async (conversationId: string) => {
     if (isDraftConvId(conversationId)) return;
 
-    const res = await fetch(`/api/connect/v1/messages/${conversationId}`, {
+    const res = await fetch(messageApi(`/api/connect/v1/messages/${conversationId}`), {
       credentials: "include",
     });
     const json = await res.json().catch(() => ({}));
@@ -297,7 +397,7 @@ export function useMessaging() {
     if (isDraftConvId(conversationId)) return [];
 
     const qs = cursorISO ? `?cursor=${encodeURIComponent(cursorISO)}` : "";
-    const res = await fetch(`/api/connect/v1/messages/${conversationId}${qs}`, {
+    const res = await fetch(messageApi(`/api/connect/v1/messages/${conversationId}${qs}`), {
       credentials: "include",
     });
     const json = await res.json().catch(() => ({}));
@@ -321,7 +421,7 @@ export function useMessaging() {
     if (isDraftConvId(conversationId)) return [];
 
     const res = await fetch(
-      `/api/connect/v1/messages/${conversationId}?before=${encodeURIComponent(beforeISO)}`,
+      messageApi(`/api/connect/v1/messages/${conversationId}?before=${encodeURIComponent(beforeISO)}`),
       { credentials: "include" }
     );
     const json = await res.json().catch(() => ({}));
@@ -390,28 +490,34 @@ export function useMessaging() {
       alive = false;
       clearInterval(t);
     };
-  }, []);
+  }, [activeActorQuery]);
 
-  // ---------- deep link ?userId= ----------
-  const lastHandledTargetRef = useRef<string | null>(null);
-
+  // ---------- deep link ?userId= / ?communityId= ----------
   useEffect(() => {
-    if (!targetUserId) return;
+    const targetType: "USER" | "COMMUNITY" | null = targetCommunityId
+      ? "COMMUNITY"
+      : targetUserId
+        ? "USER"
+        : null;
+    const targetId = targetCommunityId ?? targetUserId;
+    if (!targetType || !targetId) return;
 
-    // handle whenever targetUserId changes
-    if (lastHandledTargetRef.current === targetUserId) return;
+    const targetKey = actorKey(targetType, targetId);
+    if (lastHandledTargetRef.current === targetKey) return;
 
     // Wait until inbox loaded
     if (!inboxLoaded) return;
 
-    const existing = inbox.find((r) => r.user.id === targetUserId);
+    const existing = inbox.find(
+      (r) => r.peer.type === targetType && r.peer.id === targetId,
+    );
 
     if (existing?.conversationId) {
       // Existing real conversation
       const convId = existing.conversationId; // ✅ string (narrowed by if)
 
       setDraftPeer(null);
-      setSelectedUserId(existing.user.id);
+      setSelectedUserId(existing.peer.id);
       setSelectedConversationId(convId);
 
       setInitialUnreadByConv((prev) => ({
@@ -427,14 +533,32 @@ export function useMessaging() {
       }
 
       router.replace("/messages");
-      lastHandledTargetRef.current = targetUserId;
+      lastHandledTargetRef.current = targetKey;
+      return;
+    }
+
+    if (targetType === "COMMUNITY") {
+      const openCommunityConversation = async () => {
+        const created = await ensureConversation("COMMUNITY", targetId);
+        if (!created) return;
+
+        setDraftPeer(null);
+        setSelectedUserId(targetId);
+        setSelectedConversationId(created);
+        setShowChatMobile(true);
+        router.replace("/messages");
+        lastHandledTargetRef.current = targetKey;
+        await fetchInbox();
+      };
+
+      openCommunityConversation();
       return;
     }
 
     // No conversation yet → fetch real user info
     const fetchUser = async () => {
       try {
-        const res = await fetch(`/api/connect/v1/users/${targetUserId}`, {
+        const res = await fetch(`/api/connect/v1/users/${targetId}`, {
           credentials: "include",
         });
 
@@ -445,32 +569,33 @@ export function useMessaging() {
         if (!user) return;
 
         setDraftPeer({
+          type: "USER",
           id: user.id,
           username: user.username,
           profilePic: user.profilePic ?? null,
         });
 
         setSelectedUserId(user.id);
-        setSelectedConversationId(makeDraftConvId(user.id));
+        setSelectedConversationId(makeDraftConvId("USER", user.id));
         setShowChatMobile(true);
         router.replace("/messages");
 
-        lastHandledTargetRef.current = targetUserId;
+        lastHandledTargetRef.current = targetKey;
       } catch {
         // ignore
       }
     };
 
     fetchUser();
-  }, [targetUserId, inbox, router, inboxLoaded]);
+  }, [targetUserId, targetCommunityId, inbox, router, inboxLoaded, activeActorQuery]);
 
   // when selection changes: persist + fetch messages (only for real conv)
   useEffect(() => {
     if (!selectedConversationId || !selectedUserId) return;
     if (isDraftConvId(selectedConversationId)) return;
 
-    localStorage.setItem(LS_LAST_CONV, selectedConversationId);
-    localStorage.setItem(LS_LAST_USER, selectedUserId);
+    localStorage.setItem(scopedStorageKey(LS_LAST_CONV, activeActorKey), selectedConversationId);
+    localStorage.setItem(scopedStorageKey(LS_LAST_USER, activeActorKey), selectedUserId);
 
     // ✅ store version if we have it in inbox
     const row = inboxRef.current.find((r) => r.conversationId === selectedConversationId);
@@ -520,7 +645,14 @@ export function useMessaging() {
       const newMsgs = await fetchMessagesAppendSince(convId, cursor);
       if (!newMsgs.length) return;
 
-      const hasIncoming = newMsgs.some((m) => m.senderId === otherUserId);
+      const peer =
+        inboxRef.current.find((row) => row.conversationId === convId)?.peer ??
+        inboxRef.current.find((row) => row.peer.id === otherUserId)?.peer;
+      const hasIncoming = newMsgs.some((m) =>
+        peer?.type === "COMMUNITY"
+          ? m.senderActorType === "COMMUNITY" && m.senderCommunityId === peer.id
+          : (m.senderActorType ?? "USER") === "USER" && m.senderId === otherUserId,
+      );
       if (hasIncoming) {
         markReadLocal(convId);
         markReadServerSafe(convId);
@@ -536,7 +668,7 @@ export function useMessaging() {
   // ---------- actions ----------
   const openChatWith = async (row: InboxRow) => {
     setDraftPeer(null); // now we're in real inbox land
-    setSelectedUserId(row.user.id);
+    setSelectedUserId(row.peer.id);
     setShowChatMobile(true);
 
     if (row.conversationId) {
@@ -554,7 +686,7 @@ export function useMessaging() {
     }
 
     // If somehow row has no convId, open a draft
-    setSelectedConversationId(makeDraftConvId(row.user.id));
+    setSelectedConversationId(makeDraftConvId(row.peer.type, row.peer.id));
   };
 
   const markMessageStatus = (convId: string, id: string, status: ChatMessage["status"]) => {
@@ -576,13 +708,20 @@ export function useMessaging() {
     setMessageInput("");
 
     // If we are in a draft chat, we still need a local key for messages
-    const currentConvId = selectedConversationId ?? makeDraftConvId(selectedUserId);
+    const peerType = selectedPeer?.type ?? "USER";
+    const currentConvId =
+      selectedConversationId ?? makeDraftConvId(peerType, selectedUserId);
 
     const optimisticId = `optimistic-${Date.now()}`;
     const optimistic: ChatMessage = {
       id: optimisticId,
       senderId: "__me__",
-      receiverId: selectedUserId,
+      receiverId: peerType === "USER" ? selectedUserId : null,
+      senderActorType: selectedActor.type,
+      senderCommunityId:
+        selectedActor.type === "COMMUNITY" ? selectedActor.communityId : null,
+      receiverActorType: peerType,
+      receiverCommunityId: peerType === "COMMUNITY" ? selectedUserId : null,
       text,
       createdAt: new Date().toISOString(),
       status: "sending",
@@ -604,7 +743,7 @@ export function useMessaging() {
         return;
       }
 
-      const created = await ensureConversation(selectedUserId);
+      const created = await ensureConversation(peerType, selectedUserId);
       if (!created) {
         markMessageStatus(currentConvId, optimisticId, "failed");
         return;
@@ -630,12 +769,18 @@ export function useMessaging() {
 
       setInbox((prev) => {
         // don't duplicate
-        if (prev.some((r) => r.user.id === selectedUserId)) return prev;
+        if (prev.some((r) => r.peer.id === selectedUserId)) return prev;
 
         const nowIso = new Date().toISOString();
 
         const newRow: InboxRow = {
-          user: { id: selectedUserId, username, title: null, profilePic },
+          peer: {
+            type: peerType,
+            id: selectedUserId,
+            name: username,
+            subtitle: peerType === "COMMUNITY" ? "Community page" : null,
+            profilePic,
+          },
           conversationId: realConvId,
           lastMessageAt: optimistic.createdAt,
           lastMessageText: `You: ${text}`,
@@ -651,7 +796,7 @@ export function useMessaging() {
     }
 
     // send to server (real conversation)
-    const res = await fetch(`/api/connect/v1/messages/${realConvId}`, {
+    const res = await fetch(messageApi(`/api/connect/v1/messages/${realConvId}`), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -668,6 +813,7 @@ export function useMessaging() {
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (json?.requiresVerification) setVerificationModalOpen(true);
       markMessageStatus(realConvId, optimisticId, "failed");
       if (!isDraftConvId(realConvId))
         safeUpsertPending(realConvId, { ...optimistic, status: "failed" });
@@ -728,7 +874,7 @@ export function useMessaging() {
 
     markMessageStatus(convId, messageId, "sending");
 
-    const res = await fetch(`/api/connect/v1/messages/${convId}`, {
+    const res = await fetch(messageApi(`/api/connect/v1/messages/${convId}`), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -743,6 +889,7 @@ export function useMessaging() {
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (json?.requiresVerification) setVerificationModalOpen(true);
       markMessageStatus(convId, messageId, "failed");
       safeUpsertPending(convId, { ...target, status: "failed" });
       return;
@@ -785,7 +932,7 @@ export function useMessaging() {
     const convId = selectedConvRef.current;
     if (!convId) return;
 
-    const res = await fetch(`/api/connect/v1/messages/${convId}/message/${messageId}`, {
+    const res = await fetch(messageApi(`/api/connect/v1/messages/${convId}/message/${messageId}`), {
       method: "DELETE",
       credentials: "include",
     });
@@ -809,7 +956,7 @@ export function useMessaging() {
     const convId = selectedConvRef.current;
     if (!convId) return;
 
-    const res = await fetch(`/api/connect/v1/messages/${convId}/clear`, {
+    const res = await fetch(messageApi(`/api/connect/v1/messages/${convId}/clear`), {
       method: "DELETE",
       credentials: "include",
     });
@@ -851,7 +998,13 @@ export function useMessaging() {
         isFailed: false,
       };
 
-    const isMine = last.senderId === "__me__" || last.senderId !== row.user.id;
+    const isFromPeer =
+      row.peer.type === "COMMUNITY"
+        ? last.senderActorType === "COMMUNITY" &&
+          last.senderCommunityId === row.peer.id
+        : (last.senderActorType ?? "USER") === "USER" &&
+          last.senderId === row.peer.id;
+    const isMine = last.senderId === "__me__" || !isFromPeer;
 
     if (isMine && last.status === "failed") {
       return {
@@ -881,6 +1034,10 @@ export function useMessaging() {
   }, [initialUnreadByConv, selectedConversationId]);
 
   return {
+    activeActorKey,
+    activeActorType: selectedActor.type,
+    verificationModalOpen,
+    setVerificationModalOpen,
     inbox,
     selectedUserId,
     selectedConversationId,

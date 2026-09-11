@@ -30,6 +30,9 @@ export default function ChatPane({
   onBackMobile,
   selectedName,
   selectedProfilePic,
+  activeActorType,
+  selectedPeerType,
+  selectedPeerSlug,
   selectedUserId,
   selectedConversationId,
   selectedUnreadCount,
@@ -50,6 +53,9 @@ export default function ChatPane({
   onBackMobile: () => void;
   selectedName: string;
   selectedProfilePic: string | null;
+  activeActorType: "USER" | "COMMUNITY";
+  selectedPeerType: "USER" | "COMMUNITY";
+  selectedPeerSlug: string | null;
   selectedUserId: string | null; // the OTHER user
   selectedConversationId: string | null;
   selectedUnreadCount: number;
@@ -119,9 +125,16 @@ export default function ChatPane({
     if (!selectedUserId || selectedUnreadCount <= 0) return lastTimelineIndex;
 
     const incomingMsgIndexes = timeline
-      .map((item, index) =>
-        item.kind === "msg" && item.m.senderId === selectedUserId ? index : -1,
-      )
+      .map((item, index) => {
+        if (item.kind !== "msg") return -1;
+        const isPeerMessage =
+          selectedPeerType === "COMMUNITY"
+            ? item.m.senderActorType === "COMMUNITY" &&
+              item.m.senderCommunityId === selectedUserId
+            : (item.m.senderActorType ?? "USER") === "USER" &&
+              item.m.senderId === selectedUserId;
+        return isPeerMessage ? index : -1;
+      })
       .filter((index) => index >= 0);
 
     if (!incomingMsgIndexes.length) return lastTimelineIndex;
@@ -132,7 +145,13 @@ export default function ChatPane({
 
     // latest unread incoming message
     return unreadIncoming[unreadIncoming.length - 1];
-  }, [timeline, selectedUserId, selectedUnreadCount, lastTimelineIndex]);
+  }, [
+    timeline,
+    selectedUserId,
+    selectedPeerType,
+    selectedUnreadCount,
+    lastTimelineIndex,
+  ]);
 
   return (
     <div
@@ -183,6 +202,10 @@ export default function ChatPane({
                 type="button"
                 onClick={() => {
                   if (!selectedUserId) return;
+                  if (selectedPeerType === "COMMUNITY") {
+                    if (selectedPeerSlug) router.push(`/community/${selectedPeerSlug}`);
+                    return;
+                  }
                   const slug = buildSlug(selectedName || "", selectedUserId);
                   router.push(`/profile/${slug}`);
                 }}
@@ -205,6 +228,7 @@ export default function ChatPane({
             </div>
 
             {/* ✅ only logic changes here */}
+            {activeActorType === "USER" && selectedPeerType === "USER" && (
             <div className="relative" ref={menuRef}>
               <MoreVertical
                 className="w-5 h-5 text-gray-500 cursor-pointer hover:text-gray-700"
@@ -226,6 +250,7 @@ export default function ChatPane({
               )}
 
             </div>
+            )}
           </div>
 
           {/* Messages */}
@@ -278,7 +303,12 @@ export default function ChatPane({
                     <MessageBubble
                       m={m}
                       isIncoming={
-                        !!selectedUserId && m.senderId === selectedUserId
+                        !!selectedUserId &&
+                          (selectedPeerType === "COMMUNITY"
+                            ? m.senderActorType === "COMMUNITY" &&
+                              m.senderCommunityId === selectedUserId
+                            : (m.senderActorType ?? "USER") === "USER" &&
+                              m.senderId === selectedUserId)
                       }
                       onRetry={onRetryMessage}
                       onDeleteLocal={onDeleteLocalMessage}

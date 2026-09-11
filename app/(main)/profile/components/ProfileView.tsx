@@ -110,6 +110,7 @@ export default function ProfileView({
   const isUserActor = selectedActor.type === "USER";
   const canUsePersonalActions = isOwner && isUserActor;
   const canUsePersonalRelationshipActions = !isOwner && isUserActor;
+  const canMessageProfile = !isOwner;
   const [userState, setUserState] = useState<User>(user);
   const [openContactInfo, setOpenContactInfo] = useState(false);
   const [tab, setTab] = useState<
@@ -748,6 +749,15 @@ export default function ProfileView({
                                 Report
                               </button>
                             </>
+                          ) : canMessageProfile ? (
+                            <button
+                              onClick={() =>
+                                router.push(`/messages?userId=${user.id}`)
+                              }
+                              className="px-3 py-1.5 md:px-4 md:py-2 border rounded-lg text-xs md:text-base text-gray-700 hover:bg-gray-50 shadow-sm bg-white cursor-pointer"
+                            >
+                              Message
+                            </button>
                           ) : null}
                         </div>
 

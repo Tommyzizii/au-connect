@@ -165,7 +165,7 @@ export default function Header() {
   });
 
   const { data: msgUnreadData } = useQuery({
-    queryKey: ["messages-unread-count"],
+    queryKey: ["messages-unread-count", selectedActor],
     queryFn: fetchUnreadMessagesCount,
     refetchInterval: 4000,
   });

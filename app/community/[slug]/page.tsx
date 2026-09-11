@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import {
   Camera,
   Loader2,
@@ -95,6 +96,7 @@ export default function CommunityProfilePage({
   params: Promise<{ slug: string }>;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -626,11 +628,12 @@ export default function CommunityProfilePage({
 	                    {community.isFollowing ? "Unfollow" : "Follow"}
 	                  </button>
 	                )}
-                {!actingAsThisCommunity && (
-                  <button
-                    type="button"
-                    className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
+                {selectedActor.type === "USER" && (
+	                  <button
+	                    type="button"
+	                    onClick={() => router.push(`/messages?communityId=${community.id}`)}
+	                    className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+	                  >
                     <MessageCircle className="h-4 w-4" />
                     Message
                   </button>
