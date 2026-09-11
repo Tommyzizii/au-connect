@@ -132,12 +132,25 @@ export async function POST(
       for (const receiverId of recipientIds) {
         const pair = normalizePair(senderId, receiverId);
 
-        // Reuse the existing one-to-one conversation or create it atomically.
-        const conversation = await tx.conversation.upsert({
-          where: { userAId_userBId: pair },
-          create: pair,
-          update: {},
-          select: { id: true, userAId: true },
+        const participants = {
+          participantAActorType: "USER" as const,
+          participantAUserId: pair.userAId,
+          participantBActorType: "USER" as const,
+          participantBUserId: pair.userBId,
+        };
+        const selection = { id: true, userAId: true, participantAUserId: true } as const;
+        // Match actor-aware conversations first, then legacy user pairs.
+        const existing = await tx.conversation.findFirst({
+          where: participants,
+          select: selection,
+        });
+        const legacy = existing ?? await tx.conversation.findFirst({
+          where: pair,
+          select: selection,
+        });
+        const conversation = legacy ?? await tx.conversation.create({
+          data: { ...pair, ...participants },
+          select: selection,
         });
 
         // Store a reference to the original post instead of copying its content.
@@ -153,7 +166,7 @@ export async function POST(
         });
         // Increment the unread count belonging to the receiving participant.
         const unreadField =
-          receiverId === conversation.userAId ? "userAUnreadCount" : "userBUnreadCount";
+          receiverId === (conversation.participantAUserId ?? conversation.userAId) ? "userAUnreadCount" : "userBUnreadCount";
         await tx.conversation.update({
           where: { id: conversation.id },
           data: {

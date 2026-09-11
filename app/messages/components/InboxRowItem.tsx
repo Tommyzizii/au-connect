@@ -22,7 +22,7 @@ export default function InboxRowItem({
   previewTime: string | null;
   previewFailed: boolean;
 }) {
-  const avatarUrl = useResolvedMediaUrl(row.user.profilePic, "/default_profile.jpg");
+  const avatarUrl = useResolvedMediaUrl(row.peer.profilePic, "/default_profile.jpg");
   const unread = (row.unreadCount ?? 0) > 0;
 
   const baseBg = isSelected ? "bg-gray-100" : unread ? "bg-red-50/60" : "bg-white";
@@ -49,7 +49,7 @@ export default function InboxRowItem({
       <div className="relative w-11 h-11 shrink-0">
         <Image
           src={avatarUrl}
-          alt={row.user.username}
+          alt={row.peer.name}
           fill
           className="rounded-full object-cover"
         />
@@ -67,7 +67,7 @@ export default function InboxRowItem({
               unread ? "font-extrabold text-gray-900" : "font-semibold text-gray-900",
             ].join(" ")}
           >
-            {row.user.username}
+            {row.peer.name}
           </h3>
 
           {/* ✅ Smart stamp + hover full */}

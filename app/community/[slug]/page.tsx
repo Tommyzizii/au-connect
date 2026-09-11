@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import {
   Camera,
   Loader2,
@@ -95,6 +96,7 @@ export default function CommunityProfilePage({
   params: Promise<{ slug: string }>;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -195,7 +197,8 @@ export default function CommunityProfilePage({
     selectedActor.type === "COMMUNITY" &&
     !!community?.id &&
     selectedActor.communityId === community.id;
-  const canFollowCommunity = !actingAsThisCommunity;
+  const canManageThisCommunity = community?.isManager && actingAsThisCommunity;
+  const canFollowCommunity = selectedActor.type === "USER";
   const hasProfilePhoto =
     !!community?.profilePic && community.profilePic !== "/default_profile.jpg";
   const hasCoverPhoto =
@@ -206,6 +209,13 @@ export default function CommunityProfilePage({
   const canEditCoverOriginal = isInternalImageBlobName(
     community?.coverPhotoOriginal,
   );
+  const communityActorPayload =
+    canManageThisCommunity && community?.id
+      ? {
+          actorType: selectedActor.type,
+          communityId: community.id,
+        }
+      : {};
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -356,6 +366,7 @@ export default function CommunityProfilePage({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          ...communityActorPayload,
           profilePic: croppedUpload.blobName,
           profilePicOriginal: originalBlobName,
           profilePicCrop: result.profilePicCrop,
@@ -399,6 +410,7 @@ export default function CommunityProfilePage({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          ...communityActorPayload,
           coverPhoto: croppedUpload.blobName,
           coverPhotoOriginal: originalBlobName,
           coverPhotoCrop: result.coverPhotoCrop,
@@ -442,7 +454,7 @@ export default function CommunityProfilePage({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...communityActorPayload, ...payload }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Delete failed");
@@ -471,8 +483,9 @@ export default function CommunityProfilePage({
     setSaving(true);
     setMessage("");
 
-	    try {
+    try {
       const payload = {
+        ...communityActorPayload,
         name: form.name,
         about: form.about,
         location: form.location,
@@ -555,7 +568,7 @@ export default function CommunityProfilePage({
               fill
               className="object-cover"
             />
-            {community.isManager && (
+            {canManageThisCommunity && (
               <button
                 type="button"
                 onClick={() => openImageModal("coverPhoto")}
@@ -577,7 +590,7 @@ export default function CommunityProfilePage({
                     fill
                     className="object-cover"
                   />
-                  {community.isManager && (
+                  {canManageThisCommunity && (
                     <button
                       type="button"
                       onClick={() => openImageModal("profilePic")}
@@ -615,14 +628,17 @@ export default function CommunityProfilePage({
 	                    {community.isFollowing ? "Unfollow" : "Follow"}
 	                  </button>
 	                )}
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Message
-                </button>
-                {community.isManager && (
+                {selectedActor.type === "USER" && (
+	                  <button
+	                    type="button"
+	                    onClick={() => router.push(`/messages?communityId=${community.id}`)}
+	                    className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+	                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Message
+                  </button>
+                )}
+                {canManageThisCommunity && (
                   <button
                     type="button"
                     onClick={openEdit}
@@ -700,7 +716,7 @@ export default function CommunityProfilePage({
         </section>
       </main>
 
-      {imageModal && community.isManager && (
+      {imageModal && canManageThisCommunity && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={closeImageModal} />
           <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 text-gray-900 shadow-lg">
@@ -825,9 +841,9 @@ export default function CommunityProfilePage({
                 <h3 className="text-lg font-semibold text-slate-950">
                   Edit Community
                 </h3>
-	                <p className="mt-1 text-sm text-slate-500">
-	                  Update page details.
-	                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Update page details.
+                </p>
               </div>
               <button
                 type="button"
@@ -838,7 +854,7 @@ export default function CommunityProfilePage({
               </button>
             </div>
 
-	            <div className="mt-5 grid gap-4">
+            <div className="mt-5 grid gap-4">
               <label className="space-y-1.5 md:col-span-2">
                 <span className="text-sm font-medium text-slate-700">Name</span>
                 <input
@@ -849,11 +865,11 @@ export default function CommunityProfilePage({
                       name: event.target.value,
                     }))
                   }
-                  className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-50"
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-950 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-50"
                 />
               </label>
 
-	              <label className="space-y-1.5 md:col-span-2">
+              <label className="space-y-1.5 md:col-span-2">
                 <span className="text-sm font-medium text-slate-700">
                   Location
                 </span>
@@ -865,7 +881,7 @@ export default function CommunityProfilePage({
                       location: event.target.value,
                     }))
                   }
-                  className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-50"
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-950 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-50"
                 />
               </label>
 
@@ -880,7 +896,7 @@ export default function CommunityProfilePage({
                     }))
                   }
                   rows={4}
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-50"
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-950 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-50"
                 />
               </label>
             </div>

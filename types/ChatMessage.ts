@@ -1,7 +1,11 @@
 export type ChatMessage = {
   id: string;
-  senderId: string;
-  receiverId: string;
+  senderId: string | null;
+  receiverId: string | null;
+  senderActorType?: "USER" | "COMMUNITY";
+  senderCommunityId?: string | null;
+  receiverActorType?: "USER" | "COMMUNITY";
+  receiverCommunityId?: string | null;
   text: string | null;
   kind?: "TEXT" | "SHARED_POST";
   sharedPostId?: string | null;

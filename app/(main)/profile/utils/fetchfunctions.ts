@@ -26,6 +26,7 @@ import LinkEmbed from "@/types/LinkEmbeds";
 import JobDraft from "@/types/JobDraft";
 import CommentType from "@/types/CommentType";
 import { useActorStore } from "@/lib/stores/actorStore";
+import { clearClientSessionStorage } from "@/lib/client/logoutCleanup";
 
 type CreatePostActorPayload = {
   actorType?: "USER" | "COMMUNITY";
@@ -61,6 +62,7 @@ export async function handleLogout(redirect: () => void) {
       throw new Error(body.error || "Logout failed");
     }
 
+    clearClientSessionStorage();
     redirect();
   } catch (e) {
     console.error("Logout error:", e instanceof Error ? e.message : e);
@@ -165,7 +167,14 @@ export async function fetchPosts({
 }
 
 export async function deletePost(postId: string) {
-  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
+  const selectedActor = useActorStore.getState().selectedActor;
+  const params = new URLSearchParams({ postId, actorType: selectedActor.type });
+
+  if (selectedActor.type === "COMMUNITY" && selectedActor.communityId) {
+    params.set("actorCommunityId", selectedActor.communityId);
+  }
+
+  const res = await fetch(`${POST_API_PATH}?${params.toString()}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
   });
@@ -261,10 +270,22 @@ export async function editPost({
   postId: string;
   data: any; // or use your CreatePostSchema type
 }) {
+  const selectedActor = useActorStore.getState().selectedActor;
+  const actorPayload =
+    selectedActor.type === "COMMUNITY" && selectedActor.communityId
+      ? {
+          actorType: selectedActor.type,
+          communityId: selectedActor.communityId,
+        }
+      : {
+          actorType: "USER" as const,
+          communityId: null,
+        };
+
   const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data), // Include the updated post data
+    body: JSON.stringify({ ...data, ...actorPayload }), // Include the updated post data
   });
 
   if (!res.ok) {
@@ -284,7 +305,7 @@ export function useEditPost() {
     onSuccess: (updatedPost) => {
 
       // 1️⃣ Update FEED (["posts"])
-      queryClient.setQueryData(["posts"], (oldData: any) => {
+      queryClient.setQueriesData({ queryKey: ["posts"], exact: false }, (oldData: any) => {
         if (!oldData?.pages) return oldData;
 
         return {
@@ -303,6 +324,61 @@ export function useEditPost() {
       });
 
       // 2️⃣ Update ALL profile tabs
+      queryClient.setQueriesData(
+        { queryKey: ["community-posts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id
+                  ? {
+                      ...post,
+                      ...updatedPost,
+                    }
+                  : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["community-profile-posts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === updatedPost.id
+                  ? {
+                      ...post,
+                      ...updatedPost,
+                    }
+                  : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["post"], exact: false },
+        (oldData: any) => {
+          if (!oldData || oldData.id !== updatedPost.id) return oldData;
+          return {
+            ...oldData,
+            ...updatedPost,
+          };
+        },
+      );
+
       queryClient.setQueriesData(
         { queryKey: ["profilePosts"], exact: false },
         (oldData: any) => {
@@ -370,6 +446,11 @@ export function useEditPost() {
         }
       );
 
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-profile-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["profilePosts"] });
+      queryClient.invalidateQueries({ queryKey: ["profileJobPosts"] });
       queryClient.invalidateQueries({ queryKey: ["job-posts"] });
     },
   });

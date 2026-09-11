@@ -9,12 +9,14 @@ import type { InboxRow } from "@/types/InboxRow";
 import NewMessageModal from "./NewMessageModal";
 
 export default function ConversationsPane({
+  activeActorType,
   inbox,
   selectedUserId,
   showChatMobile,
   onOpen,
   getRowPreview,
 }: {
+  activeActorType: "USER" | "COMMUNITY";
   inbox: InboxRow[];
   selectedUserId: string | null;
   showChatMobile: boolean;
@@ -34,7 +36,7 @@ export default function ConversationsPane({
     if (!q) return inbox;
 
     return inbox.filter((row) =>
-      row.user.username.replace(/\s+/g, "").toLowerCase().includes(q),
+      row.peer.name.replace(/\s+/g, "").toLowerCase().includes(q),
     );
   }, [inbox, query]);
 
@@ -61,15 +63,16 @@ export default function ConversationsPane({
             />
           </div>
 
-          {/* clickable new message (top right) */}
-          <button
-            type="button"
-            className="shrink-0 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 "
-            aria-label="New message"
-            onClick={() => setOpenNewMessage(true)}
-          >
-            <MailPlus className="text-gray-600 w-6 h-6" />
-          </button>
+          {activeActorType === "USER" && (
+            <button
+              type="button"
+              className="shrink-0 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200"
+              aria-label="New message"
+              onClick={() => setOpenNewMessage(true)}
+            >
+              <MailPlus className="text-gray-600 w-6 h-6" />
+            </button>
+          )}
         </div>
 
         {query.trim() && (
@@ -94,7 +97,9 @@ export default function ConversationsPane({
                   No conversations yet
                 </div>
                 <div className="text-gray-500">
-                  Click the icon above to start chatting.
+                  {activeActorType === "USER"
+                    ? "Click the icon above to start chatting."
+                    : "Messages to this page will appear here."}
                 </div>
               </div>
             </div>
@@ -107,9 +112,9 @@ export default function ConversationsPane({
 
             return (
               <InboxRowItem
-                key={row.conversationId ?? `user-${row.user.id}`}
+                key={row.conversationId ?? `${row.peer.type}-${row.peer.id}`}
                 row={row}
-                isSelected={row.user.id === selectedUserId}
+                isSelected={row.peer.id === selectedUserId}
                 onOpen={() => onOpen(row)}
                 previewText={preview.text}
                 previewTime={preview.time}
@@ -120,14 +125,16 @@ export default function ConversationsPane({
         )}
       </div>
 
-      <NewMessageModal
-        open={openNewMessage}
-        onClose={() => setOpenNewMessage(false)}
-        onPickUser={(u) => {
-          router.push(`/messages?userId=${u.id}`);
-          setOpenNewMessage(false);
-        }}
-      />
+      {activeActorType === "USER" && (
+        <NewMessageModal
+          open={openNewMessage}
+          onClose={() => setOpenNewMessage(false)}
+          onPickUser={(u) => {
+            router.push(`/messages?userId=${u.id}`);
+            setOpenNewMessage(false);
+          }}
+        />
+      )}
     </div>
   );
 }

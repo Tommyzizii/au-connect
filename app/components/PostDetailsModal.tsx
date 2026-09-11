@@ -31,6 +31,8 @@ import { ReportTargetSnapshot } from "@/types/ReportTargetSnapshot";
 import { ReportSubmitPayload } from "@/types/ReportSubmitPayload";
 import { postReport } from "../(main)/profile/utils/reportFunctions";
 import { useActorStore } from "@/lib/stores/actorStore";
+import VerificationRequiredModal from "./VerificationRequiredModal";
+import { VerificationRequiredError } from "@/lib/verificationError";
 
 type CreateCommentVariables = {
   postId: string;
@@ -149,8 +151,15 @@ export default function PostDetailsModal({
   const [postMenuDropDownOpen, setPostMenuDropDownOpen] =
     useState<boolean>(false);
 
-  const postOwner = currentUserId === postInfo.userId;
+  const postOwner =
+    postInfo.actorType === "COMMUNITY"
+      ? selectedActor.type === "COMMUNITY" &&
+        selectedActor.communityId === postInfo.communityId
+      : selectedActor.type === "USER" && currentUserId === postInfo.userId;
+  const canReportPost = selectedActor.type === "USER";
+  const showPostMenu = postOwner || canReportPost;
   const [deletePopupOpen, setDeletePopupOpen] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
 
   const deletePost = useDeletePost();
   const handleDelete = (postId: string) => {
@@ -304,6 +313,11 @@ export default function PostDetailsModal({
         ["post", variables.postId],
         bumpSinglePostCommentCount,
       );
+    },
+    onError: (err) => {
+      if (err instanceof VerificationRequiredError) {
+        setVerificationModalOpen(true);
+      }
     },
   });
 
@@ -564,6 +578,13 @@ export default function PostDetailsModal({
           }}
         />
       </div>
+      <div onClick={(event) => event.stopPropagation()}>
+        <VerificationRequiredModal
+          open={verificationModalOpen}
+          onClose={() => setVerificationModalOpen(false)}
+          action="comment on posts"
+        />
+      </div>
     </div>
   );
 
@@ -589,6 +610,7 @@ export default function PostDetailsModal({
             </div>
           </div>
 
+          {showPostMenu && (
           <div className="relative">
             <button
               type="button"
@@ -627,7 +649,7 @@ export default function PostDetailsModal({
                       Delete post
                     </button>
                   </>
-                ) : (
+                ) : canReportPost ? (
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 "
@@ -638,10 +660,11 @@ export default function PostDetailsModal({
                     <Flag className="w-4 h-4" />
                     Report post
                   </button>
-                )}
+                ) : null}
               </div>
             )}
           </div>
+          )}
         </div>
 
         {(post.title || post.content) && (

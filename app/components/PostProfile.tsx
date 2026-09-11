@@ -13,6 +13,7 @@ import PopupModal from "./PopupModal";
 import ReportModal from "./ReportModal";
 import type { ReportTargetSnapshot } from "@/types/ReportTargetSnapshot";
 import type { ReportSubmitPayload } from "@/types/ReportSubmitPayload";
+import { useActorStore } from "@/lib/stores/actorStore";
 
 const DEFAULT_PROFILE_PIC = "/default_profile.jpg";
 
@@ -39,6 +40,7 @@ export default function PostProfile({
 }: PostProfileProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const selectedActor = useActorStore((state) => state.selectedActor);
   const slug = buildSlug(post.username || "", post.userId || "");
   const communitySlug = post.community?.slug;
   const displayProfilePic =
@@ -62,7 +64,13 @@ export default function PostProfile({
     links: post.links,
   };
 
-  const isOwnPost = currentUserId === post.userId;
+  const isOwnPost =
+    post.actorType === "COMMUNITY"
+      ? selectedActor.type === "COMMUNITY" &&
+        selectedActor.communityId === post.communityId
+      : selectedActor.type === "USER" && currentUserId === post.userId;
+  const canReportPost = selectedActor.type === "USER";
+  const showPostMenu = isOwnPost || canReportPost;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -118,7 +126,7 @@ export default function PostProfile({
       <div className="flex-1">
         <h3
           onClick={() => handleProfileClick(slug)}
-          className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 active:text-blue-700 hover:underline"
+          className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 hover:underline"
         >
           {post.username}
         </h3>
@@ -127,6 +135,7 @@ export default function PostProfile({
         </p>
       </div>
 
+      {showPostMenu && (
       <div className="relative" ref={dropdownRef}>
         <button
           type="button"
@@ -159,10 +168,10 @@ export default function PostProfile({
                   Delete post
                 </button>
               </>
-            ) : (
+            ) : canReportPost ? (
               <button
                 type="button"
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700  hover:bg-gra"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setReportModalOpen(true);
                 }}
@@ -170,10 +179,11 @@ export default function PostProfile({
                 <Flag className="w-4 h-4" />
                 Report post
               </button>
-            )}
+            ) : null}
           </div>
         )}
       </div>
+      )}
 
       {popupOpen && (
         <PopupModal

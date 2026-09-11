@@ -424,6 +424,8 @@ export async function createUserSession(
       value: token,
       httpOnly: true,
       secure: isSecureCookie(),
+      sameSite: "lax",
+      path: "/",
       maxAge: JWT_COOKIE_EXPIRATION_TIME,
     });
   }
