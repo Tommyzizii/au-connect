@@ -9,7 +9,8 @@
     "db:backfill-post-moderation": "tsx migration_scripts/backfill-post-moderation-status.ts",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:content": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

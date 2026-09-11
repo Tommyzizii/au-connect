@@ -19,6 +19,8 @@ model User {
   username String
   email    String @unique
 
+  successfulPostTimes DateTime[] @default([])
+
   googleId    String?
   linkedinId  String?
   microsoftId String?

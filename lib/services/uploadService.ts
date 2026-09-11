@@ -84,7 +84,7 @@ export async function processUpload(jobId: string) {
     // get blob names for every uploaded media
     const uploadedMedia = await Promise.all(
       uploadItems.map(async (item, index) => {
-        const { blobName, thumbnailBlobName } = await uploadFile(item.file);
+        const { blobName, thumbnailBlobName } = await uploadFile(item.file, "post");
         if (!blobName) throw new Error("Upload failed");
 
         const progress = Math.floor(((index + 1) / total) * 80);
@@ -159,7 +159,7 @@ export async function processEdit(jobId: string) {
       job.media
         .filter((item): item is typeof item & { file: File } => !!item.file)
         .map(async (item) => {
-          const uploadResult = await uploadFile(item.file);
+          const uploadResult = await uploadFile(item.file, "post");
 
           return {
             blobName: uploadResult.blobName,
@@ -226,6 +226,9 @@ export async function processEdit(jobId: string) {
     setTimeout(() => store.removeJob(jobId), 3000);
     return updatedPost;
   } catch (err) {
-    store.setJobError(jobId, "Edit failed");
+    store.setJobError(
+      jobId,
+      err instanceof Error ? err.message : "Edit failed",
+    );
   }
 }

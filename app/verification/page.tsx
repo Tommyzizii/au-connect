@@ -120,7 +120,11 @@ export default function VerificationPage() {
     const res = await fetch(`${BASE_API_PATH}/upload-media`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileType: file.type || "application/octet-stream" }),
+      body: JSON.stringify({
+        fileType: file.type || "application/octet-stream",
+        fileName: file.name,
+        fileSize: file.size,
+      }),
     });
 
     if (!res.ok) throw new Error(`Could not prepare upload for ${file.name}`);

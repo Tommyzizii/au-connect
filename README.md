@@ -33,6 +33,12 @@
 
 ## 🧠 Tech Stack
 
+Video posts allow 1 video per post, maximum 512 MB (512,000,000 bytes).
+Accepted formats are MP4, MOV, and WebM, with no duration limit.
+The frontend checks `File.size` immediately; the backend verifies Azure Blob
+`contentLength`, the file signature, ownership, and attachment rules. Validation
+reads only the first 4 KB of video bytes and requires no media-processing tools.
+
 | Layer | Technology |
 |:------|:------------|
 | **Frontend** | [Next.js 14+](https://nextjs.org/), [React 18+](https://react.dev/), [Tailwind CSS 3+](https://tailwindcss.com/) |

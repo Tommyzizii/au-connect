@@ -1,15 +1,22 @@
 import { MEDIA_UPLOAD_API_PATH } from "@/lib/constants";
 
-export async function uploadFile(file: File) {
+export async function uploadFile(file: File, purpose: "post" | "general" = "general") {
   // Ask server for a SAS upload URL
   const res = await fetch(MEDIA_UPLOAD_API_PATH, {
     method: "POST",
     body: JSON.stringify({
       fileType: file.type,
+      fileName: file.name,
+      fileSize: file.size,
+      purpose,
     }),
   });
 
-  const { uploadUrl, blobName, thumbnailBlobName } = await res.json();
+  const response = await res.json();
+  if (!res.ok) {
+    throw new Error(response.error || "Could not prepare upload");
+  }
+  const { uploadUrl, blobName, thumbnailBlobName } = response;
 
   if (!uploadUrl) {
     throw new Error("No upload URL returned");
