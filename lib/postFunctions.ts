@@ -24,6 +24,16 @@ import {
 } from "@/lib/jobSkillFunctions";
 import { getManagedCommunity } from "@/lib/communityAuth";
 import type { Prisma } from "@/lib/generated/prisma";
+import { postContentLimitError } from "./postLimits";
+import {
+  validatePostAttachments,
+  type PostAttachment,
+} from "./postAttachmentValidation";
+import {
+  PostLimitError,
+  reservePostQuota,
+  retryPostTransaction,
+} from "./postQuota";
 
 export async function createPost(req: NextRequest) {
   try {
@@ -94,21 +104,13 @@ export async function createPost(req: NextRequest) {
         ? user.profilePic
         : "/default_profile.jpg";
 
-    // handle post duration
-    const pollData: any = {};
-    if (data.postType === "poll") {
-      pollData.pollOptions = data.pollOptions || [];
-      pollData.pollVotes = {}; // Initialize empty votes
+    data.media = await validatePostAttachments(
+      (data.media ?? []) as PostAttachment[],
+      userId,
+    );
 
-      // Calculate poll end date
-      if (pollDuration) {
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + pollDuration);
-        pollData.pollEndsAt = endDate;
-      }
-    }
-
-    const post = await prisma.$transaction(async (tx) => {
+    const post = await retryPostTransaction(() => prisma.$transaction(async (tx) => {
+      await reservePostQuota(tx, userId);
       // 🔹 Build Post payload safely
       const basePost = await tx.post.create({
         data: {
@@ -169,7 +171,7 @@ export async function createPost(req: NextRequest) {
       }
 
       return basePost;
-    });
+    }));
 
     if (Array.isArray(post.media)) {
       const sharedKeyCredential = new StorageSharedKeyCredential(
@@ -227,6 +229,17 @@ export async function createPost(req: NextRequest) {
       return NextResponse.json(post, { status: 201 });
     }
   } catch (error) {
+    if (error instanceof PostLimitError) {
+      return NextResponse.json(
+        { error: error.message, retryAfterSeconds: error.retryAfterSeconds },
+        {
+          status: error.status,
+          headers: error.retryAfterSeconds
+            ? { "Retry-After": String(error.retryAfterSeconds) }
+            : undefined,
+        },
+      );
+    }
     console.error("Error creating post:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -448,8 +461,6 @@ export async function editPost(req: NextRequest) {
     const requestCommunityId =
       typeof body?.communityId === "string" ? body.communityId : null;
 
-    console.log("EDIT POST BODY:", JSON.stringify(body, null, 2));
-
     if (!postId) {
       return NextResponse.json(
         { error: "Post ID is required" },
@@ -483,6 +494,10 @@ export async function editPost(req: NextRequest) {
         media: true,
         pollVotes: true,
         postType: true,
+        content: true,
+        title: true,
+        links: true,
+        pollOptions: true,
       },
     });
 
@@ -544,66 +559,32 @@ export async function editPost(req: NextRequest) {
       }
     }
 
-    // Handle blob deletion if media changed
-    if (existingPost.media && Array.isArray(existingPost.media)) {
-      const oldMedia = existingPost.media as PostMedia[];
-      const newMedia = (data.media || []) as PostMedia[];
+    const finalContentError = postContentLimitError({
+      postType: data.postType,
+      content: data.content ?? existingPost.content,
+      title: data.title ?? existingPost.title ?? undefined,
+      links: (data.links ?? existingPost.links ?? []) as unknown[],
+      pollOptions: data.pollOptions ?? existingPost.pollOptions,
+      pollDuration,
+    });
+    if (finalContentError) throw new PostLimitError(finalContentError);
 
-      // Find blobs that were removed
-      const oldBlobNames = oldMedia.map((m) => m.blobName);
-      const newBlobNames = newMedia.map((m) => m.blobName);
-      const blobsToDelete = oldBlobNames.filter(
-        (name) => !newBlobNames.includes(name),
-      );
-
-      // Also check for thumbnails
-      const oldThumbnails = oldMedia
-        .filter((m) => m.thumbnailBlobName)
-        .map((m) => m.thumbnailBlobName!);
-      const newThumbnails = newMedia
-        .filter((m) => m.thumbnailBlobName)
-        .map((m) => m.thumbnailBlobName!);
-      const thumbnailsToDelete = oldThumbnails.filter(
-        (name) => !newThumbnails.includes(name),
-      );
-
-      // Delete removed blobs from Azure
-      if (blobsToDelete.length > 0 || thumbnailsToDelete.length > 0) {
-        const sharedKeyCredential = new StorageSharedKeyCredential(
-          AZURE_STORAGE_ACCOUNT_NAME,
-          AZURE_STORAGE_ACCOUNT_KEY,
-        );
-        const blobServiceClient = new BlobServiceClient(
-          `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
-          sharedKeyCredential,
-        );
-        const containerClient = blobServiceClient.getContainerClient(
-          AZURE_STORAGE_CONTAINER_NAME,
-        );
-
-        // Delete main blobs
-        for (const blobName of blobsToDelete) {
-          try {
-            await containerClient.deleteBlob(blobName);
-          } catch (error) {
-            console.error(`Failed to delete blob ${blobName}:`, error);
-          }
-        }
-
-        // Delete thumbnails
-        for (const thumbName of thumbnailsToDelete) {
-          try {
-            await containerClient.deleteBlob(thumbName);
-          } catch (error) {
-            console.error(`Failed to delete thumbnail ${thumbName}:`, error);
-          }
-        }
-      }
-    }
-
-    if (data.media) {
-      assertCompleteMedia(data.media);
-    }
+    const oldMedia = (Array.isArray(existingPost.media)
+      ? existingPost.media
+      : []) as PostAttachment[];
+    data.media = await validatePostAttachments(
+      (data.media ?? oldMedia) as PostAttachment[],
+      userId,
+      oldMedia,
+    );
+    const newMedia = data.media as PostAttachment[];
+    const blobsToDelete = oldMedia
+      .map((mediaItem) => mediaItem.blobName)
+      .filter((blobName) => !newMedia.some((mediaItem) => mediaItem.blobName === blobName));
+    const thumbnailsToDelete = oldMedia
+      .filter((mediaItem) => mediaItem.thumbnailBlobName)
+      .map((mediaItem) => mediaItem.thumbnailBlobName!)
+      .filter((blobName) => !newMedia.some((mediaItem) => mediaItem.thumbnailBlobName === blobName));
 
     // Update the post
 
@@ -693,6 +674,24 @@ export async function editPost(req: NextRequest) {
       });
     });
 
+    if (blobsToDelete.length > 0 || thumbnailsToDelete.length > 0) {
+      const sharedKeyCredential = new StorageSharedKeyCredential(
+        AZURE_STORAGE_ACCOUNT_NAME,
+        AZURE_STORAGE_ACCOUNT_KEY,
+      );
+      const containerClient = new BlobServiceClient(
+        `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
+        sharedKeyCredential,
+      ).getContainerClient(AZURE_STORAGE_CONTAINER_NAME);
+      for (const blobName of [...blobsToDelete, ...thumbnailsToDelete]) {
+        try {
+          await containerClient.deleteBlob(blobName);
+        } catch (deleteError) {
+          console.error(`Failed to delete blob ${blobName}:`, deleteError);
+        }
+      }
+    }
+
     if (!updatedPost) {
       return NextResponse.json(
         { error: "Internal server error; fetching posts" },
@@ -769,25 +768,14 @@ export async function editPost(req: NextRequest) {
 
     return NextResponse.json(updatedPostWithCompatibleJob, { status: 200 });
   } catch (error) {
+    if (error instanceof PostLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Error editing post:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
     );
-  }
-}
-
-function assertCompleteMedia(media: any[]) {
-  for (const m of media) {
-    if (
-      !m.blobName ||
-      !m.type ||
-      !m.name ||
-      !m.mimetype ||
-      typeof m.size !== "number"
-    ) {
-      throw new Error(`Invalid media object: ${JSON.stringify(m)}`);
-    }
   }
 }
 

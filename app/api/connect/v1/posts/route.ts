@@ -7,6 +7,8 @@ import {
   editPost,
 } from "@/lib/postFunctions";
 
+export const runtime = "nodejs";
+
 // create post
 export async function POST(req: NextRequest) {
   return await createPost(req);

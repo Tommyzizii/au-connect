@@ -124,9 +124,8 @@ export async function handleCreatePost(
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Backend error:", errorText);
-      throw new Error(`Failed to create post: ${errorText}`);
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || "Failed to create post.");
     }
 
     const createdPost = await res.json();
@@ -134,6 +133,7 @@ export async function handleCreatePost(
     return createdPost;
   } catch (error) {
     console.error("Create post error:", error);
+    throw error;
   }
 }
 

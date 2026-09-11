@@ -11,6 +11,7 @@ import {
   X,
   Eraser,
   Link as LinkIcon,
+  CircleHelp,
 } from "lucide-react";
 
 import { type UploadJob, useUploadStore } from "@/lib/stores/uploadStore";
@@ -38,6 +39,13 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PostType from "@/types/Post";
 import { useActorStore } from "@/lib/stores/actorStore";
+import {
+  attachmentLimitError,
+  getUploadFormat,
+  POST_LIMITS,
+  POST_UPLOAD_ACCEPT,
+  postContentLimitError,
+} from "@/lib/postLimits";
 
 type JobsPagePost = Omit<PostType, "jobPost"> & {
   jobPost?: JobDraft & {
@@ -86,12 +94,6 @@ type EditPostPayload = {
   job?: JobDraft;
   pollOptions?: string[];
   pollDuration?: number;
-};
-
-const getMediaType = (file: File): MediaType => {
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.startsWith("video/")) return "video";
-  return "file";
 };
 
 const getDraftFileString = (fList: string[]) => {
@@ -143,12 +145,35 @@ export default function CreatePostModal({
   const [shareAfterPost, setShareAfterPost] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadLimitsRef = useRef<HTMLDivElement | null>(null);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   // Separate state for new uploads vs existing media
   const [newMedia, setNewMedia] = useState<MediaItem[]>([]);
   const [existingMedia, setExistingMedia] = useState<PostMediaWithUrl[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const [showUploadLimits, setShowUploadLimits] = useState(false);
+
+  useEffect(() => {
+    if (!showUploadLimits) return;
+
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (!uploadLimitsRef.current?.contains(event.target as Node)) {
+        setShowUploadLimits(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowUploadLimits(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePress);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showUploadLimits]);
 
   // Link embeds states
   const [links, setLinks] = useState<LinkEmbed[]>([]);
@@ -407,6 +432,10 @@ export default function CreatePostModal({
     siteName?: string;
     favicon?: string;
   }) => {
+    if (links.length >= POST_LIMITS.linkCount) {
+      setValidationError("A post can have at most 5 links.");
+      return;
+    }
     // Create link embed with user-provided data + fetched metadata
     const newLink: LinkEmbed = {
       url: linkData.url,
@@ -426,6 +455,19 @@ export default function CreatePostModal({
 
   const handleSubmitPost = async () => {
     if (isSubmitting) return;
+    const limitError = postContentLimitError({
+      postType,
+      content: postContent,
+      title,
+      links,
+      pollOptions: postType === "poll" ? pollOptions : undefined,
+      pollDuration: postType === "poll" ? pollDuration : undefined,
+    });
+    if (limitError) {
+      setValidationError(limitError);
+      return;
+    }
+    setValidationError("");
     setIsSubmitting(true);
 
     if (postType === "job_post") {
@@ -548,6 +590,9 @@ export default function CreatePostModal({
         clearDraft();
       }
     } catch (err) {
+      setValidationError(
+        err instanceof Error ? err.message : "Unable to save this post.",
+      );
       console.error("❌ Submit failed:", err);
     } finally {
       setIsSubmitting(false);
@@ -699,6 +744,7 @@ export default function CreatePostModal({
             <div className="my-4 mx-5">
               <input
                 value={title}
+                maxLength={POST_LIMITS.titleCharacters}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-gray-700 text-base font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                 placeholder={
@@ -708,6 +754,11 @@ export default function CreatePostModal({
                 }
               />
             </div>
+          )}
+          {(postType === "article" || postType === "poll") && (
+            <p className="px-6 text-xs text-neutral-500">
+              {title.length}/{POST_LIMITS.titleCharacters} characters
+            </p>
           )}
 
           {/* input for poll options */}
@@ -727,6 +778,11 @@ export default function CreatePostModal({
             <div className="px-6 pt-2 pb-2">
               <textarea
                 value={postContent}
+                maxLength={
+                  postType === "article"
+                    ? POST_LIMITS.articleBodyCharacters
+                    : POST_LIMITS.postTextCharacters
+                }
                 onChange={(e) => setPostContent(e.target.value)}
                 className={`w-full ${
                   totalMedia.length === 0
@@ -739,6 +795,16 @@ export default function CreatePostModal({
                 } text-gray-600 resize-none border-none outline-none text-base`}
                 placeholder="What's on your mind?"
               />
+            </div>
+          )}
+          {((postType !== "job_post" && postType !== "poll") || showBody) && (
+            <div className="px-6 pt-1">
+              <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600">
+                {postContent.length}/
+                {postType === "article"
+                  ? POST_LIMITS.articleBodyCharacters
+                  : POST_LIMITS.postTextCharacters} characters
+              </span>
             </div>
           )}
 
@@ -757,6 +823,7 @@ export default function CreatePostModal({
                       </span>
                       <input
                         value={opt}
+                        maxLength={POST_LIMITS.pollOptionCharacters}
                         onChange={(e) => {
                           const next = [...pollOptions];
                           next[i] = e.target.value;
@@ -766,7 +833,10 @@ export default function CreatePostModal({
                         className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                       />
                     </div>
-                    {pollOptions.length > 2 && (
+                    <span className="text-xs text-neutral-500">
+                      {opt.length}/{POST_LIMITS.pollOptionCharacters}
+                    </span>
+                    {pollOptions.length > POST_LIMITS.pollMinimumOptions && (
                       <button
                         onClick={() => {
                           setPollOptions((p) =>
@@ -782,7 +852,7 @@ export default function CreatePostModal({
                   </div>
                 ))}
 
-                {pollOptions.length < 10 && (
+                {pollOptions.length < POST_LIMITS.pollMaximumOptions && (
                   <button
                     onClick={() => setPollOptions((p) => [...p, ""])}
                     className="w-full py-2.5 border-2 border-dashed border-neutral-300 rounded-xl text-sm text-blue-600 font-semibold hover:border-blue-400 hover:bg-blue-50 transition"
@@ -806,7 +876,6 @@ export default function CreatePostModal({
                   <option value={3}>3 days</option>
                   <option value={7}>1 week</option>
                   <option value={14}>2 weeks</option>
-                  <option value={30}>1 month</option>
                 </select>
               </div>
             </div>
@@ -949,35 +1018,105 @@ export default function CreatePostModal({
           )}
 
           <div className="px-6 pb-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-neutral-600">
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1">
+                  {totalMedia.length}/{POST_LIMITS.attachmentCount} attachments
+                </span>
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1">
+                  {links.length}/{POST_LIMITS.linkCount} links
+                </span>
+              </div>
+              <div ref={uploadLimitsRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadLimits((visible) => !visible)}
+                  aria-expanded={showUploadLimits}
+                  aria-controls="upload-limits"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-800 focus-visible:bg-neutral-100 focus-visible:outline-none"
+                >
+                  <CircleHelp className="h-4 w-4" />
+                  Upload limits
+                </button>
+                <div
+                  id="upload-limits"
+                  role="dialog"
+                  aria-label="Upload limits"
+                  className={`absolute bottom-full right-0 z-30 mb-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-neutral-200 bg-white p-3 text-xs text-neutral-600 shadow-xl transition duration-150 ${
+                    showUploadLimits
+                      ? "visible opacity-100"
+                      : "pointer-events-none invisible opacity-0"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-neutral-800">Upload limits</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadLimits(false)}
+                      aria-label="Close upload limits"
+                      className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <p className="mt-2 font-semibold text-neutral-800">Attachments</p>
+                  <p className="mt-1 leading-5">
+                    Up to 10 total attachments: 10 images (10 MB each) and 5
+                    documents (20 MB each). 1 video per post, maximum 512 MB.
+                  </p>
+                  <p className="mt-3 font-semibold text-neutral-800">Accepted formats</p>
+                  <p className="mt-1 leading-5">
+                    JPG, PNG, WebP, MP4, MOV, WebM, PDF, DOC, DOCX, XLS, XLSX,
+                    PPT, and PPTX. ZIP, SVG, and macro-enabled Office files are
+                    not allowed.
+                  </p>
+                </div>
+              </div>
+            </div>
+            {validationError && (
+              <p role="alert" className="mb-2 text-sm text-red-600">{validationError}</p>
+            )}
             <input
               ref={fileInputRef}
               type="file"
               hidden
               multiple
-              accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip"
+              accept={POST_UPLOAD_ACCEPT}
               onChange={async (e) => {
                 const files = Array.from(e.target.files ?? []);
-                if (!files.length) return;
-
-                const newItems: MediaItem[] = await Promise.all(
-                  files.map(async (file) => {
-                    const type = getMediaType(file);
-                    const previewUrl =
-                      type === "image" || type === "video"
-                        ? URL.createObjectURL(file)
-                        : undefined;
-
-                    return {
-                      id: crypto.randomUUID(),
-                      file,
-                      type,
-                      previewUrl,
-                    };
-                  }),
-                );
-
-                setNewMedia((prev) => [...prev, ...newItems]);
                 e.target.value = "";
+                if (!files.length) return;
+                const formats = files.map((file) => getUploadFormat(file.name));
+                if (formats.some((format) => !format)) {
+                  setValidationError("Choose only an allowed image, video, or document format.");
+                  return;
+                }
+                const limitError = attachmentLimitError([
+                  ...totalMedia.map((item) => ({
+                    type: item.type as MediaType,
+                    size: item.file?.size ?? ("size" in item ? item.size : 0),
+                  })),
+                  ...files.map((file, index) => ({
+                    type: formats[index]!.type,
+                    size: file.size,
+                    name: file.name,
+                  })),
+                ]);
+                if (limitError) {
+                  setValidationError(limitError);
+                  return;
+                }
+                const newItems: MediaItem[] = files.map((file, index) => ({
+                  id: crypto.randomUUID(),
+                  file,
+                  type: formats[index]!.type,
+                  previewUrl:
+                    formats[index]!.type === "file"
+                      ? undefined
+                      : URL.createObjectURL(file),
+                }));
+                setValidationError("");
+                setNewMedia((previous) => [...previous, ...newItems]);
               }}
             />
 
