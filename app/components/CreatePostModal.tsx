@@ -898,7 +898,7 @@ export default function CreatePostModal({
 
           {/* Media Preview */}
           {totalMedia.length > 0 && currentMedia && (
-            <div className="mb-10 px-5 relative w-full">
+            <div className="mb-10 mt-3 px-5 relative w-full">
               {isCurrentExisting ? (
                 <>
                   {currentMedia.type === "image" && (
