@@ -334,6 +334,10 @@ export function useMessaging() {
         return;
       }
 
+      // An unsent draft does not exist in the server inbox yet. Keep it selected
+      // while inbox polling continues; a page reload naturally clears this state.
+      if (currentConv && isDraftConvId(currentConv) && currentPeer) return;
+
       const lastConv =
         typeof window !== "undefined"
           ? localStorage.getItem(scopedStorageKey(LS_LAST_CONV, activeActorKey))
