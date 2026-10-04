@@ -67,8 +67,8 @@ AZURE_STORAGE_ACCOUNT_KEY=
 AZURE_STORAGE_CONNECTION_STRING=
 AZURE_STORAGE_CONTAINER_NAME=
 
-GMAIL_USER=
-GMAIL_APP_PASSWORD=
+SENDGRID_API_KEY=                                  # from app.sendgrid.com/settings/api_keys
+EMAIL_FROM=                                        # a verified Single Sender on that account
 ```
 
 For the OAuth logins to work, register these redirect URIs with each provider

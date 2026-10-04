@@ -1,28 +1,17 @@
 "use server";
 
 import prisma from "../prisma";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import { ActorType, NotificationType } from "@/lib/generated/prisma";
 import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 import { getAppUrl } from "@/lib/server/appUrl";
 
-// ─── Gmail SMTP transporter (used in both dev + production) ──────────────────
-function getGmailTransporter() {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-
-  if (!user || !pass) {
-    console.error("❌ GMAIL_USER or GMAIL_APP_PASSWORD not set.");
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user, pass },
-  });
+// ─── SendGrid client (used in both dev + production) ──────────────────────────
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
+
+const EMAIL_FROM = process.env.EMAIL_FROM;
 
 // ─── Public: create notification + fire email ─────────────────────────────────
 export async function createNotification({
@@ -103,19 +92,21 @@ async function sendNotificationEmail(
     notificationsUrl: `${appUrl}/notifications`,
   });
 
-  const transporter = getGmailTransporter();
-  if (!transporter) return;
+  if (!process.env.SENDGRID_API_KEY || !EMAIL_FROM) {
+    console.error("❌ SENDGRID_API_KEY or EMAIL_FROM not set — cannot send email.");
+    return;
+  }
 
   try {
-    const result = await transporter.sendMail({
-      from: `"AU Connect" <${process.env.GMAIL_USER}>`,
+    const [result] = await sgMail.send({
+      from: { email: EMAIL_FROM, name: "AU Connect" },
       to: recipient.email,
       subject,
       html,
     });
 
     console.log(
-      `✅ Email sent via Gmail → ${recipient.email} | messageId: ${result.messageId}`
+      `✅ Email sent via SendGrid → ${recipient.email} | status: ${result.statusCode}`
     );
   } catch (error) {
     console.error("❌ Email sending failed:", error);

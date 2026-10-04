@@ -27,8 +27,8 @@ services:
       - APP_PUBLIC_URL=http://localhost:3000/connect
       - RECOMMENDATION_SERVICE_URL=http://host.docker.internal:8000
       - RECOMMENDATION_SERVICE_API_KEY=replace-with-shared-secret
-      - GMAIL_USER=
-      - GMAIL_APP_PASSWORD=
+      - SENDGRID_API_KEY=
+      - EMAIL_FROM=
       - NODE_ENV=development
       - JWT_SECRET=
 
