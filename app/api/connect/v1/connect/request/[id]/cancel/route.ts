@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
+import { isValidConnectionUserId } from "@/lib/connect";
+import { routeErrorResponse } from "@/lib/server/routeErrors";
 
 export async function POST(
   req: NextRequest,
@@ -15,8 +17,11 @@ export async function POST(
     const requestId = params?.id;
 
     // Validate requestId exists
-    if (!requestId) {
-      return NextResponse.json({ error: "Missing request id" }, { status: 400 });
+    if (!isValidConnectionUserId(requestId)) {
+      return NextResponse.json(
+        { error: "A valid request id is required" },
+        { status: 400 },
+      );
     }
 
     const row = await prisma.connectionRequest.findUnique({
@@ -41,8 +46,7 @@ export async function POST(
     });
 
     return NextResponse.json({ ok: true });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error: unknown) {
+    return routeErrorResponse(error, "Failed to cancel connection request");
   }
 }

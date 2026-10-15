@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
+import { routeErrorResponse } from "@/lib/server/routeErrors";
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,8 +36,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ data: users });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Server error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error: unknown) {
+    return routeErrorResponse(error, "Failed to fetch connections");
   }
 }

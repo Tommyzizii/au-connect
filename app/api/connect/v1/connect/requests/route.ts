@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
+import { routeErrorResponse } from "@/lib/server/routeErrors";
 
 export async function GET(req: NextRequest) {
     try {
@@ -26,9 +27,7 @@ export async function GET(req: NextRequest) {
         });
 
         return NextResponse.json({ ok: true, data });
-    } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : "Server error";
-
-        return NextResponse.json({ error: message }, { status: 401 });
+    } catch (error: unknown) {
+        return routeErrorResponse(error, "Failed to fetch connection requests");
     }
 }

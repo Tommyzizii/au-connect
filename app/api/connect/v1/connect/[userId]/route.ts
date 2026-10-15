@@ -1,8 +1,9 @@
 // app/api/connect/v1/connections/[userId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { normalizePair } from "@/lib/connect";
+import { isValidConnectionUserId, normalizePair } from "@/lib/connect";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
+import { routeErrorResponse } from "@/lib/server/routeErrors";
 
 export async function DELETE(
   req: NextRequest,
@@ -15,8 +16,11 @@ export async function DELETE(
     const params = await context.params;
     const otherUserId = params?.userId;
 
-    if (!otherUserId) {
-      return NextResponse.json({ error: "userId required" }, { status: 400 });
+    if (!isValidConnectionUserId(otherUserId)) {
+      return NextResponse.json(
+        { error: "A valid userId is required" },
+        { status: 400 },
+      );
     }
 
     if (otherUserId === authUserId) {
@@ -38,8 +42,7 @@ export async function DELETE(
     ]);
 
     return NextResponse.json({ ok: true });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error: unknown) {
+    return routeErrorResponse(error, "Failed to remove connection");
   }
 }

@@ -298,8 +298,6 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
 
     const userData = await userResponse.json();
 
-    console.log("SERVER SIDE LOG:\nMicrosoft User Info:", userData);
-
     // check if user exists
     let user = await checkExistUser(userData.mail);
 
