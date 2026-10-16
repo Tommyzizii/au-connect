@@ -190,7 +190,7 @@ export default function MainFeed({
               Header: CreatePostCard,
               Footer,
             }}
-            itemContent={(index, post) => {
+            itemContent={(_, post) => {
               if (!post) return null;
               return (
                 <div className="mb-4">

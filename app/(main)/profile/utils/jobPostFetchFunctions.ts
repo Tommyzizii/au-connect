@@ -23,7 +23,6 @@ export function useApplyJob() {
   return useMutation({
     mutationFn: async ({
       jobPostId,
-      postId,
       resumeFile,
       resumeLetter,
       expectedSalary,

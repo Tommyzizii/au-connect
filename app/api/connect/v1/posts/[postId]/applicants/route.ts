@@ -102,7 +102,7 @@ const EXPIRE = Number(process.env.SAS_TOKEN_EXPIRE_DURATION || 3600000);
 
 const sharedKeyCredential = new StorageSharedKeyCredential(ACCOUNT, KEY);
 
-export function getProfilePicUrl(profilePic?: string | null) {
+function getProfilePicUrl(profilePic?: string | null) {
   if (!profilePic) return null;
   if (profilePic.startsWith("/")) return asset(profilePic);
 

@@ -483,7 +483,7 @@ async function main() {
       createdAt: daysAgo(0, 1),
     },
   });
-  for (const [postIdx, rootId] of Object.entries(commentRootIds)) {
+  for (const postIdx of Object.keys(commentRootIds)) {
     const count = await prisma.comment.count({ where: { postId: postIds[Number(postIdx)] } });
     await prisma.post.update({ where: { id: postIds[Number(postIdx)] }, data: { commentCount: count } });
   }

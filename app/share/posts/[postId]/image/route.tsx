@@ -4,6 +4,10 @@ import {
   firstImageBlobName,
   getPublicPostPreview,
 } from "@/lib/postHelpers";
+import {
+  PUBLIC_IMAGE_HEADERS,
+  verifiedPublicRasterResponse,
+} from "@/lib/server/publicPostImage";
 
 // Azure SAS signing needs the Node runtime (not edge).
 export const runtime = "nodejs";
@@ -50,7 +54,7 @@ function brandedCard(username: string | null, text: string) {
         </div>
       </div>
     ),
-    SIZE,
+    { ...SIZE, headers: PUBLIC_IMAGE_HEADERS },
   );
 }
 
@@ -67,20 +71,13 @@ export async function GET(
 
   const blobName = firstImageBlobName(post.media);
 
-  // Post has a photo or video thumbnail → stream it through this stable URL so the
+  // Post has a photo or video thumbnail → serve it through this stable URL so the
   // cached social card never breaks when the underlying SAS token expires.
   if (blobName) {
     try {
       const upstream = await fetch(buildBlobReadSasUrl(blobName));
-      const contentType = upstream.headers.get("content-type");
-      if (upstream.ok && upstream.body && contentType?.startsWith("image/")) {
-        return new Response(upstream.body, {
-          headers: {
-            "content-type": contentType,
-            "cache-control": "public, max-age=3600, s-maxage=3600",
-          },
-        });
-      }
+      const verifiedResponse = await verifiedPublicRasterResponse(upstream);
+      if (verifiedResponse) return verifiedResponse;
     } catch {
       // fall through to the branded card
     }

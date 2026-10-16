@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
       }
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: "Invalid URL format" },
         { status: 400 },
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     if (image && !image.startsWith("http")) {
       try {
         image = new URL(image, parsedUrl.origin).href;
-      } catch (e) {
+      } catch {
         console.warn("Failed to resolve relative image URL:", image);
         image = null;
       }
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         favicon = iconHref.startsWith("http")
           ? iconHref
           : new URL(iconHref, parsedUrl.origin).href;
-      } catch (e) {
+      } catch {
         console.warn("Failed to resolve favicon URL:", iconHref);
       }
     }

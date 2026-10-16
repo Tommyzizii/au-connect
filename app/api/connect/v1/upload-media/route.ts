@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
       {
         containerName: AZURE_STORAGE_CONTAINER_NAME,
         blobName,
-        permissions: BlobSASPermissions.parse("cw"),
+        // The random blob name is single-use. Create permits the initial PUT,
+        // while omitting Write prevents this SAS from overwriting validated data.
+        permissions: BlobSASPermissions.parse("c"),
         expiresOn: new Date(Date.now() + 5 * 60 * 1000),
       },
       sharedKeyCredential
