@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { useVoteInPoll } from "../(main)/profile/utils/fetchfunctions";
+import { useCurrentTime } from "@/lib/client/useCurrentTime";
 
 interface PostPollProps {
   postId: string;
@@ -23,14 +24,18 @@ export default function PostPoll({
   currentUserId,
   votingDisabled = false,
 }: PostPollProps) {
-  if (!currentUserId) return null;
-
-  const voteMutation = useVoteInPoll(postId, currentUserId);
+  const voteMutation = useVoteInPoll(postId, currentUserId ?? "");
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
+  const currentTime = useCurrentTime(Boolean(endsAt));
+
+  if (!currentUserId) return null;
 
   // Calculate if poll has ended
-  const pollEnded = endsAt ? new Date(endsAt) < new Date() : false;
+  const clockReady = !endsAt || currentTime !== null;
+  const pollEnded = Boolean(
+    endsAt && currentTime !== null && new Date(endsAt).getTime() <= currentTime,
+  );
 
   // Calculate total votes
   const totalVotes = Object.values(votes).reduce(
@@ -39,14 +44,14 @@ export default function PostPoll({
   );
 
   // Check if current user has voted
-  const userVotedOption = Object.entries(votes).find(([_, voters]) =>
-    voters.includes(currentUserId || ""),
+  const userVotedOption = Object.entries(votes).find(([, voters]) =>
+    voters.includes(currentUserId),
   )?.[0];
 
   const userHasVoted = !!userVotedOption || hasVoted;
 
   const handleVote = (optionIndex: number) => {
-    if (pollEnded || userHasVoted || votingDisabled) return;
+    if (!clockReady || pollEnded || userHasVoted || votingDisabled) return;
 
     setSelectedOption(optionIndex);
     setHasVoted(true);
@@ -66,10 +71,9 @@ export default function PostPoll({
 
   // Calculate time remaining
   const getTimeRemaining = () => {
-    if (!endsAt) return null;
-    const now = new Date();
+    if (!endsAt || currentTime === null) return null;
     const end = new Date(endsAt);
-    const diff = end.getTime() - now.getTime();
+    const diff = end.getTime() - currentTime;
 
     if (diff < 0) return "Poll ended";
 
@@ -95,14 +99,14 @@ export default function PostPoll({
             <button
               key={index}
               onClick={() => handleVote(index)}
-              disabled={userHasVoted || pollEnded || votingDisabled}
+              disabled={!clockReady || userHasVoted || pollEnded || votingDisabled}
               className={`w-full min-w-0 text-left relative overflow-hidden rounded-xl border-2 transition-all ${
                 showResults
                   ? isSelected
                     ? "border-blue-500 bg-blue-50"
                     : "border-neutral-200 bg-white"
                   : "border-neutral-300 hover:border-blue-400 hover:bg-blue-50 "
-              } ${(userHasVoted || pollEnded || votingDisabled) && "cursor-default"}`}
+              } ${(!clockReady || userHasVoted || pollEnded || votingDisabled) && "cursor-default"}`}
             >
               {/* Progress bar background */}
               {showResults && (

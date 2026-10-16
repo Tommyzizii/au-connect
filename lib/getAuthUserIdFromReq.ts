@@ -9,7 +9,7 @@ import { AuthenticationError } from "@/lib/server/routeErrors";
  * @param req - The NextRequest object.
  * @returns The authenticated user ID.
  * @throws AuthenticationError if the user is not authenticated.
- * @author Minn
+ * @author Tommyzizii
  */
 export function getAuthUserIdFromReq(req: NextRequest) {
   const token = req.cookies.get(JWT_COOKIE)?.value;

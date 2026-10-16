@@ -388,7 +388,7 @@ export default function CreatePostModal({
           mediaFileNames:
             newMedia.length > 0
               ? newMedia.map((m) => m.file?.name || "").filter(Boolean)
-              : draft.mediaFileNames,
+              : useDraftStore.getState().draft.mediaFileNames,
         });
       }
     }, 1000);
@@ -402,6 +402,8 @@ export default function CreatePostModal({
     selectedVisibility,
     disableComments,
     editMode,
+    postType,
+    saveDraft,
   ]);
 
   useEffect(() => {

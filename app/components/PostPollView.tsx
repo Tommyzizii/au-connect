@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock } from "lucide-react";
+import { useCurrentTime } from "@/lib/client/useCurrentTime";
 
 interface PostPollReadOnlyProps {
   options: string[];
@@ -13,6 +14,7 @@ export default function PostPollView({
   votes = {},
   endsAt,
 }: PostPollReadOnlyProps) {
+  const currentTime = useCurrentTime(Boolean(endsAt));
   const totalVotes = Object.values(votes).reduce(
     (sum, voters) => sum + voters.length,
     0,
@@ -24,8 +26,8 @@ export default function PostPollView({
     totalVotes === 0 ? 0 : Math.round((getVoteCount(index) / totalVotes) * 100);
 
   const getTimeRemaining = () => {
-    if (!endsAt) return null;
-    const diff = new Date(endsAt).getTime() - Date.now();
+    if (!endsAt || currentTime === null) return null;
+    const diff = new Date(endsAt).getTime() - currentTime;
     if (diff < 0) return "Poll ended";
 
     const hours = Math.floor(diff / (1000 * 60 * 60));

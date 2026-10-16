@@ -243,15 +243,7 @@ export default function Post({
         {/* Media Grid */}
         {containsVideosOrImages && (
           <PostMediaGrid
-            postInfo={{
-              id: post.id,
-              username: post.username,
-              profilePic: post.profilePic,
-              createdAt: post.createdAt,
-            }}
             media={videosAndImages}
-            title={post.title ? post.title : null}
-            content={post.content}
             isLoading={isLoading}
             onClick={(index) => openPostModal(post.id, index)}
           />

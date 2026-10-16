@@ -11,21 +11,27 @@ const LS_LAST_CONV = "auconnect:lastConversationId";
 const LS_LAST_USER = "auconnect:lastUserId";
 const PAGE_SIZE = 50;
 
+/** Builds an actor-specific storage key so account and community state cannot collide. */
 function scopedStorageKey(base: string, actorKeyValue: string) {
   return `${base}:${actorKeyValue}`;
 }
 
+/** Returns whether an ID represents a local-only conversation that has not been created on the server. */
 function isDraftConvId(id: string | null) {
   return !!id && id.startsWith("draft:");
 }
+
+/** Creates the stable local ID used while composing the first message to a peer. */
 function makeDraftConvId(type: "USER" | "COMMUNITY", id: string) {
   return `draft:${type}:${id}`;
 }
 
+/** Creates a type-qualified peer key for deep-link and selection comparisons. */
 function actorKey(type: "USER" | "COMMUNITY", id: string | null) {
   return `${type}:${id ?? ""}`;
 }
 
+/** Removes duplicate messages by ID while preserving the first occurrence and its order. */
 function dedupeById(list: ChatMessage[]) {
   const seen = new Set<string>();
   const out: ChatMessage[] = [];
@@ -37,21 +43,29 @@ function dedupeById(list: ChatMessage[]) {
   return out;
 }
 
+/** Appends messages without replacing an existing message that has the same ID. */
 function mergeAppend(prev: ChatMessage[], incoming: ChatMessage[]) {
   if (!incoming.length) return prev;
   return dedupeById([...prev, ...incoming]);
 }
 
+/** Prepends older messages while preventing overlap between adjacent result pages. */
 function mergePrepend(prev: ChatMessage[], incoming: ChatMessage[]) {
   if (!incoming.length) return prev;
   return dedupeById([...incoming, ...prev]);
 }
 
-/** sessionStorage pending key per conversation (REAL conv only) */
+/** Returns the session-storage key for failed messages in a server-backed conversation. */
 function pendingKey(convId: string) {
   return `auconnect:pending:${convId}`;
 }
 
+/**
+ * Restores failed messages for a server-backed conversation.
+ *
+ * Pending data from older releases is migrated from local storage to session
+ * storage. Invalid or unavailable browser storage is treated as an empty list.
+ */
 function safeReadPending(convId: string): ChatMessage[] {
   if (typeof window === "undefined") return [];
   try {
@@ -80,6 +94,7 @@ function safeReadPending(convId: string): ChatMessage[] {
   }
 }
 
+/** Persists failed messages for the current browser session and removes legacy data. */
 function safeWritePending(convId: string, list: ChatMessage[]) {
   if (typeof window === "undefined") return;
   try {
@@ -90,6 +105,7 @@ function safeWritePending(convId: string, list: ChatMessage[]) {
   } catch {}
 }
 
+/** Adds or replaces a failed message in a conversation's session retry queue. */
 function safeUpsertPending(convId: string, msg: ChatMessage) {
   const current = safeReadPending(convId);
   const next = dedupeById([
@@ -99,12 +115,17 @@ function safeUpsertPending(convId: string, msg: ChatMessage) {
   safeWritePending(convId, next);
 }
 
+/** Removes a message from a conversation's session retry queue. */
 function safeRemovePending(convId: string, id: string) {
   const current = safeReadPending(convId);
   const next = current.filter((x) => x.id !== id);
   safeWritePending(convId, next);
 }
 
+/**
+ * Coordinates inbox selection, message pagination and polling, optimistic sends,
+ * read receipts, and recovery of failed messages for the active actor.
+ */
 export function useMessaging() {
   const [inboxLoaded, setInboxLoaded] = useState(false);
   const router = useRouter();
@@ -219,6 +240,7 @@ export function useMessaging() {
     return hasMoreOlderByConv[selectedConversationId] ?? true;
   }, [hasMoreOlderByConv, selectedConversationId]);
 
+  /** Adds the active actor context to a messaging endpoint. */
   const messageApi = useCallback(
     (path: string) => {
       const separator = path.includes("?") ? "&" : "?";
@@ -245,14 +267,20 @@ export function useMessaging() {
   }, [draftPeer, inbox, selectedConversationId, selectedUserId]);
 
   // ---------- read helpers ----------
-  const markReadLocal = (conversationId: string) => {
+  /** Clears a conversation's unread count in the local inbox immediately. */
+  const markReadLocal = useCallback((conversationId: string) => {
     setInbox((prev) =>
       prev.map((x) => (x.conversationId === conversationId ? { ...x, unreadCount: 0 } : x))
     );
-  };
+  }, []);
 
   const lastReadPostAtRef = useRef<Record<string, number>>({});
-  const markReadServerSafe = async (conversationId: string) => {
+
+  /**
+   * Best-effort server read receipt for a real conversation.
+   * Repeated requests for the same conversation are throttled for three seconds.
+   */
+  const markReadServerSafe = useCallback(async (conversationId: string) => {
     if (!conversationId) return;
     if (isDraftConvId(conversationId)) return;
 
@@ -266,14 +294,56 @@ export function useMessaging() {
       method: "POST",
       credentials: "include",
     }).catch(() => {});
-  };
+  }, [messageApi]);
 
-  const shouldMarkRead = (conversationId: string) => {
+  /** Checks the latest inbox snapshot rather than a render-time unread count. */
+  const shouldMarkRead = useCallback((conversationId: string) => {
     const row = inboxRef.current.find((r) => r.conversationId === conversationId);
     return (row?.unreadCount ?? 0) > 0;
-  };
+  }, []);
 
-  const fetchInbox = async () => {
+  /** Replaces a conversation with server messages plus locally persisted failures. */
+  const setConversationMessagesWithPending = useCallback((
+    conversationId: string,
+    serverMsgs: ChatMessage[],
+  ) => {
+    const pending = safeReadPending(conversationId);
+    const merged = dedupeById([...serverMsgs, ...pending]).sort((a, b) => {
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      return ta - tb;
+    });
+    setMessagesByConv((prev) => ({ ...prev, [conversationId]: merged }));
+  }, []);
+
+  /** Fetches the newest message page and resets the conversation's paging state. */
+  const fetchMessagesReplace = useCallback(async (conversationId: string) => {
+    if (isDraftConvId(conversationId)) return;
+
+    const res = await fetch(messageApi(`${BASE_API_PATH}/messages/${conversationId}`), {
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+
+    const incoming: ChatMessage[] = (json?.data || []).map((m: ChatMessage) => ({
+      ...m,
+      status: "sent",
+    }));
+
+    setConversationMessagesWithPending(conversationId, dedupeById(incoming));
+
+    setHasMoreOlderByConv((prev) => ({
+      ...prev,
+      [conversationId]: incoming.length === PAGE_SIZE,
+    }));
+  }, [messageApi, setConversationMessagesWithPending]);
+
+  /**
+   * Refreshes the active actor's inbox and reconciles its selected conversation.
+   * Responses for an actor that is no longer active are discarded.
+   */
+  const fetchInbox = useCallback(async () => {
     const requestActorQuery = activeActorQuery;
     setInboxLoaded(false);
 
@@ -357,9 +427,16 @@ export function useMessaging() {
     } finally {
       setInboxLoaded(true);
     }
-  };
+  }, [activeActorKey, activeActorQuery, fetchMessagesReplace]);
 
-  const ensureConversation = async (peerType: "USER" | "COMMUNITY", peerId: string) => {
+  /**
+   * Creates or resolves the server conversation for a peer.
+   * Returns `null` when the request fails or verification is required.
+   */
+  const ensureConversation = useCallback(async (
+    peerType: "USER" | "COMMUNITY",
+    peerId: string,
+  ) => {
     const endpoint =
       peerType === "COMMUNITY"
         ? `${BASE_API_PATH}/messages/conversation/with-community/${peerId}`
@@ -375,42 +452,13 @@ export function useMessaging() {
       return null;
     }
     return (json?.data?.conversationId as string) || null;
-  };
+  }, [activeActorQuery]);
 
-  /** Merge server messages + locally failed pending messages */
-  const setConversationMessagesWithPending = (conversationId: string, serverMsgs: ChatMessage[]) => {
-    const pending = safeReadPending(conversationId);
-    const merged = dedupeById([...serverMsgs, ...pending]).sort((a, b) => {
-      const ta = new Date(a.createdAt).getTime();
-      const tb = new Date(b.createdAt).getTime();
-      return ta - tb;
-    });
-    setMessagesByConv((prev) => ({ ...prev, [conversationId]: merged }));
-  };
-
-  const fetchMessagesReplace = async (conversationId: string) => {
-    if (isDraftConvId(conversationId)) return;
-
-    const res = await fetch(messageApi(`${BASE_API_PATH}/messages/${conversationId}`), {
-      credentials: "include",
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) return;
-
-    const incoming: ChatMessage[] = (json?.data || []).map((m: ChatMessage) => ({
-      ...m,
-      status: "sent",
-    }));
-
-    setConversationMessagesWithPending(conversationId, dedupeById(incoming));
-
-    setHasMoreOlderByConv((prev) => ({
-      ...prev,
-      [conversationId]: incoming.length === PAGE_SIZE,
-    }));
-  };
-
-  const fetchMessagesAppendSince = async (conversationId: string, cursorISO?: string) => {
+  /** Fetches messages after a cursor and appends them to the local conversation. */
+  const fetchMessagesAppendSince = useCallback(async (
+    conversationId: string,
+    cursorISO?: string,
+  ) => {
     if (isDraftConvId(conversationId)) return [];
 
     const qs = cursorISO ? `?cursor=${encodeURIComponent(cursorISO)}` : "";
@@ -432,9 +480,13 @@ export function useMessaging() {
     });
 
     return incoming;
-  };
+  }, [messageApi]);
 
-  const fetchMessagesOlderBefore = async (conversationId: string, beforeISO: string) => {
+  /** Fetches one older page without mutating local message state. */
+  const fetchMessagesOlderBefore = useCallback(async (
+    conversationId: string,
+    beforeISO: string,
+  ) => {
     if (isDraftConvId(conversationId)) return [];
 
     const res = await fetch(
@@ -449,9 +501,9 @@ export function useMessaging() {
       status: "sent",
     }));
     return incoming;
-  };
+  }, [messageApi]);
 
-  //  reverse infinite scroll action
+  /** Loads and prepends the next older page for the selected conversation. */
   const loadOlder = useCallback(async () => {
     const convId = selectedConvRef.current;
     if (!convId) return;
@@ -484,7 +536,7 @@ export function useMessaging() {
     } finally {
       setLoadingOlder(false);
     }
-  }, [hasMoreOlderByConv, loadingOlder]);
+  }, [fetchMessagesOlderBefore, hasMoreOlderByConv, loadingOlder]);
 
   // ---------- initial load + poll inbox ----------
   useEffect(() => {
@@ -507,7 +559,7 @@ export function useMessaging() {
       alive = false;
       clearInterval(t);
     };
-  }, [activeActorQuery]);
+  }, [fetchInbox]);
 
   // ---------- deep link ?userId= / ?communityId= ----------
   useEffect(() => {
@@ -604,11 +656,20 @@ export function useMessaging() {
     };
 
     fetchUser();
-  }, [targetUserId, targetCommunityId, inbox, router, inboxLoaded, activeActorQuery]);
+  }, [
+    ensureConversation,
+    fetchInbox,
+    inbox,
+    inboxLoaded,
+    router,
+    targetCommunityId,
+    targetUserId,
+  ]);
 
   // when selection changes: persist + fetch messages (only for real conv)
   useEffect(() => {
     if (!selectedConversationId || !selectedUserId) return;
+    if (selectedConvRef.current !== selectedConversationId) return;
     if (isDraftConvId(selectedConversationId)) return;
 
     localStorage.setItem(scopedStorageKey(LS_LAST_CONV, activeActorKey), selectedConversationId);
@@ -635,8 +696,15 @@ export function useMessaging() {
       markReadLocal(selectedConversationId);
       markReadServerSafe(selectedConversationId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedConversationId, selectedUserId]);
+  }, [
+    activeActorKey,
+    fetchMessagesReplace,
+    markReadLocal,
+    markReadServerSafe,
+    selectedConversationId,
+    selectedUserId,
+    shouldMarkRead,
+  ]);
 
   // poll active conversation (append only) - only real
   useEffect(() => {
@@ -680,9 +748,15 @@ export function useMessaging() {
       alive = false;
       clearInterval(t);
     };
-  }, [selectedConversationId]);
+  }, [
+    fetchMessagesAppendSince,
+    markReadLocal,
+    markReadServerSafe,
+    selectedConversationId,
+  ]);
 
   // ---------- actions ----------
+  /** Selects an inbox row, preserving unread metadata or opening a local draft. */
   const openChatWith = async (row: InboxRow) => {
     setDraftPeer(null); // now we're in real inbox land
     setSelectedUserId(row.peer.id);
@@ -706,6 +780,7 @@ export function useMessaging() {
     setSelectedConversationId(makeDraftConvId(row.peer.type, row.peer.id));
   };
 
+  /** Updates the delivery status of one message in local state. */
   const markMessageStatus = (convId: string, id: string, status: ChatMessage["status"]) => {
     setMessagesByConv((prev) => {
       const cur = prev[convId] ?? [];
@@ -716,6 +791,11 @@ export function useMessaging() {
     });
   };
 
+  /**
+   * Sends the current input optimistically.
+   * Draft conversations are created on first send, and failed messages for real
+   * conversations are retained in session storage for manual retry.
+   */
   const sendMessage = async () => {
     if (!selectedUserId) return;
 
@@ -873,7 +953,7 @@ export function useMessaging() {
     );
   };
 
-  /** Manual retry (only works for REAL conversation ids) */
+  /** Retries a failed message in the selected server-backed conversation. */
   const retryMessage = useCallback(async (messageId: string) => {
     const convId = selectedConvRef.current;
     if (!convId) return;
@@ -929,9 +1009,9 @@ export function useMessaging() {
     });
 
     safeRemovePending(convId, messageId);
-  }, []);
+  }, [messageApi]);
 
-  /** Local delete */
+  /** Removes a local message and any matching persisted retry without calling the API. */
   const deleteLocalMessage = useCallback((messageId: string) => {
     const convId = selectedConvRef.current;
     if (!convId) return;
@@ -945,6 +1025,7 @@ export function useMessaging() {
     if (!isDraftConvId(convId)) safeRemovePending(convId, messageId);
   }, []);
 
+  /** Deletes a server message for all participants, then refreshes the inbox preview. */
   const deleteMessageForEveryone = useCallback(async (messageId: string) => {
     const convId = selectedConvRef.current;
     if (!convId) return;
@@ -971,8 +1052,9 @@ export function useMessaging() {
 
     // Refresh inbox preview
     fetchInbox();
-  }, []);
+  }, [fetchInbox, messageApi]);
 
+  /** Clears the selected server conversation and its local pending-message state. */
   const clearConversation = useCallback(async () => {
     const convId = selectedConvRef.current;
     if (!convId) return;
@@ -997,9 +1079,12 @@ export function useMessaging() {
     }));
 
     fetchInbox();
-  }, []);
+  }, [fetchInbox, messageApi]);
 
-  /** Inbox preview helper */
+  /**
+   * Overlays local optimistic delivery state on an inbox row's server preview.
+   * This keeps sending and failed messages visible before the next inbox refresh.
+   */
   const getRowPreview = useCallback((row: InboxRow) => {
     const convId = row.conversationId;
     if (!convId)

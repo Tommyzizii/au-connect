@@ -1,23 +1,13 @@
 import Image from "next/image";
-import { useState } from "react";
 
 import VideoPlayer from "./VideoPlayer";
 
 export default function PostMediaGrid({
-  postInfo,
   media,
-  title,
-  content,
   maxVisible = 4,
   isLoading,
   onClick,
 }: {
-  postInfo: {
-    id: string;
-    username: string | undefined;
-    profilePic: string | undefined | null;
-    createdAt: string | Date | undefined;
-  };
   media:
     | {
         blobName: string;
@@ -29,20 +19,10 @@ export default function PostMediaGrid({
         size?: number | undefined;
       }[]
     | undefined;
-  title: string | null;
-  content: string | undefined;
   maxVisible?: number;
   isLoading: boolean;
   onClick?: (index: number) => void;
 }) {
-  const [postModalOpen, setPostModalOpen] = useState(false);
-  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-
-  const openPost = (index: number) => {
-    setCurrentMediaIndex(index);
-    onClick?.(index);
-  };
-
   if (!media || media.length === 0) return null;
 
   const videoMedia = media.filter((item) => item.type === "video");
@@ -54,12 +34,6 @@ export default function PostMediaGrid({
   // LCP = Largest Contentful Paint
   const isLcp = (index: number) => index === 0 && isSingle;
   const gridClass = isSingle ? "grid-cols-1" : "grid-cols-2";
-
-  // Ensure each media item has a type
-  const nMedia = media.map((m) => ({
-    ...m,
-    type: m.type ?? "file", // or "image" / "video" / whatever is valid
-  }));
 
   // Show skeleton loading state
   if (isLoading) {
@@ -96,7 +70,7 @@ export default function PostMediaGrid({
                 ? "w-full overflow-hidden"
                 : "relative w-full aspect-square cursor-pointer"
             }
-            onClick={() => openPost(index)}
+            onClick={() => onClick?.(index)}
           >
             {item.type === "video" && hasSingleVideo && (
               <div className="w-full max-h-[70vh] aspect-video bg-black overflow-hidden">
