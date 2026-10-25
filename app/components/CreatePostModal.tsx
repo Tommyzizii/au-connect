@@ -46,6 +46,7 @@ import {
   POST_UPLOAD_ACCEPT,
   postContentLimitError,
 } from "@/lib/postLimits";
+import { postLanguageError } from "@/lib/postLanguageCheck";
 
 type JobsPagePost = Omit<PostType, "jobPost"> & {
   jobPost?: JobDraft & {
@@ -469,6 +470,17 @@ export default function CreatePostModal({
     });
     if (limitError) {
       setValidationError(limitError);
+      return;
+    }
+    const languageError = postLanguageError({
+      title,
+      content: postContent,
+      links,
+      pollOptions: postType === "poll" ? pollOptions : undefined,
+      job: postType === "job_post" ? jobDraft : undefined,
+    });
+    if (languageError) {
+      setValidationError(languageError);
       return;
     }
     setValidationError("");

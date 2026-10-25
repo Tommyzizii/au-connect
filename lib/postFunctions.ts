@@ -26,6 +26,7 @@ import {
 import { getManagedCommunity } from "@/lib/communityAuth";
 import type { Prisma } from "@/lib/generated/prisma";
 import { postContentLimitError } from "./postLimits";
+import { postLanguageError } from "./postLanguageCheck";
 import {
   validatePostAttachments,
   type PostAttachment,
@@ -68,6 +69,11 @@ export async function createPost(req: NextRequest) {
         },
         { status: 400 },
       );
+    }
+
+    const languageError = postLanguageError(parsed.data);
+    if (languageError) {
+      return NextResponse.json({ error: languageError }, { status: 400 });
     }
 
     // separating certain data
@@ -579,6 +585,11 @@ export async function editPost(req: NextRequest) {
       if (hasVotes) {
         delete data.pollOptions;
       }
+    }
+
+    const languageError = postLanguageError({ ...data, job });
+    if (languageError) {
+      return NextResponse.json({ error: languageError }, { status: 400 });
     }
 
     const finalContentError = postContentLimitError({

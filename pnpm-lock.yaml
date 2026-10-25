@@ -38,6 +38,9 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
+      glin-profanity:
+        specifier: ^4.0.1
+        version: 4.0.1(react@19.2.0)(zod@4.1.13)
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -50,6 +53,9 @@ importers:
       nodemailer:
         specifier: ^8.0.11
         version: 8.0.11
+      obscenity:
+        specifier: ^0.4.6
+        version: 0.4.6
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -1650,6 +1656,38 @@ packages:
     resolution: {integrity: sha512-L5bGsVkxJbJgdnwyuheIunkGatUF/zssUoxxjACCseZYAVbaqdh9Tsmmlkl8vYan09H7sbvKt4pS8GqKLBrEzA==}
     hasBin: true
 
+  glin-profanity@4.0.1:
+    resolution: {integrity: sha512-SvabzeO5z3Lcdgoq30kaUrmwILVdwDpwKPvuVlyuL7dvkTLtVoiPUR23Rr9W4ZzWkqdvIFnXhxhCQ4sb6A6muA==}
+    peerDependencies:
+      '@langchain/core': '>=0.1.0'
+      '@tensorflow-models/toxicity': '>=1.2.0'
+      '@tensorflow/tfjs': '>=4.0.0'
+      '@xenova/transformers': '>=2.0.0'
+      ai: '>=3.0.0'
+      openai: '>=4.0.0'
+      react: '>=16.8.0'
+      tesseract.js: '>=5.0.0'
+      zod: '>=3.0.0'
+    peerDependenciesMeta:
+      '@langchain/core':
+        optional: true
+      '@tensorflow-models/toxicity':
+        optional: true
+      '@tensorflow/tfjs':
+        optional: true
+      '@xenova/transformers':
+        optional: true
+      ai:
+        optional: true
+      openai:
+        optional: true
+      react:
+        optional: true
+      tesseract.js:
+        optional: true
+      zod:
+        optional: true
+
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
     engines: {node: '>= 6'}
@@ -2162,6 +2200,10 @@ packages:
   object.values@1.2.1:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
+
+  obscenity@0.4.6:
+    resolution: {integrity: sha512-pHk7kNN7j3L3zGhhGnwxjvXIGsPpLrcZl2r58fqWh/V/rH6b/dafscj2sMmAY+A/9/wPsocLmimgGk2DKeKsFQ==}
+    engines: {node: '>=18.0.0'}
 
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
@@ -4318,6 +4360,11 @@ snapshots:
       nypm: 0.6.2
       pathe: 2.0.3
 
+  glin-profanity@4.0.1(react@19.2.0)(zod@4.1.13):
+    optionalDependencies:
+      react: 19.2.0
+      zod: 4.1.13
+
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
@@ -4797,6 +4844,8 @@ snapshots:
       call-bound: 1.0.4
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
+
+  obscenity@0.4.6: {}
 
   ohash@2.0.11: {}
 
